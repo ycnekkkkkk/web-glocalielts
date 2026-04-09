@@ -1,0 +1,114 @@
+[
+    {
+        "title": "Bí kíp giỏi dành cho học sinh lười (Hạ Hạ Mentoring Coaching)",
+        "price": 2000000,
+        "introVideo": "https://www.youtube.com/watch?v=8_pmnuBW7D8&t=2s",
+        "description": "Với hơn 10 năm kinh nghiệm đào tạo, Mentor An Hạ mang đến phương pháp học ít nhưng hiệu quả, giúp bạn ghi nhớ lâu và phát triển tư duy học tập khoa học.",
+        "accessDays": 100,
+        "lessons": [
+            {
+                "name": "Buổi 1 - Mẹo học hiệu quả (4 Chủ đề)",
+                "topics": [
+                    {
+                        "title": "Lý do học nhiều mà không giỏi",
+                        "video": "https://www.youtube.com/watch?v=teKCHHJ6o5A"
+                    },
+                    {
+                        "title": "Quy tắc học tập hiệu quả",
+                        "video": "https://www.youtube.com/watch?v=teKCHHJ6o5A&t=208s"
+                    },
+                    {
+                        "title": "Bí kíp của học sinh giỏi siêu lười",
+                        "video": "https://www.youtube.com/watch?v=teKCHHJ6o5A&t=562s"
+                    },
+                    {
+                        "title": "Mẹo học tập",
+                        "video": "https://www.youtube.com/watch?v=teKCHHJ6o5A&t=837s"
+                    }
+                ],
+                "assignments": [
+                    "Recap lại nội dung học hôm nay",
+                    "Tự đánh giá thói quen học hiện tại và đề xuất hướng tốt hơn"
+                ]
+            },
+            {
+                "name": "Buổi 2 - Cách rèn luyện sự tập trung và ghi nhớ (3 Chủ đề)",
+                "topics": [
+                    {
+                        "title": "Phương pháp rèn luyện sự tập trung",
+                        "video": "https://www.youtube.com/watch?v=6lo0AVaWWR4"
+                    },
+                    {
+                        "title": "Cách rèn luyện não bộ",
+                        "video": "https://www.youtube.com/watch?v=6lo0AVaWWR4&t=128s"
+                    },
+                    {
+                        "title": "Quy tắc ghi nhớ",
+                        "video": "https://www.youtube.com/watch?v=6lo0AVaWWR4&t=507s"
+                    }
+                ],
+                "assignments": [
+                    "Recap lại nội dung học hôm nay",
+                    "Thiết lập chu trình Pomodoro phù hợp với cá nhân",
+                    "Tạo bảng theo dõi gồm các cột: Phiên Pomodoro | Nhiệm vụ đã làm | Cảm nhận (tập trung, khó khăn) | Hoàn thành (có/không)",
+                    "Ví dụ: phiên 1 | Làm xong bài 1,2 môn Toán | Tập trung | Có"
+                ]
+            },
+            {
+                "name": "Buổi 3 - Cách rèn luyện tư duy tổ chức và hệ thống thông tin (3 Chủ đề)",
+                "topics": [
+                    {
+                        "title": "Cách hệ thống thông tin",
+                        "video": "https://www.youtube.com/watch?v=LK5rFEuAOME&t=1s"
+                    },
+                    {
+                        "title": "Các phương pháp Note-taking & Recap",
+                        "video": "https://www.youtube.com/watch?v=LK5rFEuAOME&t=246s"
+                    },
+                    {
+                        "title": "Các phương pháp Spaced Repetition",
+                        "video": "https://www.youtube.com/watch?v=LK5rFEuAOME&t=760s"
+                    }
+                ],
+                "assignments": [
+                    "Áp dụng phương pháp Note-taking & Recap để tóm tắt buổi học hôm nay"
+                ]
+            },
+            {
+                "name": "Buổi 4 - Cách ôn thi dành cho học sinh lười (3 Chủ đề)",
+                "topics": [
+                    {
+                        "title": "Các dạng bài thi",
+                        "video": "https://www.youtube.com/watch?v=VXabQ8WUGM8"
+                    },
+                    {
+                        "title": "Cách giải quyết các dạng bài thi",
+                        "video": "https://www.youtube.com/watch?v=VXabQ8WUGM8&t=125s"
+                    },
+                    {
+                        "title": "Bí quyết thi cử",
+                        "video": "https://www.youtube.com/watch?v=VXabQ8WUGM8&t=431s"
+                    }
+                ],
+                "assignments": [
+                    "Recap lại nội dung học hôm nay",
+                    "Xây dựng kế hoạch học tập cá nhân trong 1 tháng tới"
+                ]
+            },
+            {
+                "name": "Buổi 5 - Tư duy của học sinh giỏi siêu lười (2 Chủ đề)",
+                "topics": [
+                    {
+                        "title": "Review lại 4 buổi học trước",
+                        "video": "https://www.youtube.com/watch?v=uAdpgnmHzLU"
+                    },
+                    {
+                        "title": "Tư duy học sinh giỏi siêu lười",
+                        "video": "https://www.youtube.com/watch?v=uAdpgnmHzLU&t=232s"
+                    }
+                ],
+                "assignments": []
+            }
+        ]
+    }
+]

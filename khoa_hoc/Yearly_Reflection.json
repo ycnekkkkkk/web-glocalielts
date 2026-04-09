@@ -1,0 +1,89 @@
+[
+    {
+        "title": "Yearly Reflection - Bạn đã sẵn sàng bứt phá cho năm mới? (Hạ Hạ Mentoring Coaching)",
+        "price": 2000000,
+        "introVideo": "https://www.youtube.com/watch?v=LzRFG_5eKmQ&t=2s",
+        "description": "Hầu hết các bạn trẻ chưa biết cách tổng kết năm một cách khoa học, dù đây là phương pháp đã được phương Tây áp dụng từ lâu. Việc thiếu công cụ và hướng dẫn khiến nhiều người loay hoay khi đặt mục tiêu, lập kế hoạch cho năm mới. Nghiên cứu từ Harvard chỉ ra rằng 80% những người có kế hoạch phát triển cá nhân luôn dễ dàng đạt đến thành công. Với kinh nghiệm của mình, Hạ cũng nhận thấy rằng những ai có mục tiêu rõ ràng, chiến lược bài bản và sự chuẩn bị vững chắc sẽ luôn nắm chắc cơ hội bứt phá. Khóa học này giúp bạn tổng kết năm cũ một cách sâu sắc, xác định mục tiêu rõ ràng và xây dựng chiến lược phát triển bứt phá cho năm mới. Mentor An Hạ ở đây với khóa học đặc biệt này để giúp bạn tạo nên năm mới thật bùng nổ!",
+        "accessDays": 100,
+        "lessons": [
+            {
+                "name": "Buổi 1 - Tổng kết một năm và định hướng cho năm mới (2 Chủ đề)",
+                "topics": [
+                    {
+                        "title": "Cách tổng kết một năm rõ ràng và hiệu quả",
+                        "video": "https://www.youtube.com/watch?v=1Hkyah4kz7I"
+                    },
+                    {
+                        "title": "Định hướng cho năm học mới khoa học chiến lược như thế nào?",
+                        "video": "https://www.youtube.com/watch?v=1Hkyah4kz7I&t=213s"
+                    }
+                ],
+                "assignments": [
+                    "Recap nội dung buổi học hôm nay",
+                    "Tổng kết 1 năm qua bằng bảng Yearly Reflection",
+                    "Hoạch định mục tiêu của bạn trong năm mới"
+                ]
+            },
+            {
+                "name": "Buổi 2 - Hiểu về bản thân (3 Chủ đề)",
+                "topics": [
+                    {
+                        "title": "Tìm hiểu về tính cách của bản thân qua xu hướng xã hội",
+                        "video": "https://www.youtube.com/watch?v=3A0R5n7y1mQ"
+                    },
+                    {
+                        "title": "Công cụ tìm hiểu bản thân từ trong ra ngoài và từ ngoài vô trong",
+                        "video": "https://www.youtube.com/watch?v=3A0R5n7y1mQ&t=342s"
+                    },
+                    {
+                        "title": "Cách hiểu bản thân với NGÔI SAO DAVID",
+                        "video": "https://www.youtube.com/watch?v=3A0R5n7y1mQ&t=603s"
+                    }
+                ],
+                "assignments": [
+                    "Recap lại nội dung học hôm nay",
+                    "Vẽ và điền vào Mô hình Ngôi sao David với các yếu tố của Cá nhân và Xã hội mà bạn cảm thấy phù hợp nhất với bản thân"
+                ]
+            },
+            {
+                "name": "Buổi 3 - Cách tạo động lực cho bản thân (2 Chủ đề)",
+                "topics": [
+                    {
+                        "title": "Bài toán động lực cá nhân",
+                        "video": "https://www.youtube.com/watch?v=Lusx9E6ZmtA"
+                    },
+                    {
+                        "title": "3+ cách tạo động lực cho bản thân - Biến \"nản lòng\" thành động lực phi thường",
+                        "video": "https://www.youtube.com/watch?v=Lusx9E6ZmtA&t=277s"
+                    }
+                ],
+                "assignments": [
+                    "Recap lại nội dung học hôm nay",
+                    "Trong ngày mai, hãy ghi lại một lực đẩy và một lực kéo. Cái nào khiến bạn hành động nhiều hơn? Làm thế nào để kết hợp cả hai?",
+                    "Tạo một danh sách những cách kích hoạt động lực của riêng bạn. Chọn một cách trong số đó và thực hiện trong tuần này nhé"
+                ]
+            },
+            {
+                "name": "Buổi 4 - Đánh lửa cảm xúc và duy trì thói quen (3 Chủ đề)",
+                "topics": [
+                    {
+                        "title": "Tại sao cần đánh lửa cảm xúc nhất thời?",
+                        "video": "https://www.youtube.com/watch?v=x5X2XTCplUU"
+                    },
+                    {
+                        "title": "Cân bằng niềm tin của cá nhân, gia đình và xã hội",
+                        "video": "https://www.youtube.com/watch?v=x5X2XTCplUU&t=398s"
+                    },
+                    {
+                        "title": "Mẹo duy trì thói quen bền vững",
+                        "video": "https://www.youtube.com/watch?v=x5X2XTCplUU&t=929s"
+                    }
+                ],
+                "assignments": [
+                    "Recap lại nội dung học hôm nay",
+                    "Lên lịch trình hoạt động cho ngày/tuần/tháng/năm bao gồm các thói quen tốt và các hoạt động để đạt được mục tiêu đã đưa ra."
+                ]
+            }
+        ]
+    }
+]

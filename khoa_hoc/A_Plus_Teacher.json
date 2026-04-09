@@ -1,0 +1,142 @@
+[
+    {
+        "title": "A+ Teacher (Hạ Hạ Mentoring Coaching)",
+        "price": 5000000,
+        "introVideo": null,
+        "description": "Khóa học dành cho giáo viên muốn nâng cao năng lực giảng dạy tiếng Anh, cập nhật xu hướng thị trường, cải thiện hiệu quả giảng dạy và xây dựng hệ thống đào tạo bền vững. Phù hợp cho cả người mới bắt đầu lẫn giáo viên đã có kinh nghiệm.",
+        "accessDays": 100,
+        "lessons": [
+            {
+                "name": "Lesson 1: Lời nói đầu (1 Chủ đề)",
+                "topics": [
+                    {
+                        "title": "Video Lesson 1",
+                        "video": "https://www.youtube.com/watch?v=Bv46FU1_M1M"
+                    }
+                ],
+                "assignments": [
+                    "What are your expectations when joining “A+ Teacher 101 Course”?",
+                    "Viết chi tiết kỳ vọng của bạn về khóa học và mục tiêu cá nhân khi tham gia."
+                ]
+            },
+            {
+                "name": "Lesson 2: Vai trò của giáo viên AS (1 Chủ đề)",
+                "topics": [
+                    {
+                        "title": "Video Lesson 2",
+                        "video": "https://www.youtube.com/watch?v=eO7shnTDly4"
+                    }
+                ],
+                "assignments": [
+                    "How many types of education towards students’ growth have you learnt from the video?",
+                    "Liệt kê các hình thức giáo dục giúp phát triển học sinh.",
+                    "Thời gian làm bài: khoảng 30 phút."
+                ]
+            },
+            {
+                "name": "Lesson 3: Thông điệp từ CEO (1 Chủ đề)",
+                "topics": [
+                    {
+                        "title": "Not just a teacher, but a world changer",
+                        "video": "https://www.youtube.com/watch?v=6zN721rE9o8"
+                    }
+                ],
+                "assignments": [
+                    "Tóm tắt thông điệp chính từ video.",
+                    "Bạn hiểu thế nào về vai trò của một người giáo viên trong xã hội?"
+                ]
+            },
+            {
+                "name": "Lesson 4: Thách thức và khó khăn của Giáo viên (1 Chủ đề)",
+                "topics": [
+                    {
+                        "title": "Video Lesson 4",
+                        "video": "https://www.youtube.com/watch?v=X7IYjkh0tcc"
+                    }
+                ],
+                "assignments": [
+                    "Liệt kê những khó khăn bạn từng gặp khi giảng dạy.",
+                    "Đề xuất giải pháp để cải thiện những vấn đề đó."
+                ]
+            },
+            {
+                "name": "Lesson 5: Phân tích SWOT cá nhân (1 Chủ đề)",
+                "topics": [
+                    {
+                        "title": "Video Lesson 5",
+                        "video": "https://www.youtube.com/watch?v=KGVWFPuk_6U"
+                    }
+                ],
+                "assignments": [
+                    "Tự phân tích SWOT cá nhân (Strengths, Weaknesses, Opportunities, Threats).",
+                    "Viết ra kế hoạch cải thiện điểm yếu và tận dụng điểm mạnh."
+                ]
+            },
+            {
+                "name": "Lesson 6: Vấn đề của học sinh Việt Nam (1 Chủ đề)",
+                "topics": [
+                    {
+                        "title": "Video Lesson 6",
+                        "video": "https://www.youtube.com/watch?v=DocS8_cy_no"
+                    }
+                ],
+                "assignments": [
+                    "Phân tích các vấn đề phổ biến của học sinh Việt Nam khi học tiếng Anh.",
+                    "Đề xuất phương pháp giảng dạy phù hợp."
+                ]
+            },
+            {
+                "name": "Lesson 7: Triết lý giáo dục Amazing School (1 Chủ đề)",
+                "topics": [
+                    {
+                        "title": "Video Lesson 7",
+                        "video": "https://www.youtube.com/watch?v=YH-9XjHqjkw"
+                    }
+                ],
+                "assignments": [
+                    "Tóm tắt triết lý giáo dục của Amazing School.",
+                    "Bạn có đồng ý với triết lý này không? Vì sao?"
+                ]
+            },
+            {
+                "name": "Lesson 8: Thấu hiểu phụ huynh và đồng hành (1 Chủ đề)",
+                "topics": [
+                    {
+                        "title": "Video Lesson 8",
+                        "video": "https://www.youtube.com/watch?v=_aSxOxq-rrY"
+                    }
+                ],
+                "assignments": [
+                    "Phân tích tâm lý phụ huynh khi cho con học tiếng Anh.",
+                    "Đề xuất cách giáo viên phối hợp hiệu quả với phụ huynh."
+                ]
+            },
+            {
+                "name": "Lesson 9: Quản lý lớp học hiệu quả (1 Chủ đề)",
+                "topics": [
+                    {
+                        "title": "Video Lesson 9",
+                        "video": "https://www.youtube.com/watch?v=j4BX8vdwvVw"
+                    }
+                ],
+                "assignments": [
+                    "Nêu các phương pháp quản lý lớp học hiệu quả.",
+                    "Áp dụng vào một tình huống thực tế bạn từng gặp."
+                ]
+            },
+            {
+                "name": "Lesson 10: Phương pháp dạy tại Amazing School (1 Chủ đề)",
+                "topics": [
+                    {
+                        "title": "Video Lesson 10",
+                        "video": "https://www.youtube.com/watch?v=UDVVsMlK4G0"
+                    }
+                ],
+                "assignments": [
+                    "Tóm tắt phương pháp giảng dạy tại Amazing School.",
+                    "Bạn sẽ áp dụng phương pháp này như thế nào trong thực tế?"
+                ]
+            }
+        ]
+    }
+]

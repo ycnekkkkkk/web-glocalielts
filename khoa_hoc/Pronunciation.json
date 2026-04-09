@@ -1,0 +1,147 @@
+[
+    {
+        "title": "Pronunciation",
+        "price": 1000000,
+        "introVideo": "https://www.youtube.com/watch?v=jA-Cd8XkEZs&t=2s",
+        "description": "Khóa học giúp rèn luyện phát âm thông qua VOA, cải thiện khả năng nói, ghi âm, đọc hiểu và tư duy phản xạ tiếng Anh.",
+        "accessDays": null,
+        "lessons": [
+            {
+                "name": "Tổng quan khóa Pronunciation (2 Chủ đề)",
+                "topics": [
+                    {
+                        "title": "Tổng quan khóa học",
+                        "video": "https://www.youtube.com/watch?v=DWoKggywq8Y"
+                    },
+                    {
+                        "title": "Các hoạt động luyện tập",
+                        "video": "https://www.youtube.com/watch?v=asN5wmy-6W8"
+                    }
+                ],
+                "assignments": []
+            },
+            {
+                "name": "Lesson 1: Age, Happiness and Sleep",
+                "topics": [
+                    {
+                        "title": "VOA 1",
+                        "video": "https://www.youtube.com/watch?v=BoQIPc162OE"
+                    }
+                ],
+                "assignments": [
+                    "Q1: Nội dung nào trong khóa học khiến bạn ấn tượng nhất?",
+                    "Q2: U18 IELTS liên quan như thế nào với Glocal IELTS?",
+                    "Q3: Chọn đáp án KHÔNG đúng về cách học hiệu quả (A/B/C/D)",
+                    "Q4: Có bao nhiêu hoạt động học tại nhà? (A/B/C/D)",
+                    "Q5: Trả lời câu hỏi mở (text)",
+                    "Q6-Q10: Ghi âm lại đoạn VOA theo audio mẫu để luyện phát âm"
+                ]
+            },
+            {
+                "name": "Lesson 2: Age, Happiness and Sleep (Part 2)",
+                "topics": [
+                    {
+                        "title": "VOA 1",
+                        "video": "https://www.youtube.com/watch?v=BoQIPc162OE"
+                    }
+                ],
+                "assignments": [
+                    "SECTION 1: Chuẩn bị ý tưởng về việc tuổi tác ảnh hưởng đến cảm xúc như thế nào",
+                    "SECTION 2: Trả lời các câu hỏi về cảm xúc, stress, giấc ngủ",
+                    "SECTION 3: Ghi lại 10 từ vựng + tìm synonym/antonym",
+                    "SECTION 4: Dịch đoạn văn sang tiếng Việt",
+                    "SECTION 5: Chọn 2 bản dịch đúng (A/B/C/D)",
+                    "SECTION 6: Đọc hiểu và trả lời câu hỏi",
+                    "SECTION 7: Dịch từ khóa trong đoạn văn",
+                    "SECTION 8: Điền từ vào bản dịch tiếng Việt"
+                ]
+            },
+            {
+                "name": "Lesson 3: Children and Money",
+                "topics": [
+                    {
+                        "title": "VOA 2",
+                        "video": "https://www.youtube.com/watch?v=h4EPX1CLslc"
+                    }
+                ],
+                "assignments": [
+                    "SECTION 1: Trả lời các câu hỏi Speaking (ghi âm)",
+                    "SECTION 2: Mô tả một lần bạn thuyết trình",
+                    "SECTION 3: Trả lời câu hỏi về kỹ năng public speaking",
+                    "SECTION 4: Thảo luận về vai trò của public speaking"
+                ]
+            },
+            {
+                "name": "Lesson 4: Children and Money (Part 2)",
+                "topics": [
+                    {
+                        "title": "VOA 2",
+                        "video": "https://www.youtube.com/watch?v=h4EPX1CLslc"
+                    }
+                ],
+                "assignments": [
+                    "SECTION 1: Chuẩn bị ý tưởng về việc trẻ học từ tiền bạc",
+                    "SECTION 2: Trả lời câu hỏi về tiết kiệm và chi tiêu",
+                    "SECTION 3: Ghi lại 10 từ vựng + synonym/antonym",
+                    "SECTION 4: Chọn đáp án đúng (A/B/C/D)",
+                    "SECTION 5: Dịch đoạn văn",
+                    "SECTION 6: Chọn bản dịch đúng (A/B/C/D)",
+                    "SECTION 7: Đọc hiểu và trả lời câu hỏi",
+                    "SECTION 8: Tìm từ đồng nghĩa",
+                    "SECTION 9: Chọn câu tương đương tiếng Anh"
+                ]
+            },
+            {
+                "name": "Lesson 5: Public Speaking Skills",
+                "topics": [
+                    {
+                        "title": "VOA 3",
+                        "video": "https://www.youtube.com/watch?v=uE-WAAYkB4k"
+                    }
+                ],
+                "assignments": [
+                    "SECTION 1: Trả lời câu hỏi về public speaking",
+                    "SECTION 2: Phân tích kỹ năng cần thiết",
+                    "SECTION 3: Thảo luận cách cải thiện kỹ năng",
+                    "SECTION 4: Ghi âm lại đoạn VOA để luyện phát âm"
+                ]
+            },
+            {
+                "name": "Lesson 6: Public Speaking Skills (Part 2)",
+                "topics": [
+                    {
+                        "title": "VOA 3",
+                        "video": "https://www.youtube.com/watch?v=uE-WAAYkB4k"
+                    }
+                ],
+                "assignments": [
+                    "Tiếp tục luyện speaking và ghi âm theo bài học"
+                ]
+            },
+            {
+                "name": "Lesson 7: Debating the Best Way to Learn a Language",
+                "topics": [
+                    {
+                        "title": "VOA 4",
+                        "video": "https://www.youtube.com/watch?v=QvU4InKZSUE"
+                    }
+                ],
+                "assignments": [
+                    "Thảo luận về phương pháp học ngôn ngữ hiệu quả"
+                ]
+            },
+            {
+                "name": "Lesson 8: Debating the Best Way to Learn a Language (Part 2)",
+                "topics": [
+                    {
+                        "title": "VOA 4",
+                        "video": "https://www.youtube.com/watch?v=QvU4InKZSUE"
+                    }
+                ],
+                "assignments": [
+                    "Tiếp tục luyện speaking và debate"
+                ]
+            }
+        ]
+    }
+]

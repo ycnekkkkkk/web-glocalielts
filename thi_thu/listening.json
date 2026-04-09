@@ -1,0 +1,426 @@
+{
+    "listening": {
+        "title": "IELTS Listening Test",
+        "parts": [
+            {
+                "part": 1,
+                "instruction": "Complete the notes below. Write ONE WORD AND/OR A NUMBER for each answer.",
+                "audioUrl": "https://www.youtube.com/watch?v=mNaooUv6nhc&list=PLQoFvrOxWqR4cqAYBjrv9petggWGB_ATM&index=1",
+                "questions": [
+                    {
+                        "id": 1,
+                        "stem": "Role",
+                        "type": "text"
+                    },
+                    {
+                        "id": 2,
+                        "stem": "Location: Fordham _____ Centre",
+                        "type": "text"
+                    },
+                    {
+                        "id": 3,
+                        "stem": "_____ Road, Fordham",
+                        "type": "text"
+                    },
+                    {
+                        "id": 4,
+                        "stem": "Work involves making _____ and reorganising them",
+                        "type": "text"
+                    },
+                    {
+                        "id": 5,
+                        "stem": "Maintaining the internal _____",
+                        "type": "text"
+                    },
+                    {
+                        "id": 6,
+                        "stem": "Requirement (essential): _____",
+                        "type": "text"
+                    },
+                    {
+                        "id": 7,
+                        "stem": "A calm and _____ manner",
+                        "type": "text"
+                    },
+                    {
+                        "id": 8,
+                        "stem": "Other info: a _____ job",
+                        "type": "text"
+                    },
+                    {
+                        "id": 9,
+                        "stem": "Hours: 7.45 a.m. to _____ p.m.",
+                        "type": "text"
+                    },
+                    {
+                        "id": 10,
+                        "stem": "_____ is available onsite",
+                        "type": "text"
+                    }
+                ]
+            },
+            {
+                "part": 2,
+                "instruction": "Choose the correct letter A, B or C.",
+                "audioUrl": "https://www.youtube.com/watch?v=6hwBW39h5uI&list=PLQoFvrOxWqR4cqAYBjrv9petggWGB_ATM&index=2",
+                "questions": [
+                    {
+                        "id": 11,
+                        "stem": "The museum building was originally",
+                        "type": "single_choice",
+                        "options": [
+                            "a factory",
+                            "a private home",
+                            "a hall of residence"
+                        ]
+                    },
+                    {
+                        "id": 12,
+                        "stem": "The university uses part of the museum building as",
+                        "type": "single_choice",
+                        "options": [
+                            "teaching rooms",
+                            "a research library",
+                            "administration offices"
+                        ]
+                    },
+                    {
+                        "id": 13,
+                        "stem": "What does the guide say about the entrance fee?",
+                        "type": "single_choice",
+                        "options": [
+                            "Visitors decide whether or not they wish to pay",
+                            "Only children and students receive a discount",
+                            "The museum charges extra for special exhibitions"
+                        ]
+                    },
+                    {
+                        "id": 14,
+                        "stem": "What are visitors advised to leave in the cloakroom?",
+                        "type": "single_choice",
+                        "options": [
+                            "cameras",
+                            "coats",
+                            "bags"
+                        ]
+                    }
+                ]
+            },
+            {
+                "part": 2,
+                "instruction": "Choose SIX answers from the box (A–H).",
+                "questions": [
+                    {
+                        "id": 15,
+                        "stem": "Four Seasons",
+                        "type": "matching",
+                        "options": [
+                            "A",
+                            "B",
+                            "C",
+                            "D",
+                            "E",
+                            "F",
+                            "G",
+                            "H"
+                        ]
+                    },
+                    {
+                        "id": 16,
+                        "stem": "Farmhouse Kitchen",
+                        "type": "matching",
+                        "options": [
+                            "A",
+                            "B",
+                            "C",
+                            "D",
+                            "E",
+                            "F",
+                            "G",
+                            "H"
+                        ]
+                    },
+                    {
+                        "id": 17,
+                        "stem": "A Year on the Farm",
+                        "type": "matching",
+                        "options": [
+                            "A",
+                            "B",
+                            "C",
+                            "D",
+                            "E",
+                            "F",
+                            "G",
+                            "H"
+                        ]
+                    },
+                    {
+                        "id": 18,
+                        "stem": "Wagon Walk",
+                        "type": "matching",
+                        "options": [
+                            "A",
+                            "B",
+                            "C",
+                            "D",
+                            "E",
+                            "F",
+                            "G",
+                            "H"
+                        ]
+                    },
+                    {
+                        "id": 19,
+                        "stem": "Bees are Magic",
+                        "type": "matching",
+                        "options": [
+                            "A",
+                            "B",
+                            "C",
+                            "D",
+                            "E",
+                            "F",
+                            "G",
+                            "H"
+                        ]
+                    },
+                    {
+                        "id": 20,
+                        "stem": "The Pond",
+                        "type": "matching",
+                        "options": [
+                            "A",
+                            "B",
+                            "C",
+                            "D",
+                            "E",
+                            "F",
+                            "G",
+                            "H"
+                        ]
+                    }
+                ],
+                "options_map": {
+                    "A": "Parents must supervise their children",
+                    "B": "There are new things to see",
+                    "C": "It is closed today",
+                    "D": "This is only for school groups",
+                    "E": "There is a quiz for visitors",
+                    "F": "It features something created by students",
+                    "G": "An expert is here today",
+                    "H": "There is a one-way system"
+                }
+            },
+            {
+                "part": 3,
+                "instruction": "Questions 21–22: Choose TWO answers (A–E).",
+                "audioUrl": "https://www.youtube.com/watch?v=oGKnYMM1fRE&list=PLQoFvrOxWqR4cqAYBjrv9petggWGB_ATM&index=3",
+                "questions": [
+                    {
+                        "id": 21,
+                        "stem": "Skill shown",
+                        "type": "multiple_choice",
+                        "options": [
+                            "solving problems",
+                            "following instructions",
+                            "working cooperatively",
+                            "learning through play",
+                            "developing hand-eye coordination"
+                        ]
+                    },
+                    {
+                        "id": 22,
+                        "stem": "Skill shown",
+                        "type": "multiple_choice",
+                        "options": [
+                            "solving problems",
+                            "following instructions",
+                            "working cooperatively",
+                            "learning through play",
+                            "developing hand-eye coordination"
+                        ]
+                    }
+                ]
+            },
+            {
+                "part": 3,
+                "instruction": "Questions 23–27: Match each child with the correct comment.",
+                "questions": [
+                    {
+                        "id": 23,
+                        "stem": "Sid",
+                        "type": "matching",
+                        "options": [
+                            "A",
+                            "B",
+                            "C",
+                            "D",
+                            "E",
+                            "F",
+                            "G"
+                        ]
+                    },
+                    {
+                        "id": 24,
+                        "stem": "Jack",
+                        "type": "matching",
+                        "options": [
+                            "A",
+                            "B",
+                            "C",
+                            "D",
+                            "E",
+                            "F",
+                            "G"
+                        ]
+                    },
+                    {
+                        "id": 25,
+                        "stem": "Naomi",
+                        "type": "matching",
+                        "options": [
+                            "A",
+                            "B",
+                            "C",
+                            "D",
+                            "E",
+                            "F",
+                            "G"
+                        ]
+                    },
+                    {
+                        "id": 26,
+                        "stem": "Anya",
+                        "type": "matching",
+                        "options": [
+                            "A",
+                            "B",
+                            "C",
+                            "D",
+                            "E",
+                            "F",
+                            "G"
+                        ]
+                    },
+                    {
+                        "id": 27,
+                        "stem": "Zara",
+                        "type": "matching",
+                        "options": [
+                            "A",
+                            "B",
+                            "C",
+                            "D",
+                            "E",
+                            "F",
+                            "G"
+                        ]
+                    }
+                ],
+                "options_map": {
+                    "A": "demonstrated independence",
+                    "B": "asked for teacher support",
+                    "C": "developed a competitive attitude",
+                    "D": "seemed to find the activity calming",
+                    "E": "seemed pleased with the results",
+                    "F": "seemed confused",
+                    "G": "seemed to find the activity easy"
+                }
+            },
+            {
+                "part": 3,
+                "instruction": "Questions 28–30: Choose the correct answer A, B or C.",
+                "questions": [
+                    {
+                        "id": 28,
+                        "stem": "Before starting an origami activity, it is important for the teacher to",
+                        "type": "single_choice",
+                        "options": [
+                            "make models that demonstrate the different stages",
+                            "check children understand the terminology involved",
+                            "tell children not to worry if they find the activity difficult"
+                        ]
+                    },
+                    {
+                        "id": 29,
+                        "stem": "Teachers may be unwilling to use origami because",
+                        "type": "single_choice",
+                        "options": [
+                            "they may not think that crafts are important",
+                            "they may not have the necessary skills",
+                            "they may worry that it will take up too much time"
+                        ]
+                    },
+                    {
+                        "id": 30,
+                        "stem": "Students decide to use origami in maths teaching practice",
+                        "type": "single_choice",
+                        "options": [
+                            "to correct a particular misunderstanding",
+                            "to set a challenge",
+                            "to introduce a new concept"
+                        ]
+                    }
+                ]
+            },
+            {
+                "part": 4,
+                "instruction": "Complete the notes below. Write ONE WORD ONLY.",
+                "audioUrl": "https://www.youtube.com/watch?v=_cskUdSXwYM&list=PLQoFvrOxWqR4cqAYBjrv9petggWGB_ATM&index=4",
+                "questions": [
+                    {
+                        "id": 31,
+                        "stem": "We know more about its overall _____ than about its author",
+                        "type": "text"
+                    },
+                    {
+                        "id": 32,
+                        "stem": "Social issues such as _____ and education",
+                        "type": "text"
+                    },
+                    {
+                        "id": 33,
+                        "stem": "Victor Hugo had to live elsewhere in _____",
+                        "type": "text"
+                    },
+                    {
+                        "id": 34,
+                        "stem": "Sale of some _____ he had written",
+                        "type": "text"
+                    },
+                    {
+                        "id": 35,
+                        "stem": "Portraits, _____ and tapestries",
+                        "type": "text"
+                    },
+                    {
+                        "id": 36,
+                        "stem": "Cheap _____ made of wood",
+                        "type": "text"
+                    },
+                    {
+                        "id": 37,
+                        "stem": "Wallpaper and _____ with Chinese design",
+                        "type": "text"
+                    },
+                    {
+                        "id": 38,
+                        "stem": "A view of the _____",
+                        "type": "text"
+                    },
+                    {
+                        "id": 39,
+                        "stem": "Poor _____ entertained in his house",
+                        "type": "text"
+                    },
+                    {
+                        "id": 40,
+                        "stem": "Victor Hugo’s _____ gave ownership to Paris",
+                        "type": "text"
+                    }
+                ]
+            }
+        ]
+    }
+}

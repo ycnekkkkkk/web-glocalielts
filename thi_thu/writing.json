@@ -1,0 +1,73 @@
+{
+    "writing": {
+        "title": "IELTS Writing Test",
+        "tasks": [
+            {
+                "task": 1,
+                "instruction": "You should spend about 20 minutes on this task.",
+                "type": "report",
+                "prompt": "The table below shows expenditures of four car companies on advertising in the UK in 2002.",
+                "data": {
+                    "headers": [
+                        "Press",
+                        "Cinema",
+                        "Outdoor",
+                        "Radio",
+                        "TV"
+                    ],
+                    "rows": [
+                        {
+                            "company": "Renault",
+                            "values": [
+                                45,
+                                6,
+                                7,
+                                15,
+                                59
+                            ]
+                        },
+                        {
+                            "company": "Rover",
+                            "values": [
+                                38,
+                                0,
+                                2,
+                                15,
+                                45
+                            ]
+                        },
+                        {
+                            "company": "Vauxhall",
+                            "values": [
+                                8,
+                                5,
+                                7,
+                                15,
+                                65
+                            ]
+                        },
+                        {
+                            "company": "Cetirizine",
+                            "values": [
+                                12,
+                                0,
+                                3,
+                                15,
+                                70
+                            ]
+                        }
+                    ],
+                    "unit": "millions of dollars"
+                },
+                "minWords": 150
+            },
+            {
+                "task": 2,
+                "instruction": "You should spend about 40 minutes on this task.",
+                "type": "essay",
+                "prompt": "The best way to ensure the growth of children is to make parents take parenting courses. Do you agree or disagree? Give reasons for your answer and include any relevant examples from your own knowledge or experience.",
+                "minWords": 250
+            }
+        ]
+    }
+}

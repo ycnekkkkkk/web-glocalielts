@@ -39,3 +39,13 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# DOCX extract script output (npm run extract:mock-skill)
+/data/mock-skill-generated/
+/public/mock-exams/_extracted/
+
+# File JSON nhạy cảm local (key cũ, export GCP, v.v.) — không commit
+*service-account*.json
+google-service-account.json
+secrets/**/*.json
+ielts-center-*.json

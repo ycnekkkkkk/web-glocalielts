@@ -1,0 +1,73 @@
+[
+    {
+        "title": "IELTS Rocket",
+        "price": 3000000,
+        "introVideo": "https://www.youtube.com/watch?v=w8TCpVe52SE&t=2s",
+        "description": "Khóa học giúp làm quen với đề thi IELTS mới nhất, tăng tốc hoàn thiện 4 kỹ năng Nghe - Nói - Đọc - Viết, phát triển tư duy phản biện và sử dụng tiếng Anh thực chiến.",
+        "accessDays": null,
+        "lessons": [
+            {
+                "name": "Lưu ý chung (1 Chủ đề)",
+                "topics": [
+                    {
+                        "title": "Lưu ý khi đi thi",
+                        "video": "https://www.youtube.com/watch?v=XYDzPxsSXww"
+                    }
+                ],
+                "assignments": []
+            },
+            {
+                "name": "IELTS Reading (2 Chủ đề)",
+                "topics": [
+                    {
+                        "title": "Tips thi Reading",
+                        "video": "https://www.youtube.com/watch?v=VEL6lQTiVec"
+                    },
+                    {
+                        "title": "Mô phỏng cách làm bài Reading",
+                        "video": "https://www.youtube.com/watch?v=VEL6lQTiVec"
+                    }
+                ],
+                "assignments": []
+            },
+            {
+                "name": "IELTS Listening (2 Chủ đề)",
+                "topics": [
+                    {
+                        "title": "Tips thi Listening",
+                        "video": "https://www.youtube.com/watch?v=4rrJy4SZgX8"
+                    },
+                    {
+                        "title": "Mô phỏng cách làm bài Listening",
+                        "video": "https://www.youtube.com/watch?v=vy4EroTeOVY"
+                    }
+                ],
+                "assignments": []
+            },
+            {
+                "name": "IELTS Writing (2 Chủ đề)",
+                "topics": [
+                    {
+                        "title": "Tips thi Writing",
+                        "video": "https://www.youtube.com/watch?v=16X8iiJJvPI"
+                    },
+                    {
+                        "title": "Mô phỏng cách làm bài Writing",
+                        "video": "https://www.youtube.com/watch?v=44OFDoQk0rU"
+                    }
+                ],
+                "assignments": []
+            },
+            {
+                "name": "IELTS Speaking (1 Chủ đề)",
+                "topics": [
+                    {
+                        "title": "Tips thi Speaking",
+                        "video": null
+                    }
+                ],
+                "assignments": []
+            }
+        ]
+    }
+]

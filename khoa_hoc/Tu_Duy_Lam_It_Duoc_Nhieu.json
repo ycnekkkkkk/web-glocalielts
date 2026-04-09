@@ -1,0 +1,120 @@
+[
+    {
+        "title": "Tư duy làm ít được nhiều (Hạ Hạ Mentoring Coaching)",
+        "price": 2000000,
+        "introVideo": "https://youtu.be/yIEJClCpkJM",
+        "description": "Mỗi người chỉ có 24 giờ trong ngày, nguồn lực và năng lượng đều có giới hạn. Vậy làm sao để \"LÀM ÍT ĐƯỢC NHIỀU\"? Khóa học này sẽ trang bị cho bạn những công thức, chiến lược và kinh nghiệm khoa học nhất, hiệu quả nhất để bạn có thể bứt phá giới hạn bản thân. Những bí quyết này được Mentor An Hạ đúc kết từ thực tiễn công việc, học tập và trải nghiệm sống, giúp bạn làm chủ thời gian và đạt được thành công vượt trội.",
+        "accessDays": 100,
+        "lessons": [
+            {
+                "name": "Buổi 1 - Xây dựng và rèn luyện tư duy của bản thân (4 Chủ đề)",
+                "topics": [
+                    {
+                        "title": "Tư duy cố định và tư duy phát triển",
+                        "video": "https://www.youtube.com/watch?v=5eRg3VL7oPc"
+                    },
+                    {
+                        "title": "Cách định hình tư duy phát triển bản thân",
+                        "video": "https://www.youtube.com/watch?v=5eRg3VL7oPc&t=310s"
+                    },
+                    {
+                        "title": "Định hình giá trị bản thân",
+                        "video": "https://www.youtube.com/watch?v=5eRg3VL7oPc&t=765s"
+                    },
+                    {
+                        "title": "Hoạt động rèn luyện",
+                        "video": "https://www.youtube.com/watch?v=5eRg3VL7oPc&t=941s"
+                    }
+                ],
+                "assignments": [
+                    "Recap lại nội dung học hôm nay",
+                    "Đánh giá lại tư duy hiện tại và đưa ra đề xuất tư duy cũng như thói quen mình mong muốn xây dựng cho bản thân"
+                ]
+            },
+            {
+                "name": "Buổi 2 - Học hiệu quả - Làm hiệu suất - Chơi năng suất (4 Chủ đề)",
+                "topics": [
+                    {
+                        "title": "Tại sao cần HỌC HIỆU QUẢ - LÀM HIỆU SUẤT - CHƠI NĂNG SUẤT?",
+                        "video": "https://www.youtube.com/watch?v=MAl_d9TfVHU"
+                    },
+                    {
+                        "title": "5+ phương pháp để học - làm - chơi hiệu quả",
+                        "video": "https://www.youtube.com/watch?v=MAl_d9TfVHU&t=160s"
+                    },
+                    {
+                        "title": "Cách kết hợp học - làm - chơi hiệu quả",
+                        "video": "https://www.youtube.com/watch?v=MAl_d9TfVHU&t=606s"
+                    },
+                    {
+                        "title": "Bonus - Làm thế nào để CHƠI NĂNG SUẤT?",
+                        "video": "https://www.youtube.com/watch?v=28YkKbMXp-U"
+                    }
+                ],
+                "assignments": [
+                    "Recap lại nội dung học hôm nay",
+                    "Hãy Revise - Review - Reflect cho chính bản thân mình: “Bạn đã thật sự HỌC HIỆU QUẢ - LÀM HIỆU SUẤT - CHƠI NĂNG SUẤT” chưa nhé"
+                ]
+            },
+            {
+                "name": "Buổi 3 - Cách làm việc và học tập \"khoa học hiệu suất\"? (2 Chủ đề)",
+                "topics": [
+                    {
+                        "title": "Tại sao cần KHOA HỌC HIỆU SUẤT?",
+                        "video": "https://www.youtube.com/watch?v=hYnYRQO7zyE"
+                    },
+                    {
+                        "title": "5+ điều răn để KHOA HỌC HIỆU SUẤT cùng Momentum",
+                        "video": "https://www.youtube.com/watch?v=hYnYRQO7zyE&t=69s"
+                    }
+                ],
+                "assignments": [
+                    "Recap lại nội dung học hôm nay",
+                    "Viết ra những hoạt động mình muốn áp dụng cho bản thân và những Momentum mình muốn tạo ra cho chính mình"
+                ]
+            },
+            {
+                "name": "Buổi 4 - Multitask sai và đúng (2 Chủ đề)",
+                "topics": [
+                    {
+                        "title": "Hiểu multitask thế nào là đúng?",
+                        "video": "https://www.youtube.com/watch?v=yKHbOK9pXXQ&t=1s"
+                    },
+                    {
+                        "title": "Làm sao để Multitask hiệu quả?",
+                        "video": "https://www.youtube.com/watch?v=yKHbOK9pXXQ&t=218s"
+                    }
+                ],
+                "assignments": [
+                    "Recap lại nội dung học hôm nay",
+                    "Đánh giá khả năng multitask của bản thân ở thời điểm hiện tại đã tạo ra kết quả phù hợp chưa, và đề xuất hành động để cải thiện. Review lại các task mình đã multigoals chưa và làm sao để tạo ra nhiều mục tiêu nhất có thể cho từng thứ mình đang làm?"
+                ]
+            },
+            {
+                "name": "Buổi 5 - Chiến lược quản lý thời gian và công việc (4 Chủ đề)",
+                "topics": [
+                    {
+                        "title": "Tại sao cần lên To-do-list?",
+                        "video": "https://www.youtube.com/watch?v=uVuwIe0ogY0"
+                    },
+                    {
+                        "title": "Các lưu ý khi lên To-do-list - làm đúng việc đúng giờ",
+                        "video": "https://www.youtube.com/watch?v=uVuwIe0ogY0&t=118s"
+                    },
+                    {
+                        "title": "Cách xác định thứ tự ưu tiên thời gian - Tránh lãng phí 1 ngày của bạn",
+                        "video": "https://www.youtube.com/watch?v=uVuwIe0ogY0&t=325s"
+                    },
+                    {
+                        "title": "3+ phương pháp lên kế hoạch hiệu quả & chiến lược",
+                        "video": "https://www.youtube.com/watch?v=uVuwIe0ogY0&t=538s"
+                    }
+                ],
+                "assignments": [
+                    "Recap lại nội dung buổi học hôm nay",
+                    "Lên kế hoạch quản lý thời gian và công việc của bản thân trong 1 tháng tới"
+                ]
+            }
+        ]
+    }
+]

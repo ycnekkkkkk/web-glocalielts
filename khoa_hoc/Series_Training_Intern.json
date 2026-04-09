@@ -1,0 +1,48 @@
+[
+    {
+        "title": "Series Training Intern (Kỹ năng cơ bản)",
+        "price": 15000000,
+        "introVideo": "https://youtu.be/ZgbJ1ScdG0I?si=GLWpV6-dM4yiQl4X",
+        "description": "Series Training Intern - hành trình chuyên nghiệp được thiết kế đặc biệt dành cho các thực tập sinh, những người mới bắt đầu bước chân vào môi trường làm việc thực tế. Series này chính là chiếc chìa khóa giúp bạn rút ngắn khoảng cách giữa lý thuyết trên giảng đường và những đòi hỏi của công việc thực tế. Chúng tôi tin rằng giai đoạn thực tập là bước đệm vô cùng quan trọng, và việc được trang bị đầy đủ kỹ năng, kiến thức nền tảng sẽ giúp bạn tự tin tỏa sáng.",
+        "accessDays": 120,
+        "lessons": [
+            {
+                "name": "Buổi 1 - Kỹ năng Thiết kế cơ bản (2 Chủ đề)",
+                "topics": [
+                    {
+                        "title": "Kỹ năng Thiết kế căn bản",
+                        "video": "https://www.youtube.com/watch?v=ZE_zcmyh9p4"
+                    },
+                    {
+                        "title": "Kỹ năng Canva cơ bản",
+                        "video": "https://www.youtube.com/watch?v=ONuDSvzBFVk"
+                    }
+                ],
+                "assignments": [
+                    "Recap nội dung buổi học của bạn.",
+                    "Thực hành: Thiết kế 1 ảnh bằng canva cho dự án mà bạn đang làm"
+                ]
+            },
+            {
+                "name": "Buổi 2 - Kỹ năng File Form (1 Chủ đề)",
+                "topics": [
+                    {
+                        "title": "Kỹ năng File Form",
+                        "video": "https://www.youtube.com/watch?v=oy0KDwmZ_Q0"
+                    }
+                ],
+                "assignments": [
+                    "Recap nội dung buổi học của bạn.",
+                    "Thực hành 1: Chỉnh lại các file bạn đang làm trên Google Docs theo đúng định dạng đã training trong video.",
+                    "Thực hành 2: Chỉnh lại các file bạn đang làm trên Google Excel theo đúng định dạng đã training trong video.",
+                    "Thực hành 3: Kiểm tra lại các link drive bạn đang sử dụng có được chia sẻ quyền hợp lí chưa, phân bổ các file bạn đang làm vào các folder hợp lí để kiểm soát. (Chụp ảnh minh chứng)"
+                ]
+            },
+            {
+                "name": "Buổi 3 (0 Chủ đề)",
+                "topics": [],
+                "assignments": []
+            }
+        ]
+    }
+]

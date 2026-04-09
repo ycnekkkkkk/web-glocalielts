@@ -1,0 +1,135 @@
+[
+    {
+        "title": "IELTS Speaking",
+        "price": 3000000,
+        "introVideo": "https://www.youtube.com/watch?v=jA-Cd8XkEZs&t=1s",
+        "description": "Khóa học cung cấp nền tảng kỹ năng Speaking với 52 chủ đề và hơn 108 mẫu câu phổ biến, giúp nâng cao khả năng giao tiếp và đạt điểm cao trong IELTS.",
+        "accessDays": null,
+        "lessons": [
+            {
+                "name": "IELTS Speaking (5 Chủ đề)",
+                "topics": [
+                    {
+                        "title": "Tổng quan IELTS Speaking",
+                        "video": "https://www.youtube.com/watch?v=T25CeUjSt8Q"
+                    },
+                    {
+                        "title": "Hệ thống chấm điểm IELTS Speaking",
+                        "video": "https://www.youtube.com/watch?v=ZP7bwzAkskA"
+                    },
+                    {
+                        "title": "Mô phỏng cách nói và chấm điểm",
+                        "video": "https://www.youtube.com/watch?v=T9OlruHMiEw"
+                    },
+                    {
+                        "title": "Tầm quan trọng của Idioms",
+                        "video": "https://www.youtube.com/watch?v=_y7yy1ETbww"
+                    },
+                    {
+                        "title": "So sánh Part 1 & Part 3",
+                        "video": "https://www.youtube.com/watch?v=_6x-H6FHyDs"
+                    }
+                ],
+                "assignments": []
+            },
+            {
+                "name": "IELTS Speaking Part 1 (8 Chủ đề)",
+                "topics": [
+                    {
+                        "title": "Tổng quan Part 1",
+                        "video": "https://www.youtube.com/watch?v=XKcF-b9ROuo"
+                    },
+                    {
+                        "title": "Basic Description",
+                        "video": "https://www.youtube.com/watch?v=nG7mNMHNRpA"
+                    },
+                    {
+                        "title": "Liking Question",
+                        "video": "https://www.youtube.com/watch?v=GGRg9liEktg"
+                    },
+                    {
+                        "title": "Disliking Question",
+                        "video": "https://www.youtube.com/watch?v=4w4_mEe6JcQ"
+                    },
+                    {
+                        "title": "Types of Question",
+                        "video": "https://www.youtube.com/watch?v=_LjEWKXxu4E"
+                    },
+                    {
+                        "title": "Wh / How often Question",
+                        "video": "https://www.youtube.com/watch?v=57rjEAr25Oo"
+                    },
+                    {
+                        "title": "Yes / No Question",
+                        "video": "https://www.youtube.com/watch?v=blUpB-b3waI"
+                    },
+                    {
+                        "title": "Would Question",
+                        "video": "https://www.youtube.com/watch?v=bcuEFwpb43A"
+                    }
+                ],
+                "assignments": []
+            },
+            {
+                "name": "IELTS Speaking Part 2 (4 Chủ đề)",
+                "topics": [
+                    {
+                        "title": "Tổng quan Part 2",
+                        "video": "https://www.youtube.com/watch?v=oeMwzR2m1z8"
+                    },
+                    {
+                        "title": "Lời khuyên từ giáo viên",
+                        "video": "https://www.youtube.com/watch?v=-d2yzEiI3eU"
+                    },
+                    {
+                        "title": "Mô phỏng Speaking thực tế",
+                        "video": "https://www.youtube.com/watch?v=XqSIXWek1cc"
+                    },
+                    {
+                        "title": "Nhận xét bài thi Speaking",
+                        "video": "https://www.youtube.com/watch?v=tQ2pmpf_omE"
+                    }
+                ],
+                "assignments": []
+            },
+            {
+                "name": "IELTS Speaking Part 3 (8 Chủ đề)",
+                "topics": [
+                    {
+                        "title": "Tổng quan Part 3",
+                        "video": "https://www.youtube.com/watch?v=kIE_t3TZm8Y"
+                    },
+                    {
+                        "title": "Comparing",
+                        "video": "https://www.youtube.com/watch?v=Rn_HmgPxZ9g"
+                    },
+                    {
+                        "title": "Predicting",
+                        "video": "https://www.youtube.com/watch?v=nZV7Q_UTbG0"
+                    },
+                    {
+                        "title": "Why Question",
+                        "video": "https://www.youtube.com/watch?v=9DJ5VkbXY2o"
+                    },
+                    {
+                        "title": "Advantages",
+                        "video": "https://www.youtube.com/watch?v=RLf7ysLzkm0"
+                    },
+                    {
+                        "title": "Disadvantages",
+                        "video": "https://www.youtube.com/watch?v=jXjnI4bLlok"
+                    },
+                    {
+                        "title": "Problems",
+                        "video": "https://www.youtube.com/watch?v=usGDoOuyNKQ"
+                    },
+                    {
+                        "title": "Solutions",
+                        "video": "https://www.youtube.com/watch?v=5FCe7q5Ktwg"
+                    }
+                ],
+                "assignments": []
+            }
+        ]
+    }
+]

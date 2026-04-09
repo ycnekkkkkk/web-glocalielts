@@ -1,0 +1,96 @@
+[
+    {
+        "title": "IELTS Mentorship",
+        "price": 5000000,
+        "introVideo": null,
+        "description": "Khóa học giúp nâng cấp toàn diện 4 kỹ năng Nghe - Nói - Đọc - Viết, mở rộng vốn từ vựng, phát triển phản xạ giao tiếp và chinh phục IELTS với lộ trình cá nhân hóa.",
+        "accessDays": null,
+        "lessons": [
+            {
+                "name": "IELTS Listening (8 Chủ đề)",
+                "topics": [
+                    {
+                        "title": "Tổng quan IELTS Listening",
+                        "video": "https://www.youtube.com/watch?v=bnJGLsZLad0"
+                    },
+                    {
+                        "title": "Multiple Choice",
+                        "video": "https://www.youtube.com/watch?v=GQvtPlZIczA"
+                    },
+                    {
+                        "title": "Short Answer",
+                        "video": "https://www.youtube.com/watch?v=dMvOS337TRs"
+                    },
+                    {
+                        "title": "Sentence Completion",
+                        "video": "https://www.youtube.com/watch?v=UHWpSgmtn8g"
+                    },
+                    {
+                        "title": "Map/Diagram",
+                        "video": null
+                    },
+                    {
+                        "title": "Summary Completion",
+                        "video": "https://www.youtube.com/watch?v=oFiC9oRrN74"
+                    },
+                    {
+                        "title": "Matching / Classification",
+                        "video": "https://www.youtube.com/watch?v=Optb1JxBsNU"
+                    },
+                    {
+                        "title": "13 Targets IELTS Listening",
+                        "video": "https://www.youtube.com/watch?v=az00Cv9YkUg"
+                    }
+                ],
+                "assignments": []
+            },
+            {
+                "name": "IELTS Reading (2 Chủ đề)",
+                "topics": [
+                    {
+                        "title": "Tổng quan IELTS Reading",
+                        "video": "https://www.youtube.com/watch?v=7Lneq99Tss0"
+                    },
+                    {
+                        "title": "6 dạng câu hỏi IELTS Reading",
+                        "video": "https://www.youtube.com/watch?v=DtBFFjyGVL0"
+                    }
+                ],
+                "assignments": []
+            },
+            {
+                "name": "IELTS Writing (3 Chủ đề)",
+                "topics": [
+                    {
+                        "title": "Tổng quan IELTS Writing",
+                        "video": "https://www.youtube.com/watch?v=SP-JYIXZwh4"
+                    },
+                    {
+                        "title": "IELTS Writing Task 1",
+                        "video": "https://www.youtube.com/watch?v=USvCYZ5oHig"
+                    },
+                    {
+                        "title": "IELTS Writing Task 2",
+                        "video": "https://www.youtube.com/watch?v=drgFgwW039g"
+                    }
+                ],
+                "assignments": []
+            },
+            {
+                "name": "Lesson 1: Overview of IELTS Listening (1 Chủ đề)",
+                "topics": [
+                    {
+                        "title": "Video Lesson 1",
+                        "video": "https://www.youtube.com/watch?v=bnJGLsZLad0"
+                    }
+                ],
+                "assignments": []
+            },
+            {
+                "name": "Lesson 2: Making Assumptions (0 Chủ đề)",
+                "topics": [],
+                "assignments": []
+            }
+        ]
+    }
+]

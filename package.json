@@ -6,12 +6,32 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "migrate:public": "node ./scripts/migrate-public-data.mjs",
+    "migrate:public:dump": "node ./scripts/migrate-public-from-dump.mjs",
+    "sync:public:courses": "node ./scripts/sync-public-courses-from-json.mjs",
+    "cleanup:public:courses": "node ./scripts/delete-extra-public-courses.mjs",
+    "restore:public:courses": "node ./scripts/restore-nine-public-courses.mjs",
+    "extract:mock-skill": "node ./scripts/extract-mock-skill-docx.mjs",
+    "migrate:mock-skill:drive": "node ./scripts/migrate-mock-skill-exams-to-drive.mjs",
+    "sync:thi-thu:json": "node ./scripts/sync-thi-thu-json-to-exam.mjs"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.9.0",
+    "@supabase/supabase-js": "^2.100.1",
+    "clsx": "^2.1.1",
+    "dotenv": "^17.3.1",
+    "googleapis": "^171.4.0",
+    "lucide-react": "^1.7.0",
+    "mysql2": "^3.20.0",
     "next": "16.2.1",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "react-hot-toast": "^2.6.0",
+    "recharts": "^3.8.1",
+    "swiper": "^12.1.3",
+    "tailwind-merge": "^3.5.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -20,6 +40,8 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.1",
+    "fast-xml-parser": "^5.5.11",
+    "jszip": "^3.10.1",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
