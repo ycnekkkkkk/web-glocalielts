@@ -50,7 +50,7 @@ const EMPTY_FORM = {
   start_date: null as string | null,
   tuition_fee: 0,
   status: "upcoming" as const,
-  class_type: "group" as const,
+  class_type: "group" as "group" | "1on1",
   zoom_link: null as string | null,
 };
 

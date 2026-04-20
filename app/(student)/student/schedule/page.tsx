@@ -54,7 +54,7 @@ function dateKey(d: Date): string {
   return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
 }
 
-function sessionDateKey(s: Session): string | null {
+function sessionDateKey(s: Pick<Session, "session_date">): string | null {
   const d = parseSessionDate(s.session_date || "");
   if (!d) return null;
   return dateKey(d);
@@ -91,9 +91,21 @@ function parseOtherSessionMakeupNote(note: string | null | undefined): { dateTex
   return { dateText, time };
 }
 
-type MakeupEvent = Session & {
+type MakeupEvent = {
+  id: number;
   kind: "makeup";
   student_name: string;
+  class_id: string | null;
+  class_name: string;
+  session_no: number | null;
+  session_date: string;
+  session_time: string | null;
+  topic: string | null;
+  homework: string | null;
+  status: "UPCOMING" | "DONE" | "CANCELLED";
+  teacher_id: string | null;
+  zoom_link?: string | null;
+  created_at: string;
 };
 
 export default function StudentSchedulePage() {

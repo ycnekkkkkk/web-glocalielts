@@ -142,7 +142,7 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
       // Also detect duplicates by class_name+session_no+session_date to warn admin
       const idSeen = new Set<string | number>();
       const seenKeys = new Set<string>();
-      const uniqueSessions = sessRes.data?.reduce((acc, session) => {
+      const uniqueSessions: Session[] = (sessRes.data ?? []).reduce((acc: Session[], session: Session) => {
         // Skip if same id already seen (duplicate from DB)
         if (session.id && idSeen.has(session.id)) {
           console.warn("[ClassDetail] Duplicate session detected by id:", session.id, session);

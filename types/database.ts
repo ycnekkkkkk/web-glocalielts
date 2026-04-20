@@ -605,8 +605,8 @@ export interface VStudentFromClass {
 // ============================================================
 export interface MonthlyStudentEvaluation {
   id: string;
-  class_id: string;
   student_id: string;
+  student_name?: string | null;
   evaluation_month: string;           // 'YYYY-MM'
   academic_year?: string | null;
   rating?: number | null;             // 1-5 stars
@@ -619,8 +619,10 @@ export interface MonthlyStudentEvaluation {
   academic_comment?: string | null;
   evaluated_by_teacher_id?: string | null;
   evaluated_by_manager_id?: string | null;
-  created_at: string;
-  updated_at: string;
+  evaluated_by_teacher_name?: string | null;
+  evaluated_by_manager_name?: string | null;
+  created_at?: string;
+  updated_at?: string;
 }
 
 // ============================================================
@@ -646,13 +648,14 @@ export interface PeriodicTestSubmission {
   id: string;
   test_id: string;
   student_id: string;
+  student_name?: string | null;
+  student_code?: string | null;
   score?: number | null;
   status?: "not_taken" | "in_progress" | "submitted" | "graded" | "absent" | null;
   submitted_at?: string | null;
-  graded_by?: string | null;
   graded_at?: string | null;
   teacher_comment?: string | null;
   student_note?: string | null;
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
 }
