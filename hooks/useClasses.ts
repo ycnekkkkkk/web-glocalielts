@@ -81,7 +81,8 @@ export function useClasses(filters?: { teacherId?: string }) {
 
   async function createClass(payload: Omit<Class, "id" | "created_at" | "updated_at" | "teacher" | "enrollments">) {
     const supabase = createBrowserClient();
-    const { data, error: err } = await supabase.from("classes").insert(payload).select().single();
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data, error: err } = await supabase.from("classes").insert({ ...payload, created_by: user?.id }).select().single();
     if (err) throw new Error(err.message);
     await load();
     return data as Class;

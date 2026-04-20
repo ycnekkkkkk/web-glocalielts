@@ -13,7 +13,7 @@ import type { Class, Session } from "@/types";
 import {
   AlertTriangle, ArrowRightLeft, BookOpen, Calendar,
   Check, ChevronDown, ChevronRight, Clock, LayoutList,
-  Pencil, Plus, Search,
+  Pencil, Plus, Search, Video, ExternalLink,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
@@ -93,7 +93,8 @@ interface ConflictRow { class_name: string; session_no: number; session_time: st
 
 const EMPTY_FORM = {
   class_id: "", session_no: "", session_date: "",
-  session_time: "", topic: "", homework: "", status: "UPCOMING" as Session["status"],
+  session_time: "", topic: "", homework: "", zoom_link: "",
+  status: "UPCOMING" as Session["status"],
 };
 
 type ViewMode = "by-class" | "by-date";
@@ -352,11 +353,14 @@ export default function AdminSessionsPage() {
     setSaving(true);
     try {
       const cls = classes.find(c => c.id === form.class_id);
+      // Auto-fill zoom_link from class.zoom_link if available
+      const zoomFromClass = cls?.zoom_link || form.zoom_link || null;
       const payload = {
         class_id: form.class_id, class_name: cls?.name || "",
         session_no: form.session_no ? Number(form.session_no) : null,
         session_date: form.session_date || null, session_time: form.session_time || null,
         topic: form.topic || null, homework: form.homework || null, status: form.status,
+        zoom_link: zoomFromClass,
       };
       const { data, error } = await createBrowserClient().from("sessions").insert(payload).select().single();
       if (error) throw new Error(error.message);
@@ -381,7 +385,36 @@ export default function AdminSessionsPage() {
     });
   }
 
-  const selectedClass = classes.find(c => c.id === form.class_id);
+  // ── auto-fill zoom_link when class is selected ──────────────────────────
+  const selectedClass = useMemo(() => classes.find(c => c.id === form.class_id), [classes, form.class_id]);
+
+  useEffect(() => {
+    if (selectedClass?.zoom_link) {
+      setForm(p => ({ ...p, zoom_link: p.zoom_link || selectedClass.zoom_link || "" }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedClass?.id]);
+
+  // ── inline zoom_link edit ────────────────────────────────────────────────
+  const [editingZoomId, setEditingZoomId]     = useState<number | null>(null);
+  const [editingZoomValue, setEditingZoomValue] = useState("");
+
+  function startEditZoom(s: Session) {
+    setEditingZoomId(s.id as number);
+    setEditingZoomValue(s.zoom_link || "");
+  }
+  async function saveZoom(sessionId: number) {
+    const newLink = editingZoomValue.trim();
+    setEditingZoomId(null);
+    const old = sessions.find(s => s.id === sessionId)?.zoom_link || "";
+    if (newLink === old) return;
+    setSessions(prev => prev.map(s => s.id === sessionId ? { ...s, zoom_link: newLink || null } : s));
+    const { error } = await createBrowserClient().from("sessions").update({ zoom_link: newLink || null }).eq("id", sessionId);
+    if (error) {
+      toast.error("Lỗi lưu link học: " + error.message);
+      setSessions(prev => prev.map(s => s.id === sessionId ? { ...s, zoom_link: old || null } : s));
+    } else toast.success("Đã cập nhật link học");
+  }
 
   // ── session row (shared between both views) ───────────────────────────────
   function SessionRow({ s, showClass }: { s: Session; showClass?: boolean }) {
@@ -432,6 +465,49 @@ export default function AdminSessionsPage() {
               <span className="truncate">{s.topic || <span className="text-gray-300 italic">Chưa có chủ đề</span>}</span>
               <Pencil className="w-3 h-3 text-gray-300 group-hover/t:text-brand-500 shrink-0 transition-colors" />
             </button>
+          )}
+        </td>
+        {/* Zoom link column */}
+        <td className="px-4 py-3 max-w-48">
+          {editingZoomId === s.id ? (
+            <div className="flex gap-1">
+              <input type="url" value={editingZoomValue}
+                onChange={e => setEditingZoomValue(e.target.value)}
+                onBlur={() => saveZoom(s.id as number)}
+                onKeyDown={e => {
+                  if (e.key === "Enter") { e.preventDefault(); saveZoom(s.id as number); }
+                  if (e.key === "Escape") setEditingZoomId(null);
+                }}
+                className="flex-1 rounded-lg border border-brand-400 bg-white px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                placeholder="https://zoom.us/..." autoFocus />
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5">
+              {s.zoom_link ? (
+                <>
+                  <a href={s.zoom_link} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 truncate max-w-36"
+                    title={s.zoom_link}>
+                    <ExternalLink className="w-3 h-3 shrink-0" />
+                    <Video className="w-3 h-3 shrink-0" />
+                    <span className="truncate">{s.zoom_link.includes("zoom") ? "Zoom" : s.zoom_link.includes("meet") ? "Meet" : "Link"}</span>
+                  </a>
+                  <button type="button" onClick={() => startEditZoom(s)}
+                    className="opacity-0 group-hover:opacity-100 shrink-0 text-gray-400 hover:text-brand-500 transition-all"
+                    title="Chỉnh sửa link">
+                    <Pencil className="w-3 h-3" />
+                  </button>
+                </>
+              ) : (
+                <button type="button" onClick={() => startEditZoom(s)}
+                  className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-blue-600 transition-colors"
+                  title="Thêm link học">
+                  <Video className="w-3.5 h-3.5" />
+                  <span className="text-xs italic">Chưa có</span>
+                  <Pencil className="w-3 h-3 text-gray-300" />
+                </button>
+              )}
+            </div>
           )}
         </td>
         <td className="px-4 py-3">{statusBadge(s.status)}</td>
@@ -639,6 +715,7 @@ export default function AdminSessionsPage() {
                             <th className="text-left px-4 py-2">Ngày</th>
                             <th className="text-left px-4 py-2">Giờ</th>
                             <th className="text-left px-4 py-2">Chủ đề</th>
+                            <th className="text-left px-4 py-2">Link</th>
                             <th className="text-left px-4 py-2">Trạng thái</th>
                             <th className="text-left px-4 py-2"></th>
                           </tr>
@@ -724,6 +801,7 @@ export default function AdminSessionsPage() {
                             <th className="text-left px-4 py-2">Ngày</th>
                             <th className="text-left px-4 py-2">Giờ</th>
                             <th className="text-left px-4 py-2">Chủ đề</th>
+                            <th className="text-left px-4 py-2">Link</th>
                             <th className="text-left px-4 py-2">Trạng thái</th>
                             <th className="text-left px-4 py-2"></th>
                           </tr>
@@ -861,6 +939,7 @@ export default function AdminSessionsPage() {
           )}
           <Input label="Chủ đề" value={form.topic} onChange={e => setForm(p => ({ ...p, topic: e.target.value }))} placeholder="Unit 3: Academic Writing" />
           <Input label="Bài tập về nhà" value={form.homework} onChange={e => setForm(p => ({ ...p, homework: e.target.value }))} placeholder="Làm bài tập trang 45..." />
+          <Input label="Link Zoom / Google Meet" value={form.zoom_link} onChange={e => setForm(p => ({ ...p, zoom_link: e.target.value }))} placeholder="https://zoom.us/j/... hoặc meet.google.com/..." />
           <div className="flex gap-3 pt-2">
             <Button type="button" variant="secondary" className="flex-1" onClick={() => { setModal(null); setConflicts([]); }}>Hủy</Button>
             <Button type="submit" loading={saving} className="flex-1">

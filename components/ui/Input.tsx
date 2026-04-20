@@ -4,11 +4,12 @@ import React from "react";
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
+  hint?: string;
   icon?: React.ReactNode;
   iconRight?: React.ReactNode;
 }
 
-export default function Input({ label, error, icon, iconRight, className, id, ...props }: InputProps) {
+export default function Input({ label, error, hint, icon, iconRight, className, id, ...props }: InputProps) {
   const inputId = id || label?.toLowerCase().replace(/\s+/g, "-");
   return (
     <div className="w-full">
@@ -24,13 +25,13 @@ export default function Input({ label, error, icon, iconRight, className, id, ..
         <input
           id={inputId}
           className={cn(
-            "w-full border rounded-xl px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400",
-            "bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500",
-            "transition-all duration-150",
-            error ? "border-red-400 focus:border-red-400 focus:ring-red-400/20" : "border-gray-200 hover:border-gray-300",
+            "w-full border-2 rounded-xl px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400",
+            "bg-white focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100",
+            "hover:border-gray-300 transition-colors duration-150",
+            error ? "border-red-400 focus:border-red-400 focus:ring-red-400/20" : "border-gray-200",
             icon && "pl-10",
             iconRight && "pr-10",
-            className
+            className,
           )}
           {...props}
         />
@@ -39,6 +40,7 @@ export default function Input({ label, error, icon, iconRight, className, id, ..
         )}
       </div>
       {error && <p className="mt-1.5 text-xs text-red-600">{error}</p>}
+      {hint && !error && <p className="mt-1.5 text-xs text-gray-500">{hint}</p>}
     </div>
   );
 }

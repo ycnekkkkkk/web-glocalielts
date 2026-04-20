@@ -81,7 +81,14 @@ export default function StudentDashboard() {
     load().catch(console.error);
   }, []);
 
-  const upcomingSessions = sessions.filter(s => s.status === SESSION_STATUS.UPCOMING).slice(0, 4);
+  const upcomingSessions = sessions
+    .filter(s => s.status === SESSION_STATUS.UPCOMING)
+    .sort((a, b) => {
+      const dateA = a.session_date + " " + (a.session_time || "");
+      const dateB = b.session_date + " " + (b.session_time || "");
+      return dateA.localeCompare(dateB);
+    })
+    .slice(0, 4);
   const completedSessions = sessions.filter(s => s.status === SESSION_STATUS.DONE).length;
   const gradedCount = grades.filter(g => g.status === "graded").length;
   const avgScore = gradedCount > 0

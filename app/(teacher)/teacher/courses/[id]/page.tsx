@@ -6,7 +6,7 @@ import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import { createBrowserClient } from "@/lib/supabase/client";
 import { SESSION_STATUS, ATTENDANCE_STATUS } from "@/lib/constants";
-import { ArrowLeft, BookOpen, Calendar, ClipboardList, Pencil, Star, Users, WrapText } from "lucide-react";
+import { ArrowLeft, BookOpen, Calendar, ClipboardList, Pencil, Star, Users, WrapText, Video } from "lucide-react";
 import Link from "next/link";
 import { use, useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
@@ -125,6 +125,11 @@ export default function TeacherCourseDetailPage({ params }: { params: Promise<{ 
   const [editingTopicId, setEditingTopicId] = useState<number | null>(null);
   const [editingTopicValue, setEditingTopicValue] = useState("");
   const topicInputRef = useRef<HTMLInputElement>(null);
+
+  // Inline zoom link editing
+  const [editingZoomId, setEditingZoomId] = useState<number | null>(null);
+  const [editingZoomValue, setEditingZoomValue] = useState("");
+  const zoomInputRef = useRef<HTMLInputElement>(null);
 
   // Students tab
   const [enrolled, setEnrolled] = useState<{ id: string; full_name: string; email: string | null; phone: string | null }[]>([]);
@@ -670,6 +675,29 @@ export default function TeacherCourseDetailPage({ params }: { params: Promise<{ 
     }
   }
 
+  // ── Zoom link inline edit ────────────────────────────────────
+  function startEditZoom(s: Session) {
+    setEditingZoomId(s.id as number);
+    setEditingZoomValue(s.zoom_link || "");
+    setTimeout(() => zoomInputRef.current?.focus(), 50);
+  }
+
+  async function saveZoom(sessionId: number) {
+    const newLink = editingZoomValue.trim();
+    setEditingZoomId(null);
+    const old = sessions.find((s) => s.id === sessionId)?.zoom_link || "";
+    if (newLink === old) return;
+    setSessions((prev) => prev.map((s) => s.id === sessionId ? { ...s, zoom_link: newLink || null } : s));
+    const { error } = await createBrowserClient()
+      .from("sessions")
+      .update({ zoom_link: newLink || null })
+      .eq("id", sessionId);
+    if (error) {
+      toast.error("Lỗi lưu link học");
+      setSessions((prev) => prev.map((s) => s.id === sessionId ? { ...s, zoom_link: old || null } : s));
+    }
+  }
+
   // ── Render ────────────────────────────────────────────────────
   if (loading) {
     return (
@@ -875,6 +903,7 @@ export default function TeacherCourseDetailPage({ params }: { params: Promise<{ 
                   <th className="text-left px-4 py-3">Thứ</th>
                   <th className="text-left px-4 py-3">Ngày</th>
                   <th className="text-left px-4 py-3">Giờ</th>
+                  <th className="text-left px-4 py-3">Link học</th>
                   <th className="text-left px-4 py-3">Chủ đề</th>
                   <th className="text-left px-4 py-3">Trạng thái</th>
                   <th className="text-left px-4 py-3">Học bù</th>
@@ -910,6 +939,54 @@ export default function TeacherCourseDetailPage({ params }: { params: Promise<{ 
                         </td>
                         <td className="px-4 py-3 text-sm font-medium text-gray-800">{s.session_date || "–"}</td>
                         <td className="px-4 py-3 text-sm text-gray-600">{s.session_time || "–"}</td>
+                        <td className="px-4 py-3">
+                          {editingZoomId === s.id ? (
+                            <div className="flex items-center gap-1">
+                              <input
+                                ref={zoomInputRef}
+                                type="url"
+                                value={editingZoomValue}
+                                onChange={(e) => setEditingZoomValue(e.target.value)}
+                                onBlur={() => saveZoom(s.id as number)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") { e.preventDefault(); saveZoom(s.id as number); }
+                                  if (e.key === "Escape") setEditingZoomId(null);
+                                }}
+                                className="w-40 rounded-lg border border-brand-400 bg-white px-2 py-1 text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                                placeholder="https://zoom.us/..."
+                              />
+                            </div>
+                          ) : s.zoom_link ? (
+                            <div className="flex items-center gap-1.5">
+                              <a href={s.zoom_link} target="_blank" rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-sky-50 hover:bg-sky-100 text-sky-700 rounded-lg text-xs font-medium transition-colors"
+                                title={s.zoom_link}>
+                                <Video className="w-3.5 h-3.5" />
+                                <span className="truncate max-w-24">{s.zoom_link.includes("zoom") ? "Zoom" : s.zoom_link.includes("meet") ? "Meet" : "Link"}</span>
+                              </a>
+                              <button
+                                type="button"
+                                onClick={() => startEditZoom(s)}
+                                className="p-1 text-gray-400 hover:text-brand-500 transition-colors"
+                                title="Sửa link"
+                              >
+                                <Pencil className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs text-gray-300">–</span>
+                              <button
+                                type="button"
+                                onClick={() => startEditZoom(s)}
+                                className="p-1 text-gray-300 hover:text-brand-500 transition-colors"
+                                title="Thêm link học"
+                              >
+                                <Pencil className="w-3 h-3" />
+                              </button>
+                            </div>
+                          )}
+                        </td>
                         <td className="px-4 py-3 max-w-52">
                           {editingTopicId === s.id ? (
                             <input

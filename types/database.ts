@@ -62,6 +62,8 @@ export interface Class {
   end_date: string | null;
   status: "active" | "upcoming" | "completed" | "cancelled";
   class_type: "group" | "1on1";
+  zoom_link: string | null;
+  created_by: string | null;
   created_at: string;
   updated_at: string;
   /** Joined via: classes.select("*, teacher:profiles!teacher_id(id,full_name,email)") */
@@ -113,6 +115,7 @@ export interface Session {
   homework: string | null;
   status: "UPCOMING" | "DONE" | "CANCELLED";
   teacher_id: string | null;        // FK → auth.users (replaces teacher_name)
+  zoom_link: string | null;
   created_at: string;
 }
 
@@ -595,4 +598,61 @@ export interface VStudentFromClass {
   ten_lop: string;
   giao_vien: string | null;
   tinh_trang: string | null;
+}
+
+// ============================================================
+// Monthly Student Evaluations
+// ============================================================
+export interface MonthlyStudentEvaluation {
+  id: string;
+  class_id: string;
+  student_id: string;
+  evaluation_month: string;           // 'YYYY-MM'
+  academic_year?: string | null;
+  rating?: number | null;             // 1-5 stars
+  performance?: "excellent" | "good" | "average" | "below_average" | "poor" | null;
+  attendance_rate?: number | null;   // percentage
+  homework_score?: number | null;    // percentage
+  midterm_score?: number | null;     // percentage
+  final_score?: number | null;       // percentage
+  teacher_comment?: string | null;
+  academic_comment?: string | null;
+  evaluated_by_teacher_id?: string | null;
+  evaluated_by_manager_id?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// ============================================================
+// Periodic Tests & Submissions
+// ============================================================
+export interface PeriodicTest {
+  id: string;
+  class_id: string;
+  test_name: string;
+  test_date?: string | null;
+  test_type?: "midterm" | "final" | "regular" | "mock" | null;
+  max_score?: number | null;
+  passing_score?: number | null;
+  description?: string | null;
+  test_material_link?: string | null;
+  zoom_link?: string | null;         // <-- Tích hợp Zoom
+  created_by?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PeriodicTestSubmission {
+  id: string;
+  test_id: string;
+  student_id: string;
+  score?: number | null;
+  status?: "not_taken" | "in_progress" | "submitted" | "graded" | "absent" | null;
+  submitted_at?: string | null;
+  graded_by?: string | null;
+  graded_at?: string | null;
+  teacher_comment?: string | null;
+  student_note?: string | null;
+  created_at: string;
+  updated_at: string;
 }

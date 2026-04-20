@@ -7,7 +7,7 @@ import { SkeletonPage } from "@/components/ui/Skeleton";
 import { createBrowserClient } from "@/lib/supabase/client";
 import { SESSION_STATUS, ATTENDANCE_STATUS } from "@/lib/constants";
 import { buildSessionRef } from "@/lib/sessionRefUtils";
-import { AlertTriangle, ArrowLeft, ArrowRightLeft, BookOpen, Calendar, CheckSquare, MessageSquare, Plus, Search, Star, Trash2, Users, WrapText } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ArrowRightLeft, BookOpen, Calendar, CheckSquare, ExternalLink, MessageSquare, Plus, Search, Star, Trash2, Users, Video, WrapText } from "lucide-react";
 import Link from "next/link";
 import Modal from "@/components/ui/Modal";
 import { use, useCallback, useEffect, useRef, useState } from "react";
@@ -129,32 +129,88 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
   useEffect(() => {
     async function load() {
       const supabase = createBrowserClient();
-      const [classRes, sessRes, normRes] = await Promise.all([
-        supabase.from("classes_current").select("*").eq("ten_lop", className),
-        supabase.from("sessions").select("*").eq("class_name", className).order("session_no"),
-        supabase.from("classes")
-          .select("id, teacher_id, schedule, sessions_done, total_sessions, teacher:profiles!teacher_id(full_name)")
-          .eq("name", className)
-          .maybeSingle(),
-      ]);
-      setClassRows(classRes.data || []);
-      setSessions(sessRes.data || []);
+
+      // Step 1: Load sessions bằng class_name (luôn works — sessions đã tồn tại)
+      const sessRes = await supabase
+        .from("sessions")
+        .select("id, class_id, class_name, session_no, session_date, session_time, topic, status, zoom_link")
+        .eq("class_name", className)
+        .order("session_no");
+      console.log("[ClassDetail] sessions by class_name:", JSON.stringify(className), "| count:", sessRes.data?.length, "| error:", sessRes.error?.message);
+      
+      // Remove duplicates by id (keep the first occurrence)
+      // Also detect duplicates by class_name+session_no+session_date to warn admin
+      const idSeen = new Set<string | number>();
+      const seenKeys = new Set<string>();
+      const uniqueSessions = sessRes.data?.reduce((acc, session) => {
+        // Skip if same id already seen (duplicate from DB)
+        if (session.id && idSeen.has(session.id)) {
+          console.warn("[ClassDetail] Duplicate session detected by id:", session.id, session);
+          return acc;
+        }
+        // Skip if same class_name+session_no+session_date (definite duplicate)
+        const key = `${session.class_name}|${session.session_no}|${session.session_date}`;
+        if (seenKeys.has(key)) {
+          console.warn("[ClassDetail] Duplicate session detected by key:", key, session);
+          return acc;
+        }
+        idSeen.add(session.id);
+        seenKeys.add(key);
+        acc.push(session);
+        return acc;
+      }, [] as typeof sessRes.data) || [];
+      
+      // Warn if duplicates were removed
+      if (uniqueSessions.length < (sessRes.data?.length || 0)) {
+        const dupCount = (sessRes.data?.length || 0) - uniqueSessions.length;
+        console.warn(`[ClassDetail] Removed ${dupCount} duplicate sessions`);
+      }
+      
+      setSessions(uniqueSessions);
+
+      // Step 2: Load class info từ bảng normalized "classes" (tách join để tránh PostgREST fail)
+      const normRes = await supabase
+        .from("classes")
+        .select("id, name, teacher_id, schedule, sessions_done, total_sessions")
+        .eq("name", className)
+        .maybeSingle();
+      console.log("[ClassDetail] class from normalized:", normRes.data ? "found" : "null", normRes.error?.message);
+
+      let classId = className; // fallback: dùng class_name làm id
+
       if (normRes.data) {
-        const nd = normRes.data as { id: string; teacher_id: string | null; schedule: string | null; sessions_done: number; total_sessions: number; teacher?: { full_name: string | null } | null };
+        const nd = normRes.data;
+        classId = nd.id;
         setClassId(nd.id);
         setTeacherId(nd.teacher_id ?? null);
         setClassSchedule(nd.schedule);
         setSessionsDone(nd.sessions_done ?? 0);
         setTotalSessions(nd.total_sessions ?? 0);
-        setTeacherName((nd.teacher as { full_name: string | null } | null)?.full_name ?? null);
-        // Pre-load enrolled students for the attendance tab
+        if (nd.teacher_id) {
+          const { data: prof } = await supabase.from("profiles").select("full_name").eq("id", nd.teacher_id).maybeSingle();
+          setTeacherName(prof?.full_name ?? null);
+        }
+      } else {
+        // Class chưa có trong normalized table → lấy session count từ sessions
+        setSessionsDone(0);
+        setTotalSessions(sessRes.data?.length ?? 0);
+        setClassSchedule(null);
+        setClassId(null);
+        setTeacherId(null);
+        setTeacherName(null);
+      }
+
+      // Step 3: Load enrolled students
+      // Try class_id from normalized table first, then fallback to sessions table
+      let enrolledData: EnrolledStudent[] = [];
+      if (normRes.data) {
         const enrollRes = await supabase
           .from("enrollments")
           .select("id, student_id, students(id, student_code, full_name, email, phone)")
-          .eq("class_id", nd.id)
+          .eq("class_id", normRes.data.id)
           .eq("status", "active");
         if (enrollRes.data && enrollRes.data.length > 0) {
-          const enrolled: EnrolledStudent[] = (enrollRes.data as unknown as {
+          enrolledData = (enrollRes.data as unknown as {
             id: string; student_id: string;
             students: { id: string; student_code?: string | null; full_name: string; email: string | null; phone: string | null } | null;
           }[]).map((e) => ({
@@ -165,27 +221,77 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
             email: e.students?.email ?? null,
             phone: e.students?.phone ?? null,
           }));
-          setEnrolledStudents(enrolled);
+        }
+      } else {
+        // Try to get class_id from sessions table
+        const sessionWithClassId = sessRes.data?.find((s: Session) => s.class_id);
+        if (sessionWithClassId?.class_id) {
+          const enrollRes = await supabase
+            .from("enrollments")
+            .select("id, student_id, students(id, student_code, full_name, email, phone)")
+            .eq("class_id", sessionWithClassId.class_id)
+            .eq("status", "active");
+          if (enrollRes.data && enrollRes.data.length > 0) {
+            enrolledData = (enrollRes.data as unknown as {
+              id: string; student_id: string;
+              students: { id: string; student_code?: string | null; full_name: string; email: string | null; phone: string | null } | null;
+            }[]).map((e) => ({
+              enrollment_id: e.id,
+              student_id: e.student_id,
+              student_code: e.students?.student_code ?? null,
+              full_name: e.students?.full_name ?? "",
+              email: e.students?.email ?? null,
+              phone: e.students?.phone ?? null,
+            }));
+          }
         }
       }
+      setEnrolledStudents(enrolledData);
+
+      // Step 4: Query classes_current (legacy) for display — still used for some fields
+      const classRes = await supabase
+        .from("classes_current")
+        .select("*")
+        .eq("ten_lop", className);
+      setClassRows(classRes.data || []);
+
       setLoading(false);
     }
     load().catch(console.error);
   }, [className]);
 
-  async function loadStudentsTab(cId: string) {
+  async function loadStudentsTab(cId: string | null) {
     setStudentsLoading(true);
     const supabase = createBrowserClient();
-    const [enrollRes, allRes] = await Promise.all([
-      supabase
+
+    // Fetch enrolled students: use class_id if available, otherwise use class_name from sessions
+    let enrollRes;
+    if (cId) {
+      enrollRes = await supabase
         .from("enrollments")
         .select("id, student_id, students(id, student_code, full_name, email, phone)")
         .eq("class_id", cId)
-        .eq("status", "active"),
-      supabase.from("students").select("id, student_code, full_name, email").order("full_name"),
-    ]);
+        .eq("status", "active");
+    } else {
+      // Fallback: try to find class_id from sessions table using class_name
+      const sessionsRes = await supabase
+        .from("sessions")
+        .select("class_id")
+        .eq("class_name", className)
+        .limit(1)
+        .maybeSingle();
+      if (sessionsRes.data?.class_id) {
+        enrollRes = await supabase
+          .from("enrollments")
+          .select("id, student_id, students(id, student_code, full_name, email, phone)")
+          .eq("class_id", sessionsRes.data.class_id)
+          .eq("status", "active");
+      }
+    }
 
-    const enrolled: EnrolledStudent[] = ((enrollRes.data || []) as unknown as {
+    const allRes = await supabase.from("students").select("id, student_code, full_name, email").order("full_name");
+
+    const enrolled: EnrolledStudent[] = ((enrollRes?.data || []) as unknown as {
       id: string; student_id: string;
       students: { id: string; student_code?: string | null; full_name: string; email: string | null; phone: string | null } | null;
     }[]).map((e) => ({
@@ -211,7 +317,7 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
     setRemovingId(enrollmentId);
     const { error } = await createBrowserClient()
       .from("enrollments")
-      .update({ status: "dropped" })
+      .delete()
       .eq("id", enrollmentId);
     if (error) { toast.error("Lỗi xóa học viên"); setRemovingId(null); return; }
     setEnrolledStudents((prev) => prev.filter((e) => e.enrollment_id !== enrollmentId));
@@ -220,11 +326,28 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
   }
 
   async function addStudent(student: AvailableStudent) {
-    if (!classId) return;
+    // Find class_id: prefer normalized classId, fallback to querying sessions table
+    let targetClassId = classId;
+    if (!targetClassId) {
+      const supabase = createBrowserClient();
+      const { data } = await supabase
+        .from("sessions")
+        .select("class_id")
+        .eq("class_name", className)
+        .limit(1)
+        .maybeSingle();
+      targetClassId = data?.class_id || null;
+    }
+
+    if (!targetClassId) {
+      toast.error("Không tìm được lớp học. Vui lòng tạo lớp trong bảng classes trước.");
+      return;
+    }
+
     setAddingId(student.id);
     const { error } = await createBrowserClient()
       .from("enrollments")
-      .insert({ class_id: classId, student_id: student.id, status: "active" });
+      .insert({ class_id: targetClassId, student_id: student.id, status: "active" });
     if (error) { toast.error(error.message.includes("duplicate") ? "Học viên đã ở trong lớp" : "Lỗi thêm học viên"); setAddingId(null); return; }
     setEnrolledStudents((prev) => [...prev, { enrollment_id: "", student_id: student.id, full_name: student.full_name, email: student.email, phone: null }]);
     setAvailableStudents((prev) => prev.filter((s) => s.id !== student.id));
@@ -302,7 +425,7 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
 
   async function loadTabData(t: TabId) {
     setTab(t);
-    if (t === "students" && classId && !studentsTabLoaded) {
+    if (t === "students" && !studentsTabLoaded) {
       await loadStudentsTab(classId);
     }
     if (t === "evaluation" && evaluations.length === 0) {
@@ -769,19 +892,77 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900">{s.topic || "Buổi học"}</p>
                       <p className="text-xs text-gray-500">{s.session_date} · {s.session_time}</p>
+                      {s.zoom_link && (
+                        <a href={s.zoom_link} target="_blank" rel="noopener noreferrer"
+                          className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium mt-0.5"
+                          onClick={e => e.stopPropagation()}
+                          title={s.zoom_link}>
+                          <Video className="w-3 h-3" />
+                          <span className="truncate max-w-40">{s.zoom_link.includes("zoom") ? "Zoom" : s.zoom_link.includes("meet") ? "Meet" : "Link"}</span>
+                          <ExternalLink className="w-3 h-3 shrink-0" />
+                        </a>
+                      )}
                     </div>
                     {s.status === SESSION_STATUS.DONE ? <Badge variant="success">✓</Badge>
                       : s.status === SESSION_STATUS.CANCELLED ? <Badge variant="danger">Hủy</Badge>
                         : <Badge variant="info">Sắp tới</Badge>}
                   </div>
-                  {s.status !== SESSION_STATUS.DONE && s.status !== SESSION_STATUS.CANCELLED && (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); openReschedule(s); }}
-                      title="Đổi lịch buổi này"
-                      className="shrink-0 p-1.5 rounded-lg text-sky-500 hover:bg-sky-50 hover:text-sky-700 transition-colors"
-                    >
-                      <ArrowRightLeft className="w-4 h-4" />
-                    </button>
+                    {s.status !== SESSION_STATUS.DONE && s.status !== SESSION_STATUS.CANCELLED && (
+                    <>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); openReschedule(s); }}
+                        title="Đổi lịch buổi này"
+                        className="shrink-0 p-1.5 rounded-lg text-sky-500 hover:bg-sky-50 hover:text-sky-700 transition-colors"
+                      >
+                        <ArrowRightLeft className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          const link = prompt("Nhập link Zoom/Meet:", s.zoom_link || "");
+                          if (link === null) return;
+                          const newLink = link.trim() || null;
+                          if (newLink === s.zoom_link) return;
+                          
+                          const supabase = createBrowserClient();
+                          
+                          // Update using the correct identifier based on what we have
+                          // If id is a number, use it. Otherwise use class_name + session_no + session_date
+                          let updateError: Error | null = null;
+                          
+                          if (typeof s.id === 'number' || !isNaN(Number(s.id))) {
+                            // Use numeric id
+                            const numericId = typeof s.id === 'number' ? s.id : Number(s.id);
+                            const { error } = await supabase
+                              .from("sessions")
+                              .update({ zoom_link: newLink })
+                              .eq("id", numericId);
+                            updateError = error;
+                          } else {
+                            // Fallback: use class_name + session_no + session_date (with unique date)
+                            const { error } = await supabase
+                              .from("sessions")
+                              .update({ zoom_link: newLink })
+                              .eq("class_name", s.class_name)
+                              .eq("session_no", s.session_no)
+                              .eq("session_date", s.session_date);
+                            updateError = error;
+                          }
+                          
+                          if (updateError) {
+                            toast.error("Lỗi cập nhật: " + updateError.message);
+                          } else {
+                            // Update local state
+                            setSessions(prev => prev.map(x => x.id === s.id ? { ...x, zoom_link: newLink } : x));
+                            toast.success("Đã cập nhật link");
+                          }
+                        }}
+                        title="Sửa link học"
+                        className="shrink-0 p-1.5 rounded-lg text-blue-500 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                      >
+                        <Video className="w-4 h-4" />
+                      </button>
+                    </>
                   )}
                 </div>
               ))}
@@ -947,7 +1128,7 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                     </div>
                     <button
                       onClick={() => addStudent(s)}
-                      disabled={addingId === s.id || !classId}
+                      disabled={addingId === s.id}
                       className="flex items-center gap-1 text-xs font-semibold text-brand-600 bg-brand-50 hover:bg-brand-100 px-2.5 py-1.5 rounded-lg transition-colors disabled:opacity-50"
                     >
                       {addingId === s.id

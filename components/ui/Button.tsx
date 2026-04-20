@@ -3,7 +3,7 @@ import { cn } from "@/utils/cn";
 import { Loader2 } from "lucide-react";
 import React from "react";
 
-type Variant = "primary" | "secondary" | "ghost" | "danger" | "outline";
+type Variant = "primary" | "secondary" | "ghost" | "danger" | "outline" | "subtle";
 type Size = "sm" | "md" | "lg";
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -15,11 +15,12 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantStyles: Record<Variant, string> = {
-  primary: "bg-brand-600 text-white hover:bg-brand-700 shadow-sm hover:shadow-md disabled:bg-brand-300",
+  primary:  "bg-brand-600 text-white hover:bg-brand-700 shadow-sm hover:shadow-md disabled:bg-brand-300",
   secondary: "bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50",
-  ghost: "text-gray-600 hover:bg-gray-100 hover:text-gray-900 disabled:opacity-50",
-  danger: "bg-red-600 text-white hover:bg-red-700 shadow-sm disabled:bg-red-300",
-  outline: "border border-gray-300 text-gray-700 hover:bg-gray-50 bg-white disabled:opacity-50",
+  ghost:     "text-gray-600 hover:bg-gray-100 hover:text-gray-900 disabled:opacity-50",
+  danger:    "bg-red-600 text-white hover:bg-red-700 shadow-sm disabled:bg-red-300",
+  outline:   "border-2 border-gray-300 text-gray-700 hover:bg-gray-50 bg-white disabled:opacity-50",
+  subtle:    "text-brand-600 hover:bg-brand-50 hover:text-brand-700 disabled:opacity-50",
 };
 
 const sizeStyles: Record<Size, string> = {
@@ -44,11 +45,11 @@ export default function Button({
       type="button"
       disabled={disabled || loading}
       className={cn(
-        "inline-flex items-center justify-center font-medium rounded-xl transition-all duration-150 cursor-pointer select-none",
+        "inline-flex items-center justify-center font-semibold rounded-xl transition-all duration-150 cursor-pointer select-none",
         variantStyles[variant],
         sizeStyles[size],
         (disabled || loading) && "cursor-not-allowed",
-        className
+        className,
       )}
       {...props}
     >

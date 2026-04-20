@@ -466,7 +466,7 @@ CREATE TABLE IF NOT EXISTS public.student_achievements (
 -- Bảng teachers: danh sách giáo viên (admin thêm mới)
 -- name phải khớp với giao_vien trong classes_current để hiển thị lớp trên trang giảng viên
 CREATE TABLE IF NOT EXISTS public.teachers (
-  id SERIAL PRIMARY KEY,
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   name TEXT NOT NULL,
   email TEXT,
   phone TEXT,

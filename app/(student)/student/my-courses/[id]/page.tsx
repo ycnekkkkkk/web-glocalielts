@@ -7,7 +7,7 @@ import Modal from "@/components/ui/Modal";
 import { SkeletonPage } from "@/components/ui/Skeleton";
 import { createBrowserClient } from "@/lib/supabase/client";
 import { SESSION_STATUS } from "@/lib/constants";
-import { ArrowLeft, BookOpen, Calendar, CheckCircle, Clock, GraduationCap, MessageSquare, Star } from "lucide-react";
+import { ArrowLeft, BookOpen, Calendar, CheckCircle, Clock, GraduationCap, MessageSquare, Star, Video, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { use, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
@@ -483,6 +483,15 @@ export default function StudentCourseDetailPage({ params }: { params: Promise<{ 
                     <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-500">
                       <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{s.session_date}</span>
                       <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{s.session_time}</span>
+                      {s.zoom_link && (
+                        <a href={s.zoom_link} target="_blank" rel="noopener noreferrer"
+                          className="flex items-center gap-1 text-blue-600 hover:text-blue-800 font-medium"
+                          title={s.zoom_link}>
+                          <Video className="w-3 h-3" />
+                          <span>{s.zoom_link.includes("zoom") ? "Zoom" : s.zoom_link.includes("meet") ? "Meet" : "Vào học"}</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      )}
                     </div>
                   </div>
                   {isDone

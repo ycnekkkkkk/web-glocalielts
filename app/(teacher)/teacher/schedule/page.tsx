@@ -9,6 +9,7 @@ import { SESSION_STATUS, ATTENDANCE_STATUS } from "@/lib/constants";
 import { parseSessionDate } from "@/lib/scheduleUtils";
 import {
   ChevronLeft, ChevronRight, ClipboardList, Star, WrapText, Calendar,
+  Video, ExternalLink,
 } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import toast from "react-hot-toast";
@@ -1047,6 +1048,17 @@ export default function InstructorSchedulePage() {
           </div>
         ) : (
           <div className="space-y-3">
+            {/* Session info: date/time + zoom link */}
+            {attendSession?.zoom_link && (
+              <a href={attendSession.zoom_link} target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-xl text-sm text-blue-700 hover:bg-blue-100 transition-colors">
+                <Video className="w-4 h-4 shrink-0" />
+                <span className="font-medium">Vào lớp học</span>
+                <span className="truncate flex-1">{attendSession.zoom_link}</span>
+                <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+              </a>
+            )}
+
             {/* Summary */}
             <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl text-xs">
               <span className="text-gray-500">{attendStudents.length} học viên</span>
@@ -1068,6 +1080,34 @@ export default function InstructorSchedulePage() {
                 Buổi đã hoàn thành. Bạn vẫn có thể chỉnh sửa nếu cần.
               </p>
             )}
+
+            {/* Zoom link edit */}
+            <div className="flex items-center gap-2 px-3 py-2 bg-sky-50 border border-sky-200 rounded-xl">
+              <Video className="w-4 h-4 text-sky-600 shrink-0" />
+              <input
+                type="url"
+                className="flex-1 bg-transparent text-sm text-sky-800 placeholder:text-sky-400 focus:outline-none"
+                placeholder="Paste Zoom / Meet link vào đây..."
+                value={attendSession?.zoom_link || ""}
+                onChange={async (e) => {
+                  const newLink = e.target.value;
+                  if (!attendSession) return;
+                  setAttendSession(prev => prev ? { ...prev, zoom_link: newLink || null } : null);
+                  setSessions(prev => prev.map(s => s.id === attendSession.id ? { ...s, zoom_link: newLink || null } : s));
+                  const { error } = await createBrowserClient()
+                    .from("sessions")
+                    .update({ zoom_link: newLink || null })
+                    .eq("id", attendSession.id);
+                  if (error) toast.error("Lỗi lưu link: " + error.message);
+                }}
+              />
+              {attendSession?.zoom_link && (
+                <a href={attendSession.zoom_link} target="_blank" rel="noopener noreferrer"
+                  className="text-sky-600 hover:text-sky-800 shrink-0">
+                  <ExternalLink className="w-4 h-4" />
+                </a>
+              )}
+            </div>
 
             {attendStudents.map(st => (
               <div key={st.id} className="p-3 bg-gray-50 rounded-xl space-y-2">
