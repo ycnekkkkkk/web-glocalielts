@@ -7,7 +7,7 @@ import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import { createBrowserClient } from "@/lib/supabase/client";
 import {
-  ArrowLeft, BookOpen, Calendar, CheckCircle, Download, FileText, MessageSquare, Pencil, Plus, Star, Upload, Users, Video, WrapText, ZoomIn,
+  ArrowLeft, BookOpen, Calendar, CheckCircle, Download, FileText, MessageSquare, Pencil, Plus, Star, Trash2, Upload, Users, Video, WrapText, ZoomIn,
 } from "lucide-react";
 import Link from "next/link";
 import { use, useEffect, useState } from "react";
@@ -140,6 +140,7 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [addingId, setAddingId] = useState<string | null>(null);
   const [showAddStudentModal, setShowAddStudentModal] = useState(false);
+  const [confirmRemoveStudent, setConfirmRemoveStudent] = useState<{ enrollmentId: string; name: string } | null>(null);
 
   // Teacher assignment state
   const [allTeachers, setAllTeachers] = useState<{ id: string; full_name: string; email: string | null }[]>([]);
@@ -391,12 +392,19 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
   }
 
   async function removeStudent(enrollmentId: string) {
+    const enrolled = enrolledStudents.find(e => e.enrollment_id === enrollmentId);
+    if (enrolled) setConfirmRemoveStudent({ enrollmentId, name: enrolled.full_name });
+  }
+
+  async function doRemoveStudent() {
+    if (!confirmRemoveStudent) return;
+    const { enrollmentId } = confirmRemoveStudent;
     setRemovingId(enrollmentId);
     const { error } = await createBrowserClient()
       .from("enrollments")
       .delete()
       .eq("id", enrollmentId);
-    if (error) { toast.error("Lỗi xóa học viên"); setRemovingId(null); return; }
+    if (error) { toast.error("Lỗi xóa học viên: " + error.message); setRemovingId(null); setConfirmRemoveStudent(null); return; }
     setEnrolledStudents(prev => prev.filter(e => e.enrollment_id !== enrollmentId));
     const removed = enrolledStudents.find(e => e.enrollment_id === enrollmentId);
     if (removed) {
@@ -409,6 +417,7 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
     }
     toast.success("Đã xóa học viên khỏi lớp");
     setRemovingId(null);
+    setConfirmRemoveStudent(null);
   }
 
   async function addStudent(student: AvailableStudent) {
@@ -1438,21 +1447,22 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
                       {enrolledStudents
                         .filter(s => studentSearch === "" || s.full_name.toLowerCase().includes(studentSearch.toLowerCase()) || (s.student_code || "").toLowerCase().includes(studentSearch.toLowerCase()))
                         .map((s) => (
-                          <tr key={s.student_id} className="hover:bg-gray-50">
+                          <tr key={s.student_id} className="group hover:bg-gray-50">
                             <td className="py-2.5 pr-3 text-gray-600">{s.student_code || "–"}</td>
                             <td className="py-2.5 pr-4 font-medium text-gray-800">{s.full_name}</td>
                             <td className="py-2.5 pr-3 text-gray-500">{s.email || "–"}</td>
                             <td className="py-2.5 pr-3 text-gray-500">{s.phone || "–"}</td>
                             <td className="py-2.5">
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="text-red-600 hover:text-red-700"
+                              <button
                                 disabled={removingId === s.enrollment_id}
                                 onClick={() => removeStudent(s.enrollment_id)}
+                                className="group-hover:opacity-100 p-1.5 rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600 transition-all disabled:opacity-50"
+                                title="Xóa khỏi lớp"
                               >
-                                {removingId === s.enrollment_id ? "Đang xóa..." : "Xóa"}
-                              </Button>
+                                {removingId === s.enrollment_id
+                                  ? <div className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
+                                  : <Trash2 className="w-4 h-4" />}
+                              </button>
                             </td>
                           </tr>
                         ))}
@@ -1843,6 +1853,34 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
             </Modal>
           )}
         </div>
+      )}
+
+      {/* Confirm Remove Student Modal */}
+      {confirmRemoveStudent && (
+        <Modal
+          open={true}
+          onClose={() => setConfirmRemoveStudent(null)}
+          title="Xác nhận xóa học viên"
+        >
+          <div className="space-y-4">
+            <p className="text-gray-700">
+              Bạn có chắc muốn xóa học viên <strong>{confirmRemoveStudent.name}</strong> khỏi lớp này không?
+            </p>
+            <p className="text-sm text-gray-500">Hành động này không thể hoàn tác.</p>
+            <div className="flex justify-end gap-3 pt-2">
+              <Button variant="outline" onClick={() => setConfirmRemoveStudent(null)}>
+                Hủy
+              </Button>
+              <Button
+                variant="danger"
+                onClick={doRemoveStudent}
+                disabled={!!removingId}
+              >
+                {removingId ? "Đang xóa..." : "Xóa học viên"}
+              </Button>
+            </div>
+          </div>
+        </Modal>
       )}
     </PageWrapper>
   );
