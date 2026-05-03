@@ -62,15 +62,17 @@ function parseMixedAnswers(raw: unknown): Record<string, string | number> {
 }
 
 function validateMcqPicks(
-  questions: { id: string; options?: string[] }[] | undefined,
-  picks: Record<string, number>
+  questions: { id: string; type?: string; options?: string[] }[] | undefined,
+  picks: Record<string, string | number>
 ): string | null {
   if (!questions?.length) return null;
+  const CHOICE_TYPES = new Set(["single_choice", "true_false_not_given", "matching", "multiple_choice"]);
   for (const q of questions) {
+    if (!q.type || !CHOICE_TYPES.has(q.type)) continue; // text questions — skip
     const opts = q.options || [];
     const v = picks[q.id];
     if (v === undefined) continue;
-    if (typeof v !== "number" || v < 0 || v >= opts.length) {
+    if (typeof v === "number" && (v < 0 || v >= opts.length)) {
       return `Đáp án không hợp lệ ở câu: ${q.id}`;
     }
   }
@@ -78,10 +80,11 @@ function validateMcqPicks(
 }
 
 function validateListeningAnswers(
-  questions: Array<{ id: string; type: "single_choice" | "text"; options?: string[] }> | undefined,
+  questions: Array<{ id: string; type: string; options?: string[] }> | undefined,
   picks: Record<string, string | number>
 ): string | null {
   if (!questions?.length) return null;
+  const CHOICE_TYPES = new Set(["single_choice", "true_false_not_given", "matching", "multiple_choice"]);
   for (const q of questions) {
     const v = picks[q.id];
     if (v === undefined) continue;
@@ -91,9 +94,11 @@ function validateListeningAnswers(
       }
       continue;
     }
-    const opts = q.options || [];
-    if (typeof v !== "number" || v < 0 || v >= opts.length) {
-      return `Đáp án không hợp lệ ở câu: ${q.id}`;
+    if (CHOICE_TYPES.has(q.type)) {
+      const opts = q.options || [];
+      if (typeof v === "number" && (v < 0 || v >= opts.length)) {
+        return `Đáp án không hợp lệ ở câu: ${q.id}`;
+      }
     }
   }
   return null;
@@ -121,7 +126,7 @@ export async function POST(request: Request) {
   }
 
   const listeningPicks = parseMixedAnswers(form.get("listeningAnswers"));
-  const readingPicks = parsePicks(form.get("readingAnswers"));
+  const readingPicks = parseMixedAnswers(form.get("readingAnswers"));
   const writingText = String(form.get("writingText") || "");
   const speakingFile = form.get("speakingAudio");
 
@@ -214,22 +219,36 @@ export async function POST(request: Request) {
     .maybeSingle();
 
   const answerKey = (answerRow?.answers || {}) as unknown as MockSkillAnswers;
+  // Convert selection indices → option text for ALL choice-based questions
+  const CHOICE_TYPES = new Set(["single_choice", "true_false_not_given", "matching", "multiple_choice"]);
+
   const listeningForScore: Record<string, string | number> = {};
   for (const q of content.listening.questions || []) {
     const raw = listeningPicks[q.id];
-    if (q.type === "single_choice" && typeof raw === "number") {
+    if (CHOICE_TYPES.has(q.type) && typeof raw === "number") {
       listeningForScore[q.id] = q.options?.[raw] ?? "";
     } else {
       listeningForScore[q.id] = typeof raw === "string" ? raw : "";
     }
   }
+
+  const readingForScore: Record<string, string | number> = {};
+  for (const q of content.reading.questions || []) {
+    const raw = readingPicks[q.id];
+    if (CHOICE_TYPES.has(q.type) && typeof raw === "number") {
+      readingForScore[q.id] = q.options?.[raw] ?? "";
+    } else {
+      readingForScore[q.id] = typeof raw === "string" ? raw : "";
+    }
+  }
+
   const scores = scoreListeningReading(
     {
       listening: answerKey.listening || {},
       reading: answerKey.reading || {},
     },
     listeningForScore,
-    readingPicks
+    readingForScore
   );
 
   const { data: inserted, error: insErr } = await admin

@@ -1,0 +1,72 @@
+{
+    "section": "Reading Passage 2 - Questions",
+    "questions_14_22": {
+        "type": "Classification",
+        "instructions": "Classify the following as typical of A (The reptilian cortex), B (The limbic cortex), C (The neocortex).",
+        "options": {
+            "A": "The reptilian cortex",
+            "B": "The limbic cortex",
+            "C": "The neocortex"
+        },
+        "questions": [
+            {
+                "id": 14,
+                "text": "Giving up short-term happiness for future gains"
+            },
+            {
+                "id": 15,
+                "text": "Maintaining the bodily functions necessary for life"
+            },
+            {
+                "id": 16,
+                "text": "Experiencing the pain of losing another"
+            },
+            {
+                "id": 17,
+                "text": "Forming communities and social groups"
+            },
+            {
+                "id": 18,
+                "text": "Making a decision and carrying it out"
+            },
+            {
+                "id": 19,
+                "text": "Guarding areas of land"
+            },
+            {
+                "id": 20,
+                "text": "Developing explanations for things"
+            },
+            {
+                "id": 21,
+                "text": "Looking after one’s young"
+            },
+            {
+                "id": 22,
+                "text": "Responding quickly to sudden movement and noise"
+            }
+        ]
+    },
+    "questions_23_26": {
+        "type": "Sentence Completion",
+        "instructions": "Complete the sentences below. Write NO MORE THAN TWO WORDS from the passage for each answer.",
+        "questions": [
+            {
+                "id": 23,
+                "text": "A person with only a functioning reptilian cortex is known as __________."
+            },
+            {
+                "id": 24,
+                "text": "__________ in humans is associated with limbic disruption."
+            },
+            {
+                "id": 25,
+                "text": "An industrial accident caused Phineas Gage to lose part of his __________."
+            },
+            {
+                "id": 26,
+                "text": "After his accident, co-workers noticed an imbalance between Gage’s __________ and higher-order thinking."
+            }
+        ]
+    }
+}

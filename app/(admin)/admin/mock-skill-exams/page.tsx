@@ -79,9 +79,13 @@ export default function AdminMockSkillExamsPage() {
       <div className="page-header flex items-start justify-between flex-wrap gap-4">
         <div>
           <h1 className="page-title">Thi thử 4 kỹ năng</h1>
-          <p className="page-subtitle">Quản lý đề IELTS (Listening, Reading, Speaking, Writing). Nội dung đề cập nhật qua Supabase / migration.</p>
+          <p className="page-subtitle">Quản lý đề IELTS (Listening, Reading, Speaking, Writing). Nội dung đề cập nhật qua form editor.</p>
         </div>
+        <Link href="/admin/mock-skill-exams/new">
+          <Button variant="primary">+ Tạo đề mới</Button>
+        </Link>
       </div>
+
 
       <Card>
         {loading ? (

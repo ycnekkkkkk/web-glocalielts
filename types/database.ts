@@ -61,6 +61,7 @@ export interface Class {
   start_date: string | null;
   end_date: string | null;
   status: "active" | "upcoming" | "completed" | "cancelled";
+  teacher_salary_per_hour?: number | null;
   class_type: "group" | "1on1";
   zoom_link: string | null;
   created_by: string | null;
@@ -95,6 +96,8 @@ export interface Enrollment {
   class_id: string;
   student_id: string;
   status: "active" | "completed" | "dropped";
+  level_in?: string | null;
+  level_out?: string | null;
   enrolled_at: string;
   /** Optional joins */
   student?: Pick<Student, "id" | "full_name" | "email" | "phone">;
@@ -658,4 +661,31 @@ export interface PeriodicTestSubmission {
   student_note?: string | null;
   created_at?: string;
   updated_at?: string;
+}
+
+// ============================================================
+// Course Purchase Requests & Messaging
+// ============================================================
+export interface CoursePurchaseRequest {
+  id: string;
+  course_id: string;
+  user_id: string;
+  user_name: string | null;
+  user_email: string | null;
+  course_title: string | null;
+  status: "pending" | "approved" | "rejected";
+  note: string | null;
+  admin_note: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CourseMessage {
+  id: string;
+  course_id: string;
+  user_id: string;
+  sender_id: string;
+  sender_role: "user" | "admin";
+  content: string;
+  created_at: string;
 }

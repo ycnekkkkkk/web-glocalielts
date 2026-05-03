@@ -2,10 +2,10 @@
 import Header from "@/components/layouts/Header";
 import Sidebar from "@/components/layouts/Sidebar";
 import Avatar from "@/components/ui/Avatar";
-import { useAuth } from "@/hooks/useAuth";
+import { useRoleGuard } from "@/hooks/useRoleGuard";
 import {
   BarChart3, BookOpen, BookMarked, Building2, DollarSign, FileText,
-  GraduationCap, LayoutDashboard, Settings, Users, UserSquare2, Calendar, ClipboardList, ShieldCheck,
+  GraduationCap, LayoutDashboard, Settings, ShoppingCart, Users, UserSquare2, Calendar, ClipboardList, ShieldCheck,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -35,6 +35,7 @@ const navGroups: NavGroup[] = [
     items: [
       { label: "Chương trình", href: "/admin/curriculum", icon: BookOpen },
       { label: "Khóa học online", href: "/admin/online-courses", icon: BookOpen },
+      { label: "Yêu cầu mua khóa", href: "/admin/course-requests", icon: ShoppingCart },
       { label: "Tài liệu", href: "/admin/content", icon: FileText },
       { label: "Thi thử 4 kỹ năng", href: "/admin/mock-skill-exams", icon: BookMarked },
     ],
@@ -55,14 +56,7 @@ const navGroups: NavGroup[] = [
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (loading) return;
-    if (!user) router.replace("/admin");
-    else if (user.role !== "admin") router.replace("/");
-  }, [user, loading, router]);
+  const { user, loading } = useRoleGuard("admin", "/admin");
 
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen bg-gray-50">

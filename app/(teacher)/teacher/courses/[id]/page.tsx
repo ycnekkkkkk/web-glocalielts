@@ -52,6 +52,7 @@ interface StudentAttendanceSummary {
   absent_unresolved: number;
   makeup_completed: number;
   learned_total: number;
+  total_records: number;
   absent_details: string[];
 }
 
@@ -155,6 +156,23 @@ export default function TeacherCourseDetailPage({ params }: { params: Promise<{ 
   // Set of session_refs that already have a class evaluation
   const [evalledRefs, setEvalledRefs] = useState<Set<string>>(new Set());
 
+  // Monthly Eval Modal
+  const [monthlyEvalOpen, setMonthlyEvalOpen] = useState(false);
+  const [monthlyEvalLoading, setMonthlyEvalLoading] = useState(false);
+  const [monthlyEvalSaving, setMonthlyEvalSaving] = useState(false);
+  const [monthlyEvals, setMonthlyEvals] = useState<{
+    student_id: string;
+    student_name: string;
+    performance: string;
+    attendance_rate: number | string;
+    homework_score: number | string;
+    midterm_score: number | string;
+    final_score: number | string;
+    teacher_comment: string;
+  }[]>([]);
+  const [monthlyEvalMonth, setMonthlyEvalMonth] = useState("");
+  const [completedMonthlyMonths, setCompletedMonthlyMonths] = useState<Set<string>>(new Set());
+
   // Makeup modal
   const [makeup, setMakeup] = useState<MakeupForm | null>(null);
   const [upcomingSessions, setUpcomingSessions] = useState<Session[]>([]);
@@ -178,26 +196,53 @@ export default function TeacherCourseDetailPage({ params }: { params: Promise<{ 
       const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", user.id).single();
       setMyName(profile?.full_name || "");
 
-      const [clsRes, sessRes, enrollRes] = await Promise.all([
+      const [clsRes, enrollRes] = await Promise.all([
         supabase.from("classes")
           .select("id, name, status, class_type, schedule, schedule_time, schedule_end_time, total_sessions, sessions_done, start_date")
           .eq("id", classId)
           .single(),
-        supabase.from("sessions")
-          .select("*")
-          .eq("class_id", classId)
-          .order("session_no"),
         supabase.from("enrollments")
           .select("students(id, full_name, email, phone)")
           .eq("class_id", classId)
           .eq("status", "active"),
       ]);
 
-      const sessData = (sessRes.data as Session[]) || [];
+      const clsName = clsRes.data?.name || "";
+      let sessRes;
+      if (clsName) {
+        sessRes = await supabase.from("sessions")
+          .select("*")
+          // Avoid syntax errors in .or() if class name has commas by using .eq and merging, or just rely on class_id now that we updated logic.
+          // Wait, PostgREST .or() uses comma. If clsName has comma, it breaks.
+          // Let's just fetch by class_name
+          .eq("class_name", clsName)
+          .order("session_no");
+      } else {
+        sessRes = await supabase.from("sessions")
+          .select("*")
+          .eq("class_id", classId)
+          .order("session_no");
+      }
+
+      let sessData = (sessRes.data as Session[]) || [];
+      
+      // Sort sessions by date correctly
+      sessData.sort((a, b) => {
+        if (!a.session_date && !b.session_date) return 0;
+        if (!a.session_date) return 1;
+        if (!b.session_date) return -1;
+        const parseDateStr = (dateStr: string) => {
+          const parts = dateStr.split("/");
+          if (parts.length !== 3) return new Date(0);
+          return new Date(parseInt(parts[2], 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
+        };
+        return parseDateStr(a.session_date).getTime() - parseDateStr(b.session_date).getTime();
+      });
+      // Re-assign session_no based on actual date order to be safe
+      sessData.forEach((s, i) => s.session_no = i + 1);
+
       setCls(clsRes.data as ClassInfo | null);
       setSessions(sessData);
-
-      const clsName = clsRes.data?.name || "";
       const sessionRefs = sessData.map((s) => `${s.class_name}#${s.session_no}#${s.session_date}`);
       if (clsName) {
         const attendanceRes = await supabase
@@ -247,6 +292,14 @@ export default function TeacherCourseDetailPage({ params }: { params: Promise<{ 
           .eq("class_name", clsName);
         if (evalData) {
           setEvalledRefs(new Set((evalData as { session_ref: string }[]).map(e => e.session_ref)));
+        }
+
+        const { data: monthlyData } = await supabase
+          .from("monthly_student_evaluations")
+          .select("evaluation_month")
+          .eq("class_id", classId);
+        if (monthlyData) {
+          setCompletedMonthlyMonths(new Set((monthlyData as any[]).map(r => r.evaluation_month)));
         }
       }
 
@@ -492,6 +545,125 @@ export default function TeacherCourseDetailPage({ params }: { params: Promise<{ 
       toast.error(err instanceof Error ? err.message : "Có lỗi xảy ra");
     } finally {
       setSavingEval(false);
+    }
+  }
+
+  // ── Monthly Evaluation ────────────────────────────────────────
+  function openMonthlyEval() {
+    const sessionsDoneCount = sessions.filter(x => x.status === "DONE").length;
+    const cyclesToComplete = Math.floor(sessionsDoneCount / 8);
+    let targetCycle = "";
+    for (let i = 1; i <= cyclesToComplete; i++) {
+      const cycleName = `Chu kỳ ${i} (Buổi ${i * 8 - 7}-${i * 8})`;
+      if (!completedMonthlyMonths.has(cycleName)) {
+        targetCycle = cycleName;
+        break;
+      }
+    }
+    if (!targetCycle && cyclesToComplete > 0) {
+      targetCycle = `Chu kỳ ${cyclesToComplete} (Buổi ${cyclesToComplete * 8 - 7}-${cyclesToComplete * 8})`;
+    }
+    if (!targetCycle) {
+      toast.error("Lớp chưa học đủ 8 buổi để thực hiện đánh giá định kỳ.");
+      return;
+    }
+
+    setMonthlyEvalMonth(targetCycle);
+    const defaultMonthlyEvals = enrolled.map(st => {
+      const existing = monthlyEvals.find(x => x.student_id === st.id);
+      return existing ? { ...existing, student_name: st.full_name } : {
+        student_id: st.id,
+        student_name: st.full_name,
+        performance: "good",
+        attendance_rate: "",
+        homework_score: "",
+        midterm_score: "",
+        final_score: "",
+        teacher_comment: "",
+      };
+    });
+    setMonthlyEvals(defaultMonthlyEvals);
+    setMonthlyEvalOpen(true);
+    handleMonthlyEvalCycleChange(targetCycle);
+  }
+
+  async function handleMonthlyEvalCycleChange(cycle: string) {
+    setMonthlyEvalMonth(cycle);
+    if (!cycle) return;
+    setMonthlyEvalLoading(true);
+    try {
+      const supabase = createBrowserClient();
+      const { data } = await supabase.from("monthly_student_evaluations")
+        .select("*")
+        .eq("class_id", classId)
+        .eq("evaluation_month", cycle);
+        
+      if (data && data.length > 0) {
+        setMonthlyEvals(prev => prev.map(st => {
+          const row = (data as any[]).find(r => r.student_id === st.student_id);
+          return row ? {
+            ...st,
+            performance: row.performance || "good",
+            attendance_rate: row.attendance_rate ?? "",
+            homework_score: row.homework_score ?? "",
+            midterm_score: row.midterm_score ?? "",
+            final_score: row.final_score ?? "",
+            teacher_comment: row.teacher_comment || "",
+          } : st;
+        }));
+      } else {
+         setMonthlyEvals(prev => prev.map(st => ({
+            ...st,
+            performance: "good",
+            attendance_rate: "",
+            homework_score: "",
+            midterm_score: "",
+            final_score: "",
+            teacher_comment: "",
+         })));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    setMonthlyEvalLoading(false);
+  }
+
+  async function handleSaveMonthlyEval() {
+    if (!monthlyEvalMonth) {
+      toast.error("Vui lòng chọn chu kỳ đánh giá");
+      return;
+    }
+    setMonthlyEvalSaving(true);
+    try {
+      const supabase = createBrowserClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      const upsertData = monthlyEvals.map(st => ({
+        class_id: classId,
+        student_id: st.student_id,
+        evaluation_month: monthlyEvalMonth,
+        performance: st.performance,
+        attendance_rate: st.attendance_rate === "" ? null : Number(st.attendance_rate),
+        homework_score: st.homework_score === "" ? null : Number(st.homework_score),
+        midterm_score: st.midterm_score === "" ? null : Number(st.midterm_score),
+        final_score: st.final_score === "" ? null : Number(st.final_score),
+        teacher_comment: st.teacher_comment,
+        evaluated_by_teacher_id: user?.id,
+      }));
+
+      const { error } = await supabase.from("monthly_student_evaluations").upsert(upsertData, {
+        onConflict: "class_id,student_id,evaluation_month"
+      });
+
+      if (error) throw error;
+      
+      toast.success("Đã lưu đánh giá tháng!");
+      setCompletedMonthlyMonths(prev => new Set([...prev, monthlyEvalMonth]));
+      setMonthlyEvalOpen(false);
+    } catch (e: any) {
+      toast.error(e.message || "Lỗi khi lưu đánh giá tháng");
+    } finally {
+      setMonthlyEvalSaving(false);
     }
   }
 
@@ -762,12 +934,14 @@ export default function TeacherCourseDetailPage({ params }: { params: Promise<{ 
     let late = 0;
     let absent_unresolved = 0;
     let makeup_completed = 0;
+    let total_records = 0;
     const absent_details: string[] = [];
-
     sessions.forEach((s) => {
+      if (s.status !== "DONE") return;
       const sRef = `${s.class_name}#${s.session_no}#${s.session_date}`;
       const att = attendanceBySessionRefAndStudent[`${sRef}::${st.full_name}`];
       if (!att) return;
+      total_records += 1;
       if (att.attendance_status === ATTENDANCE_STATUS.ON_TIME) {
         on_time += 1;
         return;
@@ -798,6 +972,7 @@ export default function TeacherCourseDetailPage({ params }: { params: Promise<{ 
       absent_unresolved,
       makeup_completed,
       learned_total: on_time + late + makeup_completed,
+      total_records,
       absent_details,
     };
   });
@@ -875,21 +1050,53 @@ export default function TeacherCourseDetailPage({ params }: { params: Promise<{ 
       </Card>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-gray-100 p-1 rounded-2xl mb-5 w-fit">
-        {([
-          { id: "sessions", label: "Lịch học & Điểm danh", icon: <ClipboardList className="w-4 h-4" /> },
-          { id: "students", label: "Học viên",             icon: <Users className="w-4 h-4" /> },
-        ] as const).map((t) => (
-          <button key={t.id} onClick={() => setTab(t.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${tab === t.id ? "bg-white shadow text-gray-900" : "text-gray-500 hover:text-gray-700"}`}>
-            {t.icon}{t.label}
-          </button>
-        ))}
+      <div className="flex flex-col sm:flex-row gap-3 bg-gray-100 p-1 rounded-2xl mb-5 w-fit">
+        <div className="flex gap-1">
+          {([
+            { id: "sessions", label: "Lịch học & Điểm danh", icon: <ClipboardList className="w-4 h-4" /> },
+            { id: "students", label: "Học viên",             icon: <Users className="w-4 h-4" /> },
+          ] as const).map((t) => (
+            <button key={t.id} onClick={() => setTab(t.id)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${tab === t.id ? "bg-white shadow text-gray-900" : "text-gray-500 hover:text-gray-700"}`}>
+              {t.icon}{t.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* ── Tab: Lịch học & Điểm danh ── */}
       {tab === "sessions" && (
-        <Card className="overflow-hidden">
+        <div className="space-y-4">
+          {(() => {
+            const sessionsDoneCount = sessions.filter(x => x.status === "DONE").length;
+            const cyclesToComplete = Math.floor(sessionsDoneCount / 8);
+            let missingCycleName = "";
+            for (let i = 1; i <= cyclesToComplete; i++) {
+              const cycleName = `Chu kỳ ${i} (Buổi ${i * 8 - 7}-${i * 8})`;
+              if (!completedMonthlyMonths.has(cycleName)) {
+                missingCycleName = cycleName;
+                break;
+              }
+            }
+            if (missingCycleName) {
+              return (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+                    <Star className="w-4 h-4 text-amber-600" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-amber-800">Yêu cầu Đánh giá Tháng</h4>
+                    <p className="text-sm text-amber-700 mt-1">
+                      Lớp đã hoàn thành ít nhất 8 buổi học. Bạn cần thực hiện <b>Đánh giá tháng: {missingCycleName}</b> để tiếp tục điểm danh các buổi tiếp theo. 
+                      Vui lòng chuyển sang tab <b>Học viên</b> và nhấn nút <b>Đánh Giá Tháng</b>.
+                    </p>
+                  </div>
+                </div>
+              );
+            }
+            return null;
+          })()}
+          <Card className="overflow-hidden">
           {sessions.length === 0 ? (
             <div className="text-center py-16 text-gray-400">
               <BookOpen className="w-10 h-10 mx-auto mb-3 opacity-40" />
@@ -925,6 +1132,28 @@ export default function TeacherCourseDetailPage({ params }: { params: Promise<{ 
                   const hasAnyMakeup = makeupStat.assigned > 0;
                   const isExpanded = !!expandedMakeupBySessionRef[sessionRef];
                   const visibleMakeupList = isExpanded ? makeupList : makeupList.slice(0, 1);
+                  
+                  // Ràng buộc đánh giá mỗi 8 buổi (Đánh giá tháng)
+                  const sessionsDone = sessions.filter(x => x.status === "DONE").length;
+                  const cyclesToComplete = Math.floor(sessionsDone / 8);
+                  let isLockedByMonthlyEval = false;
+                  let missingCycleName = "";
+                  for (let i = 1; i <= cyclesToComplete; i++) {
+                    const cycleName = `Chu kỳ ${i} (Buổi ${i * 8 - 7}-${i * 8})`;
+                    if (!completedMonthlyMonths.has(cycleName)) {
+                      isLockedByMonthlyEval = true;
+                      missingCycleName = cycleName;
+                      break;
+                    }
+                  }
+
+                  let isLockedByEval = false;
+                  let lockedByEvalMsg = "";
+                  if (isLockedByMonthlyEval) {
+                    isLockedByEval = true;
+                    lockedByEvalMsg = `Vui lòng hoàn thành Đánh giá tháng: ${missingCycleName} (tab Học viên) trước khi điểm danh tiếp.`;
+                  }
+
                   const rows = [
                       <tr key={s.id} className={`transition-colors ${isDone ? "bg-gray-50/50" : "hover:bg-gray-50"}`}>
                         <td className="px-4 py-3">
@@ -1050,8 +1279,15 @@ export default function TeacherCourseDetailPage({ params }: { params: Promise<{ 
                           <div className="flex items-center gap-1.5">
                             {!isDone && !isCancelled && (
                               <Button size="sm" variant="outline"
+                                className={isLockedByEval ? "opacity-50" : ""}
                                 icon={<ClipboardList className="w-3.5 h-3.5" />}
-                                onClick={() => openAttendance(s, false)}>
+                                onClick={() => {
+                                  if (isLockedByEval) {
+                                    toast.error(lockedByEvalMsg);
+                                    return;
+                                  }
+                                  openAttendance(s, false);
+                                }}>
                                 Điểm danh
                               </Button>
                             )}
@@ -1124,12 +1360,18 @@ export default function TeacherCourseDetailPage({ params }: { params: Promise<{ 
             </table>
           )}
         </Card>
+        </div>
       )}
 
       {/* ── Tab: Học viên ── */}
       {tab === "students" && (
         <Card className="p-5">
-          <h3 className="section-title mb-4">Danh sách học viên ({enrolled.length})</h3>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="section-title mb-0">Danh sách học viên ({enrolled.length})</h3>
+            <Button size="sm" icon={<Star className="w-4 h-4" />} onClick={openMonthlyEval}>
+              Đánh Giá Tháng
+            </Button>
+          </div>
           {enrolled.length === 0 ? (
             <div className="text-center py-10 text-gray-400">
               <Users className="w-10 h-10 mx-auto mb-3 opacity-40" />
@@ -1146,7 +1388,7 @@ export default function TeacherCourseDetailPage({ params }: { params: Promise<{ 
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900 truncate">{sum.student_name}</p>
                       <p className="text-xs text-gray-500 truncate">
-                        Tổng đã học: <b>{sum.learned_total}</b> / {sessions.length} buổi
+                        Tổng đã học: <b>{sum.learned_total}</b> / {sum.total_records} buổi (đã điểm danh)
                       </p>
                     </div>
                     <Badge variant="success">Đang học</Badge>
@@ -1156,7 +1398,7 @@ export default function TeacherCourseDetailPage({ params }: { params: Promise<{ 
                     <div className="rounded-lg bg-amber-50 border border-amber-100 px-2 py-1">Trễ: <b>{sum.late}</b></div>
                     <div className="rounded-lg bg-sky-50 border border-sky-100 px-2 py-1">Vắng đã bù xong: <b>{sum.makeup_completed}</b></div>
                     <div className="rounded-lg bg-rose-50 border border-rose-100 px-2 py-1">Vắng chưa bù: <b>{sum.absent_unresolved}</b></div>
-                    <div className="rounded-lg bg-gray-50 border border-gray-100 px-2 py-1">Tổng buổi: <b>{sessions.length}</b></div>
+                    <div className="rounded-lg bg-gray-50 border border-gray-100 px-2 py-1">Tổng bản ghi: <b>{sum.total_records}</b></div>
                   </div>
                   {sum.absent_details.length > 0 && (
                     <div className="mt-2 rounded-lg bg-rose-50 border border-rose-100 px-2 py-2">
@@ -1466,6 +1708,66 @@ export default function TeacherCourseDetailPage({ params }: { params: Promise<{ 
             </div>
           </div>
         )}
+      </Modal>
+
+      {/* ── Monthly Eval Modal ── */}
+      <Modal open={monthlyEvalOpen} onClose={() => setMonthlyEvalOpen(false)} title="Đánh Giá Tháng (Định Kỳ)">
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Chu kỳ đánh giá</label>
+            <div className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm bg-gray-50 text-gray-700 font-semibold">
+              {monthlyEvalMonth}
+            </div>
+          </div>
+
+          {monthlyEvalMonth && (
+            monthlyEvalLoading ? (
+              <div className="flex justify-center py-8">
+                <div className="w-8 h-8 border-4 border-brand-400 border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : (
+              <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
+                {monthlyEvals.map((st, i) => (
+                  <div key={st.student_id} className="p-4 bg-gray-50 rounded-xl space-y-3">
+                    <p className="font-semibold text-gray-800 text-sm">{i + 1}. {st.student_name}</p>
+                    <div className="grid grid-cols-1 gap-3">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Xếp loại</label>
+                        <select
+                          value={st.performance}
+                          onChange={(e) => setMonthlyEvals(prev => prev.map(x => x.student_id === st.student_id ? { ...x, performance: e.target.value } : x))}
+                          className="w-full rounded-lg border border-gray-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                        >
+                          <option value="excellent">Xuất sắc</option>
+                          <option value="good">Tốt</option>
+                          <option value="average">Trung bình</option>
+                          <option value="below_average">Yếu</option>
+                          <option value="poor">Kém</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Nhận xét của giảng viên</label>
+                      <textarea
+                        value={st.teacher_comment}
+                        onChange={(e) => setMonthlyEvals(prev => prev.map(x => x.student_id === st.student_id ? { ...x, teacher_comment: e.target.value } : x))}
+                        className="w-full rounded-lg border border-gray-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"
+                        rows={2}
+                        placeholder="Nhận xét sự tiến bộ, thái độ..."
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
+          )}
+          <div className="flex gap-3 pt-2">
+            <Button variant="secondary" className="flex-1" onClick={() => setMonthlyEvalOpen(false)}>Đóng</Button>
+            <Button className="flex-1" loading={monthlyEvalSaving} onClick={handleSaveMonthlyEval} disabled={!monthlyEvalMonth}>
+              Lưu đánh giá
+            </Button>
+          </div>
+        </div>
       </Modal>
     </PageWrapper>
   );

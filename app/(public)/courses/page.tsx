@@ -8,6 +8,7 @@ import { extractCertificate, extractCourseCode, extractDuration, extractObjectiv
 import { createBrowserClient } from "@/lib/supabase/client";
 import type { PublicCourse } from "@/types";
 import { Search } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
@@ -35,6 +36,29 @@ const GROUP_TITLE_BY_CATEGORY: Record<string, string> = {
   "[AG x HR] Series Training Intern": "[AG x HR] Internship Training Series",
   Khác: "Other Courses",
 };
+
+// Map each category to its local thumbnail image
+const CATEGORY_THUMBNAIL_MAP: Record<string, string> = {
+  Pronunciation: "/thumbnails/pronunciation.png",
+  Speaking: "/thumbnails/ielts_speaking.png",
+  "IELTS Mentorship": "/thumbnails/ielts_mentorship.png",
+  "IELTS Rocket": "/thumbnails/ielts_rocket.png",
+  "A+ Teacher": "/thumbnails/A+_teacher.png",
+  "[AG x HR] Series Training Intern": "/thumbnails/series_training_intern.png",
+  "Hạ Hạ Mentoring Coaching": "/thumbnails/tu_duy_lam_it_duoc_nhieu.png",
+};
+
+// Sub-slug-level thumbnail overrides (matched against title + slug)
+function getThumbnail(course: PublicCourse, category: string): string {
+  const titleLow = (course.title ?? "").toLowerCase();
+  // If the course has its own thumbnail URL from DB, prefer that
+  if (course.thumbnail_url) return course.thumbnail_url;
+  // Special per-title overrides within Hạ Hạ coaching
+  if (titleLow.includes("yearly reflection")) return "/thumbnails/yearly_reflection.png";
+  if (titleLow.includes("bí kíp") || titleLow.includes("bi kip") || titleLow.includes("học sinh lười"))
+    return "/thumbnails/bi_kip_hoc_gioi_danh_cho_hs_luoi.png";
+  return CATEGORY_THUMBNAIL_MAP[category] ?? "";
+}
 
 // Legacy data: some courses in IELTS Mentorship have "Chứng chỉ" shown as IELTS,
 // while others should be blank even though their description mentions "IELTS Overall".
@@ -170,7 +194,7 @@ export default function PublicCoursesPage() {
           </Card>
         ) : (
           <div className="space-y-10">
-            {COURSE_CATEGORIES.map((category) => {
+            {COURSE_CATEGORIES.map((category, categoryIndex) => {
               const list = grouped.get(category) ?? [];
               if (!list.length) return null;
               return (
@@ -179,7 +203,7 @@ export default function PublicCoursesPage() {
                     <h2 className="text-xl font-bold text-gray-900">{GROUP_TITLE_BY_CATEGORY[category] ?? category}</h2>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-                    {list.map((course) => {
+                    {list.map((course, courseIndex) => {
                       const code = extractCourseCode(
                         `${course.title} ${course.short_description ?? ""} ${course.description ?? ""}`
                       );
@@ -198,43 +222,51 @@ export default function PublicCoursesPage() {
                             : ""
                           : extractCertificate(`${course.short_description ?? ""} ${course.description ?? ""}`) ?? "";
 
+                      const thumbnail = getThumbnail(course, category);
                       return (
                         <Link key={course.id} href={`/courses/${course.slug}`} className="block">
-                          <Card hover className="p-5 flex flex-col h-full border-brand-100/50">
-                            <h3 className="text-sm sm:text-base font-semibold text-gray-900 line-clamp-2 leading-snug">
-                              {course.title}
-                            </h3>
+                          <Card hover className="flex flex-col h-full border-brand-100/50 overflow-hidden p-0">
+                            {/* Thumbnail */}
+                            <div className="relative w-full h-44 bg-gradient-to-br from-brand-100 to-indigo-100 shrink-0 overflow-hidden">
+                              {thumbnail ? (
+                                <Image
+                                  src={thumbnail}
+                                  alt={course.title}
+                                  fill
+                                  className="object-cover transition-transform duration-300 group-hover:scale-105"
+                                  sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                                  priority={categoryIndex === 0 && courseIndex < 3}
+                                />
+                              ) : (
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                  <span className="text-4xl">📚</span>
+                                </div>
+                              )}
+                              {/* Price badge */}
+                              <span className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm text-brand-700 font-bold text-xs px-2.5 py-1 rounded-full shadow">
+                                {course.price > 0
+                                  ? `${Math.round(course.price / 1_000_000).toLocaleString("vi-VN")}M VND`
+                                  : "Miễn phí"}
+                              </span>
+                            </div>
 
-                            <div className="mt-4 space-y-2 text-sm text-gray-700">
-                              <div className="flex gap-2">
-                                <span className="shrink-0 font-semibold text-gray-900">Đối tượng:</span>
-                                <span className="min-w-0 break-words">{objective}</span>
-                              </div>
-                              <div className="flex gap-2">
-                                <span className="shrink-0 font-semibold text-gray-900">Thời lượng:</span>
-                                <span className="min-w-0 break-words">
-                                  {course.duration_text?.trim() ||
-                                    extractDuration(`${course.title ?? ""} ${course.short_description ?? ""} ${course.description ?? ""}`) ||
-                                    ""}
-                                </span>
-                              </div>
-                              <div className="flex gap-2">
-                                <span className="shrink-0 font-semibold text-gray-900">Chứng chỉ:</span>
-                                <span className="min-w-0 break-words">
-                                  {certificate}
-                                </span>
-                              </div>
-                              <div className="flex gap-2">
-                                <span className="shrink-0 font-semibold text-gray-900">Giá:</span>
-                                <span className="min-w-0 break-words font-bold text-brand-700">
-                                  {course.price > 0
-                                    ? `${Math.round(course.price).toLocaleString("vi-VN")} ${course.currency}`
-                                    : "Miễn phí"}
-                                </span>
+                            {/* Content */}
+                            <div className="p-5 flex flex-col flex-1">
+                              <h3 className="text-sm sm:text-base font-semibold text-gray-900 line-clamp-2 leading-snug">
+                                {course.title}
+                              </h3>
+
+                              <div className="mt-3 space-y-1.5 text-sm text-gray-700">
+                                {certificate ? (
+                                  <div className="flex gap-2">
+                                    <span className="shrink-0 font-semibold text-gray-900">Chứng chỉ:</span>
+                                    <span className="min-w-0 break-words">{certificate}</span>
+                                  </div>
+                                ) : null}
                               </div>
 
                               {code ? (
-                                <div className="pt-1 text-xs font-mono text-gray-500">{code}</div>
+                                <div className="mt-auto pt-3 text-xs font-mono text-gray-400">{code}</div>
                               ) : null}
                             </div>
                           </Card>

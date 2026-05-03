@@ -1,6 +1,20 @@
 export type DayColumn = "T2" | "T3" | "T4" | "T5" | "T6" | "T7" | "CN";
 export const DAY_COLUMNS: DayColumn[] = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
 
+const VIETNAM_HOLIDAYS_DDMM = [
+  "01/01", // Tết Dương lịch
+  "30/04", // Giải phóng miền Nam
+  "01/05", // Quốc tế Lao động
+  "02/09", // Quốc khánh
+];
+
+export function isHoliday(date: Date): boolean {
+  const d = String(date.getDate()).padStart(2, "0");
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const dm = `${d}/${m}`;
+  return VIETNAM_HOLIDAYS_DDMM.includes(dm);
+}
+
 /** Parse Vietnamese weekday strings in lich_hoc */
 const VIET_DAYS: Record<string, DayColumn> = {
   "thứ 2": "T2", "thứ hai": "T2", "t2": "T2",
@@ -124,7 +138,7 @@ export function generateSessionDates(
   let iterations = 0;
 
   while (dates.length < totalSessions && iterations < maxIterations) {
-    if (targetDays.includes(current.getDay())) {
+    if (targetDays.includes(current.getDay()) && !isHoliday(current)) {
       dates.push(new Date(current));
     }
     current.setDate(current.getDate() + 1);

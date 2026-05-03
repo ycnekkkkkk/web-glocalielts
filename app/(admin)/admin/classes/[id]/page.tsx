@@ -30,6 +30,8 @@ interface EnrolledStudent {
   full_name: string;
   email: string | null;
   phone: string | null;
+  level_in?: string | null;
+  level_out?: string | null;
 }
 
 interface AvailableStudent {
@@ -68,6 +70,9 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
   const [classSchedule, setClassSchedule] = useState<string | null>(null);
   const [sessionsDone, setSessionsDone] = useState(0);
   const [totalSessions, setTotalSessions] = useState(0);
+  const [teacherSalaryPerHour, setTeacherSalaryPerHour] = useState<number | null>(null);
+  const [scheduleTime, setScheduleTime] = useState<string | null>(null);
+  const [scheduleEndTime, setScheduleEndTime] = useState<string | null>(null);
 
   // Reschedule modal
   interface ConflictRow { class_name: string; session_no: number; session_time: string; }
@@ -126,6 +131,12 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
   const [creatingManager, setCreatingManager] = useState(false);
   const [showCreateManagerForm, setShowCreateManagerForm] = useState(false);
 
+  // Financial & Level Modal
+  const [financialModal, setFinancialModal] = useState<EnrolledStudent | null>(null);
+  const [financialData, setFinancialData] = useState<{ level_in: string; level_out: string; invoiceId: number | null; amount: number; paid_total: number; remaining: number }>({ level_in: '', level_out: '', invoiceId: null, amount: 0, paid_total: 0, remaining: 0 });
+  const [financialLoading, setFinancialLoading] = useState(false);
+  const [financialSaving, setFinancialSaving] = useState(false);
+
   useEffect(() => {
     async function load() {
       const supabase = createBrowserClient();
@@ -165,13 +176,30 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
         const dupCount = (sessRes.data?.length || 0) - uniqueSessions.length;
         console.warn(`[ClassDetail] Removed ${dupCount} duplicate sessions`);
       }
+      uniqueSessions.sort((a, b) => {
+        if (!a.session_date && !b.session_date) return 0;
+        if (!a.session_date) return 1;
+        if (!b.session_date) return -1;
+        
+        const parseDateStr = (dateStr: string) => {
+          const parts = dateStr.split("/");
+          if (parts.length !== 3) return new Date(0);
+          return new Date(parseInt(parts[2], 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
+        };
+        return parseDateStr(a.session_date).getTime() - parseDateStr(b.session_date).getTime();
+      });
       
+      // Update session_no sequentially based on date order to avoid skipping
+      uniqueSessions.forEach((s, i) => {
+        s.session_no = i + 1;
+      });
+
       setSessions(uniqueSessions);
 
       // Step 2: Load class info từ bảng normalized "classes" (tách join để tránh PostgREST fail)
       const normRes = await supabase
         .from("classes")
-        .select("id, name, teacher_id, schedule, sessions_done, total_sessions")
+        .select("id, name, teacher_id, schedule, sessions_done, total_sessions, teacher_salary_per_hour, schedule_time, schedule_end_time")
         .eq("name", className)
         .maybeSingle();
       console.log("[ClassDetail] class from normalized:", normRes.data ? "found" : "null", normRes.error?.message);
@@ -186,6 +214,9 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
         setClassSchedule(nd.schedule);
         setSessionsDone(nd.sessions_done ?? 0);
         setTotalSessions(nd.total_sessions ?? 0);
+        setTeacherSalaryPerHour(nd.teacher_salary_per_hour ?? null);
+        setScheduleTime(nd.schedule_time ?? null);
+        setScheduleEndTime(nd.schedule_end_time ?? null);
         if (nd.teacher_id) {
           const { data: prof } = await supabase.from("profiles").select("full_name").eq("id", nd.teacher_id).maybeSingle();
           setTeacherName(prof?.full_name ?? null);
@@ -198,6 +229,9 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
         setClassId(null);
         setTeacherId(null);
         setTeacherName(null);
+        setTeacherSalaryPerHour(null);
+        setScheduleTime(null);
+        setScheduleEndTime(null);
       }
 
       // Step 3: Load enrolled students
@@ -206,12 +240,12 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
       if (normRes.data) {
         const enrollRes = await supabase
           .from("enrollments")
-          .select("id, student_id, students(id, student_code, full_name, email, phone)")
+          .select("id, student_id, level_in, level_out, students(id, student_code, full_name, email, phone)")
           .eq("class_id", normRes.data.id)
           .eq("status", "active");
         if (enrollRes.data && enrollRes.data.length > 0) {
           enrolledData = (enrollRes.data as unknown as {
-            id: string; student_id: string;
+            id: string; student_id: string; level_in?: string; level_out?: string;
             students: { id: string; student_code?: string | null; full_name: string; email: string | null; phone: string | null } | null;
           }[]).map((e) => ({
             enrollment_id: e.id,
@@ -220,6 +254,8 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
             full_name: e.students?.full_name ?? "",
             email: e.students?.email ?? null,
             phone: e.students?.phone ?? null,
+            level_in: e.level_in ?? null,
+            level_out: e.level_out ?? null,
           }));
         }
       } else {
@@ -228,12 +264,12 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
         if (sessionWithClassId?.class_id) {
           const enrollRes = await supabase
             .from("enrollments")
-            .select("id, student_id, students(id, student_code, full_name, email, phone)")
+            .select("id, student_id, level_in, level_out, students(id, student_code, full_name, email, phone)")
             .eq("class_id", sessionWithClassId.class_id)
             .eq("status", "active");
           if (enrollRes.data && enrollRes.data.length > 0) {
             enrolledData = (enrollRes.data as unknown as {
-              id: string; student_id: string;
+              id: string; student_id: string; level_in?: string; level_out?: string;
               students: { id: string; student_code?: string | null; full_name: string; email: string | null; phone: string | null } | null;
             }[]).map((e) => ({
               enrollment_id: e.id,
@@ -242,6 +278,8 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
               full_name: e.students?.full_name ?? "",
               email: e.students?.email ?? null,
               phone: e.students?.phone ?? null,
+              level_in: e.level_in ?? null,
+              level_out: e.level_out ?? null,
             }));
           }
         }
@@ -420,6 +458,96 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
       toast.error(err instanceof Error ? err.message : "Có lỗi xảy ra");
     } finally {
       setSavingReschedule(false);
+    }
+  }
+
+  // ── Functions cho Tab Tài Chính & Trình Độ ──────────────────────
+  async function openFinancialModal(student: EnrolledStudent) {
+    setFinancialModal(student);
+    setFinancialLoading(true);
+    setFinancialData({ level_in: student.level_in || '', level_out: student.level_out || '', invoiceId: null, amount: 0, paid_total: 0, remaining: 0 });
+    try {
+      const supabase = createBrowserClient();
+      const { data, error } = await supabase
+        .from("v_invoice_status")
+        .select("*")
+        .eq("enrollment_id", student.enrollment_id)
+        .maybeSingle();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error("Error fetching invoice:", error);
+      } else if (data) {
+        setFinancialData({
+          level_in: student.level_in || '',
+          level_out: student.level_out || '',
+          invoiceId: data.id,
+          amount: data.amount || 0,
+          paid_total: data.paid_total || 0,
+          remaining: data.remaining || 0
+        });
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setFinancialLoading(false);
+    }
+  }
+
+  async function saveFinancialData(e: React.FormEvent) {
+    e.preventDefault();
+    if (!financialModal) return;
+    setFinancialSaving(true);
+    try {
+      const supabase = createBrowserClient();
+      
+      // Update levels in enrollments table
+      const { error: enrErr } = await supabase
+        .from("enrollments")
+        .update({
+          level_in: financialData.level_in || null,
+          level_out: financialData.level_out || null
+        })
+        .eq("id", financialModal.enrollment_id);
+        
+      if (enrErr) throw enrErr;
+
+      // If there's an invoice, update its amount (total tuition fee)
+      if (financialData.invoiceId) {
+        const { error: invErr } = await supabase
+          .from("invoices")
+          .update({ amount: financialData.amount })
+          .eq("id", financialData.invoiceId);
+        if (invErr) throw invErr;
+      } else if (financialData.amount > 0) {
+        // Create an invoice if it doesn't exist but an amount is provided
+        const dueDate = new Date();
+        dueDate.setDate(dueDate.getDate() + 7);
+        const { error: newInvErr } = await supabase
+          .from("invoices")
+          .insert({
+            enrollment_id: financialModal.enrollment_id,
+            student_name: financialModal.full_name,
+            class_name: className,
+            amount: financialData.amount,
+            due_date: dueDate.toISOString().split("T")[0]
+          });
+        if (newInvErr) throw newInvErr;
+      }
+
+      toast.success("Cập nhật thành công!");
+      
+      // Update local state for EnrolledStudent
+      setEnrolledStudents(prev => prev.map(s => 
+        s.enrollment_id === financialModal.enrollment_id 
+          ? { ...s, level_in: financialData.level_in || null, level_out: financialData.level_out || null } 
+          : s
+      ));
+      
+      setFinancialModal(null);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Có lỗi xảy ra");
+    } finally {
+      setFinancialSaving(false);
     }
   }
 
@@ -831,6 +959,18 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
   const makeupDone  = makeupRows.filter(r => r.has_makeup).length;
   const makeupTodo  = makeupRows.filter(r => !r.has_makeup).length;
 
+  // Tính lương giáo viên
+  let hoursPerSession = 1.5; // mặc định 1.5 giờ
+  if (scheduleTime && scheduleEndTime) {
+    const [startH, startM] = scheduleTime.split(":").map(Number);
+    const [endH, endM] = scheduleEndTime.split(":").map(Number);
+    if (!isNaN(startH) && !isNaN(endH)) {
+      hoursPerSession = (endH + (endM || 0) / 60) - (startH + (startM || 0) / 60);
+      if (hoursPerSession <= 0) hoursPerSession = 1.5;
+    }
+  }
+  const totalSalary = (teacherSalaryPerHour || 0) * sessionsDone * hoursPerSession;
+
   return (
     <PageWrapper>
       <div className="mb-4">
@@ -863,6 +1003,17 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
         <Card className="p-4 flex items-center gap-3">
           <div className="w-9 h-9 bg-red-100 rounded-xl flex items-center justify-center"><WrapText className="w-4 h-4 text-red-500" /></div>
           <div><p className="text-xl font-bold text-gray-900">{makeupTodo > 0 ? makeupTodo : "–"}</p><p className="text-xs text-gray-500">Chưa xếp bù</p></div>
+        </Card>
+        <Card className="p-4 flex items-center gap-3 border-emerald-100 bg-gradient-to-br from-emerald-50 to-teal-50">
+          <div className="w-9 h-9 bg-emerald-100/50 rounded-xl flex items-center justify-center text-emerald-600 shrink-0">
+            <BookOpen className="w-4 h-4" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-bold text-emerald-900 truncate" title={`${new Intl.NumberFormat("vi-VN").format(totalSalary)} đ`}>
+              {teacherSalaryPerHour ? `${new Intl.NumberFormat("vi-VN").format(totalSalary)} đ` : "Chưa cấu hình"}
+            </p>
+            <p className="text-[10px] text-emerald-700 mt-0.5">Lương dự kiến</p>
+          </div>
         </Card>
       </div>
 
@@ -1076,16 +1227,25 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                         </p>
                         <p className="text-xs text-gray-500 truncate">{s.email || s.phone || "–"}</p>
                       </div>
-                      <button
-                        onClick={() => removeStudent(s.enrollment_id)}
-                        disabled={removingId === s.enrollment_id}
-                        className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600 transition-all disabled:opacity-50"
-                        title="Xóa khỏi lớp"
-                      >
-                        {removingId === s.enrollment_id
-                          ? <div className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
-                          : <Trash2 className="w-4 h-4" />}
-                      </button>
+                      <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          variant="subtle" size="sm" className="text-brand-600 bg-brand-50 hover:bg-brand-100 px-2.5 py-1 text-xs font-semibold rounded-lg"
+                          onClick={() => openFinancialModal(s)}
+                          title="Quản lý tài chính & trình độ"
+                        >
+                          Tài chính & Trình độ
+                        </Button>
+                        <button
+                          onClick={() => removeStudent(s.enrollment_id)}
+                          disabled={removingId === s.enrollment_id}
+                          className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+                          title="Xóa khỏi lớp"
+                        >
+                          {removingId === s.enrollment_id
+                            ? <div className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
+                            : <Trash2 className="w-4 h-4" />}
+                        </button>
+                      </div>
                     </div>
                   ))}
                 {enrolledStudents.length === 0 && (
@@ -1595,6 +1755,95 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
           </div>
         )}
       </Modal>
+      {/* Financial & Level Modal */}
+      <Modal open={!!financialModal} onClose={() => setFinancialModal(null)} title={`Tài chính & Trình độ - ${financialModal?.full_name}`}>
+        {financialLoading ? (
+          <div className="flex justify-center py-10"><div className="w-8 h-8 border-4 border-brand-400 border-t-transparent rounded-full animate-spin" /></div>
+        ) : financialModal && (
+          <form onSubmit={saveFinancialData} className="space-y-5">
+            {/* Trình độ */}
+            <div>
+              <h4 className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-brand-500" /> Trình độ học viên
+              </h4>
+              <div className="grid grid-cols-2 gap-3 bg-gray-50/70 p-4 rounded-xl border border-gray-100">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Đầu vào</label>
+                  <input
+                    type="text"
+                    value={financialData.level_in}
+                    onChange={e => setFinancialData(p => ({ ...p, level_in: e.target.value }))}
+                    placeholder="VD: 5.0"
+                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Mục tiêu (Đầu ra)</label>
+                  <input
+                    type="text"
+                    value={financialData.level_out}
+                    onChange={e => setFinancialData(p => ({ ...p, level_out: e.target.value }))}
+                    placeholder="VD: 6.5"
+                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Tài chính */}
+            <div>
+              <h4 className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
+                <CheckSquare className="w-4 h-4 text-emerald-500" /> Thông tin học phí
+              </h4>
+              <div className="bg-gray-50/70 p-4 rounded-xl border border-gray-100 space-y-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Tổng học phí (VNĐ)</label>
+                  <input
+                    type="number"
+                    value={financialData.amount || ""}
+                    onChange={e => setFinancialData(p => ({ ...p, amount: Number(e.target.value) }))}
+                    placeholder="VD: 15000000"
+                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 font-semibold text-emerald-700"
+                  />
+                  {financialData.amount > 0 && (
+                    <p className="text-[10px] text-gray-500 mt-1">
+                      {new Intl.NumberFormat("vi-VN").format(financialData.amount)} đ
+                    </p>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-200">
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 mb-1">Đã đóng</p>
+                    <p className="text-sm font-bold text-gray-900">
+                      {new Intl.NumberFormat("vi-VN").format(financialData.paid_total || 0)} đ
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 mb-1">Còn lại</p>
+                    <p className="text-sm font-bold text-red-600">
+                      {new Intl.NumberFormat("vi-VN").format(financialData.remaining || (financialData.amount - financialData.paid_total))} đ
+                    </p>
+                  </div>
+                </div>
+                {financialData.invoiceId && (
+                  <div className="mt-2 text-right">
+                    <Link href="/admin/financials" className="text-xs text-brand-600 hover:underline">
+                      Xem chi tiết đóng tiền &rarr;
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <Button type="button" variant="secondary" className="flex-1" onClick={() => setFinancialModal(null)}>Đóng</Button>
+              <Button type="submit" loading={financialSaving} className="flex-1">Lưu thay đổi</Button>
+            </div>
+          </form>
+        )}
+      </Modal>
+
     </PageWrapper>
   );
 }

@@ -2,7 +2,7 @@
 import Header from "@/components/layouts/Header";
 import Sidebar from "@/components/layouts/Sidebar";
 import Avatar from "@/components/ui/Avatar";
-import { useAuth } from "@/hooks/useAuth";
+import { useRoleGuard } from "@/hooks/useRoleGuard";
 import { BarChart3, Building2, GraduationCap, LayoutDashboard, Users, CreditCard } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -30,19 +30,9 @@ const navGroups: NavGroup[] = [
 ];
 
 export default function OrganizationLayout({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
-  const router = useRouter();
-  const [mounted, setMounted] = useState(false);
+  const { user, loading } = useRoleGuard("organization", "/organization");
 
-  useEffect(() => { setMounted(true); }, []);
-
-  useEffect(() => {
-    if (!mounted || loading) return;
-    if (!user) router.replace("/organization");
-    else if (user.role !== "organization") router.replace("/");
-  }, [user, loading, mounted, router]);
-
-  if (!mounted || loading) return <div className="flex items-center justify-center min-h-screen bg-gray-50">
+  if (loading) return <div className="flex items-center justify-center min-h-screen bg-gray-50">
     <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin" />
   </div>;
 

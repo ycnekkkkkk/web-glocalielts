@@ -53,6 +53,7 @@ export default function InstructorCoursesPage() {
 
       // Enrollment counts + real done-session counts
       const classIds = classData.map((c: { id: string }) => c.id);
+      const classNames = classData.map((c: { name: string }) => c.name).filter(Boolean);
       const [{ data: enrollData }, { data: sessionData }] = await Promise.all([
         supabase
           .from("enrollments")
@@ -61,8 +62,8 @@ export default function InstructorCoursesPage() {
           .eq("status", "active"),
         supabase
           .from("sessions")
-          .select("class_id,status")
-          .in("class_id", classIds),
+          .select("class_id, class_name, status")
+          .in("class_name", classNames),
       ]);
 
       const countMap: Record<string, number> = {};
@@ -71,10 +72,12 @@ export default function InstructorCoursesPage() {
       });
 
       const doneMap: Record<string, number> = {};
-      ((sessionData || []) as { class_id: string | null; status: string | null }[]).forEach((s) => {
-        if (!s.class_id) return;
+      ((sessionData || []) as { class_id: string | null; class_name: string | null; status: string | null }[]).forEach((s) => {
         if (s.status !== "DONE") return;
-        doneMap[s.class_id] = (doneMap[s.class_id] || 0) + 1;
+        // Find matching class ID by class_name
+        const matchedClass = classData.find((c: { name: string }) => c.name === s.class_name);
+        if (!matchedClass) return;
+        doneMap[matchedClass.id] = (doneMap[matchedClass.id] || 0) + 1;
       });
 
       setClasses(

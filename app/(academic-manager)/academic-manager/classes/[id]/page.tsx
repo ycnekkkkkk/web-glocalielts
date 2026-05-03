@@ -507,11 +507,19 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
       studentIdByName.set((e.students.full_name || "").trim().toLowerCase(), e.students.id);
     }
 
+    const doneSessionRefs = new Set<string>();
+    (classSessions || []).forEach((s: any) => {
+      if (s.status === "DONE" && s.class_name && s.session_no != null && s.session_date) {
+        doneSessionRefs.add(`${s.class_name}#${s.session_no}#${s.session_date}`);
+        doneSessionRefs.add(`${s.class_name}__${s.session_no}__${s.session_date}`);
+      }
+    });
+
     const attendanceRows = (attendanceData || []) as AttendanceRow[];
     const uniqueAttendanceKeys = new Set<string>();
     const taughtSessionSet = new Set<string>();
     for (const row of attendanceRows) {
-      if (!row.session_ref) continue;
+      if (!row.session_ref || !doneSessionRefs.has(row.session_ref)) continue;
       taughtSessionSet.add(row.session_ref);
 
       const resolvedStudentId =
@@ -530,6 +538,7 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
       if (status === "on_time") target.on_time += 1;
       if (status === "late") target.late += 1;
       if (status === "absent") target.absent += 1;
+      target.taught_sessions += 1;
       target.present_total = target.on_time + target.late;
     }
 
@@ -611,7 +620,6 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
         const presentWithMakeup = r.on_time + r.late + convertedAbsences;
         return {
           ...r,
-          taught_sessions: taughtSessions,
           present_total: presentWithMakeup,
         };
       })
@@ -1007,34 +1015,15 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                  <Card className="p-3">
-                    <p className="text-xs text-gray-500">Đúng giờ</p>
-                    <p className="text-lg font-bold text-emerald-600">{attendanceSummary.on_time}</p>
-                  </Card>
-                  <Card className="p-3">
-                    <p className="text-xs text-gray-500">Muộn</p>
-                    <p className="text-lg font-bold text-amber-600">{attendanceSummary.late}</p>
-                  </Card>
-                  <Card className="p-3">
-                    <p className="text-xs text-gray-500">Vắng</p>
-                    <p className="text-lg font-bold text-red-600">{attendanceSummary.absent}</p>
-                  </Card>
-                  <Card className="p-3">
-                    <p className="text-xs text-gray-500">Tổng lượt đi học</p>
-                    <p className="text-lg font-bold text-indigo-600">{attendanceSummary.present}</p>
-                  </Card>
-                </div>
-
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="text-xs text-gray-500 border-b border-gray-100">
                         <th className="text-left py-2 pr-3 font-medium">Mã HV</th>
                         <th className="text-left py-2 pr-3 font-medium">Học viên</th>
-                        <th className="text-left py-2 pr-3 font-medium">Đúng giờ</th>
-                        <th className="text-left py-2 pr-3 font-medium">Muộn</th>
-                        <th className="text-left py-2 pr-3 font-medium">Vắng</th>
+                        <th className="text-left py-2 pr-3 font-medium">Tổng đúng giờ</th>
+                        <th className="text-left py-2 pr-3 font-medium">Tổng muộn</th>
+                        <th className="text-left py-2 pr-3 font-medium">Tổng vắng</th>
                         <th className="text-left py-2 pr-3 font-medium">Đã học bù</th>
                         <th className="text-left py-2 pr-3 font-medium">Đi học</th>
                         <th className="text-left py-2 pr-3 font-medium">Tỷ lệ</th>
@@ -1050,10 +1039,10 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
                           <tr key={row.student_id || row.student_name} className="hover:bg-gray-50">
                             <td className="py-2.5 pr-3 text-gray-600">{row.student_code || "–"}</td>
                             <td className="py-2.5 pr-3 font-medium text-gray-800">{row.student_name}</td>
-                            <td className="py-2.5 pr-3 text-emerald-600 font-semibold">{row.on_time}</td>
-                            <td className="py-2.5 pr-3 text-amber-600 font-semibold">{row.late}</td>
-                            <td className="py-2.5 pr-3 text-red-600 font-semibold">{row.absent}</td>
-                            <td className="py-2.5 pr-3 text-emerald-700 font-semibold">{row.makeup_completed}</td>
+                            <td className="py-2.5 pr-3 text-emerald-600 font-semibold">{row.on_time}/{row.taught_sessions}</td>
+                            <td className="py-2.5 pr-3 text-amber-600 font-semibold">{row.late}/{row.taught_sessions}</td>
+                            <td className="py-2.5 pr-3 text-red-600 font-semibold">{row.absent}/{row.taught_sessions}</td>
+                            <td className="py-2.5 pr-3 text-emerald-700 font-semibold">{row.makeup_completed}/{row.taught_sessions}</td>
                             <td className="py-2.5 pr-3 text-indigo-700 font-semibold">{row.present_total}</td>
                             <td className="py-2.5 pr-3">
                               <Badge variant={rate >= 80 ? "success" : rate >= 60 ? "warning" : "danger"}>

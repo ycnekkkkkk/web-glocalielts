@@ -1,7 +1,8 @@
 "use client";
 import Avatar from "@/components/ui/Avatar";
-import { Bell, Search, LogOut } from "lucide-react";
+import { Search, LogOut } from "lucide-react";
 import { useState } from "react";
+import NotificationBell from "./NotificationBell";
 import { createBrowserClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import type { AuthUser } from "@/types";
@@ -36,10 +37,7 @@ export default function Header({ user, title }: HeaderProps) {
         </div>
 
         {/* Notifications */}
-        <button className="relative w-9 h-9 flex items-center justify-center rounded-xl text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors">
-          <Bell className="w-4.5 h-4.5" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
-        </button>
+        {user && <NotificationBell user={user} />}
 
         {/* User Menu */}
         {user && (

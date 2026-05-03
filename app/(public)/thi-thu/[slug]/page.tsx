@@ -209,6 +209,79 @@ function Blocks({ blocks }: { blocks: MockSkillBlock[] }) {
   );
 }
 
+const TF_OPTIONS = ["True", "False", "Not Given"];
+
+function renderQuestionInput(
+  q: MockSkillQuestion,
+  value: Record<string, string | number>,
+  onChange: (next: Record<string, string | number>) => void
+) {
+  if (q.type === "text") {
+    return (
+      <input
+        className="mt-3 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+        value={typeof value[q.id] === "string" ? String(value[q.id]) : ""}
+        onChange={(e) => onChange({ ...value, [q.id]: e.target.value })}
+        placeholder="Nhập đáp án"
+      />
+    );
+  }
+  if (q.type === "true_false_not_given") {
+    return (
+      <div className="mt-3 flex flex-wrap gap-2">
+        {TF_OPTIONS.map((opt, idx) => (
+          <label key={opt} className="flex items-center gap-2 cursor-pointer rounded-lg border border-gray-200 px-3 py-2 hover:bg-gray-50">
+            <input
+              type="radio"
+              name={q.id}
+              checked={value[q.id] === idx}
+              onChange={() => onChange({ ...value, [q.id]: idx })}
+            />
+            <span className="text-sm text-gray-800">{opt}</span>
+          </label>
+        ))}
+      </div>
+    );
+  }
+  if (q.type === "matching") {
+    const keys = q.options || [];
+    return (
+      <select
+        className="mt-3 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm bg-white"
+        value={typeof value[q.id] === "number" ? String(value[q.id]) : (value[q.id] as string) || ""}
+        onChange={(e) => {
+          const idx = parseInt(e.target.value);
+          onChange({ ...value, [q.id]: Number.isNaN(idx) ? e.target.value : idx });
+        }}
+      >
+        <option value="">— Chọn —</option>
+        {keys.map((k, idx) => (
+          <option key={k} value={idx}>
+            {k}{q.options_map?.[k] ? ` – ${q.options_map[k]}` : ""}
+          </option>
+        ))}
+      </select>
+    );
+  }
+  // single_choice / multiple_choice (render as radio for simplicity)
+  return (
+    <div className="mt-3 space-y-2">
+      {(q.options || []).map((opt, idx) => (
+        <label key={idx} className="flex items-start gap-3 cursor-pointer rounded-lg px-2 py-2 hover:bg-gray-50">
+          <input
+            type="radio"
+            name={q.id}
+            className="mt-1"
+            checked={value[q.id] === idx}
+            onChange={() => onChange({ ...value, [q.id]: idx })}
+          />
+          <span className="text-sm text-gray-800">{opt}</span>
+        </label>
+      ))}
+    </div>
+  );
+}
+
 function McqSection({
   title,
   blocks,
@@ -219,8 +292,8 @@ function McqSection({
   title: string;
   blocks: MockSkillBlock[];
   questions: MockSkillQuestion[];
-  value: Record<string, number>;
-  onChange: (next: Record<string, number>) => void;
+  value: Record<string, string | number>;
+  onChange: (next: Record<string, string | number>) => void;
 }) {
   return (
     <div className="space-y-6">
@@ -230,23 +303,7 @@ function McqSection({
         {questions.map((q) => (
           <fieldset key={q.id} className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
             <legend className="px-1 text-sm font-semibold text-gray-900">{q.stem}</legend>
-            <div className="mt-3 space-y-2">
-              {(q.options || []).map((opt, idx) => (
-                <label
-                  key={idx}
-                  className="flex items-start gap-3 cursor-pointer rounded-lg px-2 py-2 hover:bg-gray-50"
-                >
-                  <input
-                    type="radio"
-                    name={q.id}
-                    className="mt-1"
-                    checked={value[q.id] === idx}
-                    onChange={() => onChange({ ...value, [q.id]: idx })}
-                  />
-                  <span className="text-sm text-gray-800">{opt}</span>
-                </label>
-              ))}
-            </div>
+            {renderQuestionInput(q, value, onChange)}
           </fieldset>
         ))}
       </div>
@@ -289,32 +346,7 @@ function ListeningSection({
               <legend className="px-1 text-sm font-semibold text-gray-900">
                 Question {getDisplayNo(q)}. {q.stem}
               </legend>
-              {q.type === "text" ? (
-                <input
-                  className="mt-3 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                  value={typeof value[q.id] === "string" ? String(value[q.id]) : ""}
-                  onChange={(e) => onChange({ ...value, [q.id]: e.target.value })}
-                  placeholder="Nhập đáp án"
-                />
-              ) : (
-                <div className="mt-3 space-y-2">
-                  {(q.options || []).map((opt, idx) => (
-                    <label
-                      key={idx}
-                      className="flex items-start gap-3 cursor-pointer rounded-lg px-2 py-2 hover:bg-gray-50"
-                    >
-                      <input
-                        type="radio"
-                        name={q.id}
-                        className="mt-1"
-                        checked={value[q.id] === idx}
-                        onChange={() => onChange({ ...value, [q.id]: idx })}
-                      />
-                      <span className="text-sm text-gray-800">{opt}</span>
-                    </label>
-                  ))}
-                </div>
-              )}
+              {renderQuestionInput(q, value, onChange)}
             </fieldset>
           ))}
         </div>
@@ -337,32 +369,7 @@ function ListeningSection({
                   <legend className="px-1 text-sm font-semibold text-gray-900">
                     Question {getDisplayNo(q)}. {q.stem}
                   </legend>
-                  {q.type === "text" ? (
-                    <input
-                      className="mt-3 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm bg-white"
-                      value={typeof value[q.id] === "string" ? String(value[q.id]) : ""}
-                      onChange={(e) => onChange({ ...value, [q.id]: e.target.value })}
-                      placeholder="Nhập đáp án"
-                    />
-                  ) : (
-                    <div className="mt-3 space-y-2">
-                      {(q.options || []).map((opt, idx) => (
-                        <label
-                          key={idx}
-                          className="flex items-start gap-3 cursor-pointer rounded-lg px-2 py-2 hover:bg-white"
-                        >
-                          <input
-                            type="radio"
-                            name={q.id}
-                            className="mt-1"
-                            checked={value[q.id] === idx}
-                            onChange={() => onChange({ ...value, [q.id]: idx })}
-                          />
-                          <span className="text-sm text-gray-800">{opt}</span>
-                        </label>
-                      ))}
-                    </div>
-                  )}
+                  {renderQuestionInput(q, value, onChange)}
                 </fieldset>
               ))}
             </div>
@@ -390,7 +397,7 @@ function Wizard({ slug }: { slug: string }) {
   const [consent, setConsent] = useState(false);
 
   const [listeningPicks, setListeningPicks] = useState<Record<string, string | number>>({});
-  const [readingPicks, setReadingPicks] = useState<Record<string, number>>({});
+  const [readingPicks, setReadingPicks] = useState<Record<string, string | number>>({});
   const [writingText, setWritingText] = useState("");
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
 

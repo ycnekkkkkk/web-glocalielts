@@ -22,6 +22,7 @@ type CourseForm = {
   duration_text: string;
   certificate_text: string;
   demo_video_url: string;
+  thumbnail_url: string;
   price: string;
   status: "published" | "draft" | "archived";
   curriculum: PublicCourseLesson[];
@@ -64,6 +65,7 @@ const EMPTY_FORM: CourseForm = {
   duration_text: "",
   certificate_text: "",
   demo_video_url: "",
+  thumbnail_url: "",
   price: "0",
   status: "published",
   curriculum: [],
@@ -83,6 +85,7 @@ export default function AdminOnlineCoursesPage() {
   const [accessUserIds, setAccessUserIds] = useState<string[]>([]);
   const [previewLearning, setPreviewLearning] = useState(false);
   const [previewTopicIndex, setPreviewTopicIndex] = useState(0);
+  const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
   const safeCurriculum = form?.curriculum ?? [];
 
   async function loadCourses() {
@@ -129,6 +132,7 @@ export default function AdminOnlineCoursesPage() {
       duration_text: form.duration_text.trim(),
       certificate_text: form.certificate_text.trim(),
       demo_video_url: form.demo_video_url.trim(),
+      thumbnail_url: form.thumbnail_url?.trim() || "",
       price: Number(form.price || 0),
       currency: "VND",
       slug: form.slug.trim() || slugify(form.title),
@@ -177,6 +181,7 @@ export default function AdminOnlineCoursesPage() {
       duration_text: course.duration_text || "",
       certificate_text: course.certificate_text || "",
       demo_video_url: course.demo_video_url || "",
+      thumbnail_url: course.thumbnail_url || "",
       price: String(course.price || 0),
       status: course.status,
       curriculum: (course.curriculum as PublicCourseLesson[] | null) || [],
@@ -293,6 +298,28 @@ export default function AdminOnlineCoursesPage() {
     }));
   }
 
+  async function handleThumbnailUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingThumbnail(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/admin/upload-thumbnail", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Upload failed");
+      setForm((p) => ({ ...p, thumbnail_url: data.url }));
+      toast.success("Tải ảnh lên thành công");
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setUploadingThumbnail(false);
+    }
+  }
+
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
@@ -323,6 +350,7 @@ export default function AdminOnlineCoursesPage() {
         duration_text: form.duration_text.trim() || null,
         certificate_text: form.certificate_text.trim() || null,
         demo_video_url: form.demo_video_url.trim() || null,
+        thumbnail_url: form.thumbnail_url?.trim() || null,
         demo_video_source: form.demo_video_url.trim() ? "youtube" : null,
         price: Number(form.price || "0"),
         currency: "VND",
@@ -349,6 +377,23 @@ export default function AdminOnlineCoursesPage() {
           }));
           const { error: grantError } = await supabase.from("public_course_access").upsert(grantRows, { onConflict: "course_id,user_id" });
           if (grantError) throw grantError;
+          
+          // Đồng bộ với request table
+          const { data: addedProfiles } = await supabase.from("profiles").select("id, full_name, email").in("id", accessUserIds);
+          const requestRows = accessUserIds.map(id => {
+             const p = addedProfiles?.find((x: any) => x.id === id);
+             return {
+                course_id: newCourseId,
+                user_id: id,
+                user_name: p?.full_name ?? null,
+                user_email: p?.email ?? null,
+                course_title: payload.title,
+                status: "approved",
+                admin_note: "Admin thêm trực tiếp vào khóa học",
+                updated_at: new Date().toISOString()
+             };
+          });
+          await supabase.from("course_purchase_requests").upsert(requestRows, { onConflict: "course_id,user_id" });
         }
         toast.success("Đã thêm khóa học");
       } else if (selected) {
@@ -370,10 +415,31 @@ export default function AdminOnlineCoursesPage() {
         const nextIds = new Set(accessUserIds);
         const removeIds = [...existingIds].filter((id) => !nextIds.has(id));
 
+        const addedIds = [...nextIds].filter((id) => !existingIds.has(id));
+
         if (grantedRows.length > 0) {
           const { error: upsertErr } = await supabase.from("public_course_access").upsert(grantedRows, { onConflict: "course_id,user_id" });
           if (upsertErr) throw upsertErr;
         }
+        
+        if (addedIds.length > 0) {
+          const { data: addedProfiles } = await supabase.from("profiles").select("id, full_name, email").in("id", addedIds);
+          const requestRows = addedIds.map(id => {
+             const p = addedProfiles?.find((x: any) => x.id === id);
+             return {
+                course_id: selected.id,
+                user_id: id,
+                user_name: p?.full_name ?? null,
+                user_email: p?.email ?? null,
+                course_title: selected.title,
+                status: "approved",
+                admin_note: "Admin thêm trực tiếp vào khóa học",
+                updated_at: new Date().toISOString()
+             };
+          });
+          await supabase.from("course_purchase_requests").upsert(requestRows, { onConflict: "course_id,user_id" });
+        }
+
         if (removeIds.length > 0) {
           const { error: deleteErr } = await supabase
             .from("public_course_access")
@@ -381,6 +447,12 @@ export default function AdminOnlineCoursesPage() {
             .eq("course_id", selected.id)
             .in("user_id", removeIds);
           if (deleteErr) throw deleteErr;
+          
+          // Chuyển status về rejected
+          await supabase.from("course_purchase_requests")
+            .update({ status: "rejected", admin_note: "Admin đã thu hồi quyền truy cập", updated_at: new Date().toISOString() })
+            .eq("course_id", selected.id)
+            .in("user_id", removeIds);
         }
         toast.success("Đã cập nhật khóa học");
       }
@@ -565,6 +637,27 @@ export default function AdminOnlineCoursesPage() {
               onChange={(e) => setForm((p) => ({ ...p, demo_video_url: e.target.value }))}
               icon={<Video className="w-4 h-4" />}
             />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Ảnh thu nhỏ (Thumbnail)</label>
+              <div className="flex gap-2 items-center">
+                <input
+                  type="text"
+                  value={form.thumbnail_url}
+                  onChange={(e) => setForm((p) => ({ ...p, thumbnail_url: e.target.value }))}
+                  placeholder="URL hoặc /thumbnails/..."
+                  className="flex-1 rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                />
+                <label className="cursor-pointer bg-brand-50 hover:bg-brand-100 text-brand-600 px-4 py-2.5 rounded-xl text-sm font-semibold border border-brand-200 flex items-center gap-2 whitespace-nowrap transition-colors">
+                  {uploadingThumbnail ? "Đang tải..." : "Tải ảnh lên"}
+                  <input type="file" accept="image/*" className="hidden" onChange={handleThumbnailUpload} disabled={uploadingThumbnail} />
+                </label>
+              </div>
+              {form.thumbnail_url && (
+                <div className="mt-3 relative w-full aspect-video bg-gray-100 rounded-xl overflow-hidden border border-gray-200">
+                  <img src={form.thumbnail_url} alt="Thumbnail preview" className="w-full h-full object-cover" />
+                </div>
+              )}
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Input label="Giá (VND)" type="number" value={form.price} onChange={(e) => setForm((p) => ({ ...p, price: e.target.value }))} />
               <div>

@@ -5,11 +5,21 @@ export type MockSkillBlock =
   | { type: "image"; src: string; alt?: string; section?: string }
   | { type: "audio"; url: string; label?: string; section?: string };
 
+export type MockSkillQuestionType =
+  | "single_choice"         // MCQ – chọn 1 trong nhiều options
+  | "text"                  // Điền từ / số
+  | "true_false_not_given"  // True / False / Not Given
+  | "matching"              // Nối – chọn 1 key từ options_map
+  | "multiple_choice";      // Chọn nhiều (checkboxes)
+
 export type MockSkillQuestion = {
   id: string;
   stem: string;
-  type: "single_choice" | "text";
+  type: MockSkillQuestionType;
+  /** Dùng cho single_choice, true_false_not_given, matching, multiple_choice */
   options?: string[];
+  /** Dùng cho matching: map key → label hiển thị (e.g. { "A": "parents must supervise..." }) */
+  options_map?: Record<string, string>;
   section?: string;
   display_no?: number;
 };

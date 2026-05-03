@@ -26,6 +26,7 @@
   --animate-fade-in: fadeIn 0.3s ease-in-out;
   --animate-slide-in: slideIn 0.3s ease-out;
   --animate-float: float 3s ease-in-out infinite;
+  --animate-wiggle: wiggle 0.5s ease-in-out infinite;
 
   @keyframes fadeIn {
     from { opacity: 0; transform: translateY(8px); }
@@ -38,6 +39,10 @@
   @keyframes float {
     0%, 100% { transform: translateY(0px); }
     50% { transform: translateY(-8px); }
+  }
+  @keyframes wiggle {
+    0%, 100% { transform: rotate(-10deg); }
+    50% { transform: rotate(10deg); }
   }
 }
 

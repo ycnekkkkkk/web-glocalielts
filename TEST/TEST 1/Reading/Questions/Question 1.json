@@ -1,0 +1,103 @@
+{
+    "section": "Reading Passage 1 - Questions",
+    "questions_1_7": {
+        "type": "True/False/Not Given",
+        "instructions": "Do the following statements agree with the information given in Reading Passage 1?",
+        "questions": [
+            {
+                "id": 1,
+                "text": "Chronobiology is the study of how living things have evolved over time."
+            },
+            {
+                "id": 2,
+                "text": "The rise and fall of sea levels affects how sea creatures behave."
+            },
+            {
+                "id": 3,
+                "text": "Most animals are active during the daytime."
+            },
+            {
+                "id": 4,
+                "text": "Circadian rhythms identify how we do different things on different days."
+            },
+            {
+                "id": 5,
+                "text": "A ‘night person’ can still have a healthy circadian rhythm."
+            },
+            {
+                "id": 6,
+                "text": "New therapies can permanently change circadian rhythms without causing harm."
+            },
+            {
+                "id": 7,
+                "text": "Naturally-produced vegetables have more nutritional value."
+            }
+        ]
+    },
+    "questions_8_13": {
+        "type": "Multiple Choice",
+        "instructions": "Choose the correct letter, A, B, C or D.",
+        "questions": [
+            {
+                "id": 8,
+                "text": "What did researchers identify as the ideal time to wake up in the morning?",
+                "options": {
+                    "A": "6.04",
+                    "B": "7.00",
+                    "C": "7.22",
+                    "D": "7.30"
+                }
+            },
+            {
+                "id": 9,
+                "text": "In order to lose weight, we should",
+                "options": {
+                    "A": "avoid eating breakfast",
+                    "B": "eat a low carbohydrate breakfast",
+                    "C": "exercise before breakfast",
+                    "D": "exercise after breakfast"
+                }
+            },
+            {
+                "id": 10,
+                "text": "Which is NOT mentioned as a way to improve supplement absorption?",
+                "options": {
+                    "A": "avoiding drinks containing caffeine while taking supplements",
+                    "B": "taking supplements at breakfast",
+                    "C": "taking supplements with foods that can dissolve them",
+                    "D": "storing supplements in a cool, dry environment"
+                }
+            },
+            {
+                "id": 11,
+                "text": "The best time to stop drinking coffee is",
+                "options": {
+                    "A": "mid-afternoon",
+                    "B": "10 p.m.",
+                    "C": "only when feeling anxious",
+                    "D": "after dinner"
+                }
+            },
+            {
+                "id": 12,
+                "text": "In the evening, we should",
+                "options": {
+                    "A": "stay away from carbohydrates",
+                    "B": "stop exercising",
+                    "C": "eat as much as possible",
+                    "D": "eat a light meal"
+                }
+            },
+            {
+                "id": 13,
+                "text": "Which of the following phrases best describes the main aim of Reading Passage 1?",
+                "options": {
+                    "A": "to suggest healthier ways of eating, sleeping and exercising",
+                    "B": "to describe how modern life has made chronobiology largely irrelevant",
+                    "C": "to introduce chronobiology and describe some practical applications",
+                    "D": "to plan a daily schedule that can alter our natural chronobiological rhythms"
+                }
+            }
+        ]
+    }
+}

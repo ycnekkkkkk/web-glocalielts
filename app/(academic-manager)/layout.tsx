@@ -2,7 +2,7 @@
 import Header from "@/components/layouts/Header";
 import Sidebar from "@/components/layouts/Sidebar";
 import Avatar from "@/components/ui/Avatar";
-import { useAuth } from "@/hooks/useAuth";
+import { useRoleGuard } from "@/hooks/useRoleGuard";
 import { BookOpen, LayoutList, Settings } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -25,19 +25,9 @@ const navGroups: NavGroup[] = [
 ];
 
 export default function AcademicManagerLayout({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
-  const router = useRouter();
-  const [mounted, setMounted] = useState(false);
+  const { user, loading } = useRoleGuard("academic_manager", "/academic-manager");
 
-  useEffect(() => { setMounted(true); }, []);
-
-  useEffect(() => {
-    if (!mounted || loading) return;
-    if (!user) router.replace("/academic-manager");
-    else if (user.role !== "academic_manager") router.replace("/academic-manager");
-  }, [user, loading, mounted, router]);
-
-  if (!mounted || loading) return (
+  if (loading) return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50">
       <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
     </div>

@@ -5,7 +5,7 @@ import Avatar from "@/components/ui/Avatar";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
-import { useAuth } from "@/hooks/useAuth";
+import { useRoleGuard } from "@/hooks/useRoleGuard";
 import { createBrowserClient } from "@/lib/supabase/client";
 import {
   Award, BookOpen, Calendar, GraduationCap, Headphones, LayoutDashboard, Search, Settings
@@ -42,8 +42,7 @@ const navGroups: NavGroup[] = [
 ];
 
 export default function StudentLayout({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
-  const router = useRouter();
+  const { user, loading } = useRoleGuard("student", "/login");
   const [mounted, setMounted] = useState(false);
   const [checkingProfile, setCheckingProfile] = useState(true);
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -62,12 +61,6 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
   });
 
   useEffect(() => { setMounted(true); }, []);
-
-  useEffect(() => {
-    if (!mounted || loading) return;
-    if (!user) router.replace("/login");
-    else if (user.role !== "student") router.replace("/");
-  }, [user, loading, mounted, router]);
 
   useEffect(() => {
     if (!mounted || loading || !user || user.role !== "student") return;

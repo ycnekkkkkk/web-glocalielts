@@ -26,16 +26,17 @@ export default function InstructorAnalyticsPage() {
         .eq("teacher_id", user.id);
 
       const classIds = (teacherClasses || []).map((c: { id: string }) => c.id);
+      const classNames = (teacherClasses || []).map((c: { name: string }) => c.name).filter(Boolean);
 
       let attStats = { on_time: 0, late: 0, absent: 0 };
       const classStudentCounts: { name: string; students: number }[] = [];
 
-      if (classIds.length > 0) {
+      if (classNames.length > 0) {
         // Get attendance for these classes' sessions
         const { data: sessionData } = await supabase
           .from("sessions")
           .select("id")
-          .in("class_id", classIds);
+          .in("class_name", classNames);
 
         const sessionIds = (sessionData || []).map((s: { id: number }) => s.id);
 

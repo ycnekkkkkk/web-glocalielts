@@ -147,7 +147,7 @@ export default function AdminSessionsPage() {
     const supabase = createBrowserClient();
     setLoadError(null);
     Promise.all([
-      supabase.from("sessions").select("*").order("session_date", { ascending: true }).order("session_time", { ascending: true }),
+      supabase.from("sessions").select("*"), // Remove server-side order as it's unreliable for dd/MM/yyyy text
       supabase.from("classes").select("id,name,teacher_id").order("name"),
     ]).then(([sesRes, clsRes]) => {
       if (sesRes.error) {
@@ -155,7 +155,21 @@ export default function AdminSessionsPage() {
       } else if (clsRes.error) {
         setLoadError(`Lỗi tải lớp học: ${clsRes.error.message}`);
       }
-      setSessions((sesRes.data as Session[]) || []);
+      
+      const rawSessions = (sesRes.data as Session[]) || [];
+      // Sort sessions robustly: Date first, then Time
+      const sortedSessions = [...rawSessions].sort((a, b) => {
+        const da = parseDD(a.session_date || ""), db = parseDD(b.session_date || "");
+        if (da && db) {
+          if (da.getTime() !== db.getTime()) return da.getTime() - db.getTime();
+        } else if (da) return -1;
+        else if (db) return 1;
+        
+        // If same date or both missing date, sort by time
+        return (a.session_time || "").localeCompare(b.session_time || "");
+      });
+
+      setSessions(sortedSessions);
       setClasses((clsRes.data as Class[]) || []);
       setLoading(false);
     });
@@ -188,7 +202,15 @@ export default function AdminSessionsPage() {
 
   // ── filtering ─────────────────────────────────────────────────────────────
   const filtered = useMemo(() => {
+    const existingClassIds = new Set(classes.map(c => c.id));
+    const existingClassNames = new Set(classes.map(c => c.name));
+
     return sessions.filter(s => {
+      // Only show sessions for classes that currently exist
+      const classExists = (s.class_id && existingClassIds.has(s.class_id)) || 
+                          (s.class_name && existingClassNames.has(s.class_name));
+      if (!classExists) return false;
+
       const matchSearch = (s.class_name || "").toLowerCase().includes(search.toLowerCase()) ||
         (s.topic || "").toLowerCase().includes(search.toLowerCase());
       const matchStatus = !statusFilter || s.status === statusFilter;
@@ -216,6 +238,13 @@ export default function AdminSessionsPage() {
         }
       }
       return matchSearch && matchStatus && matchClass && matchDate;
+    }).sort((a, b) => {
+      const da = parseDD(a.session_date || ""), db = parseDD(b.session_date || "");
+      if (da && db) {
+        if (da.getTime() !== db.getTime()) return da.getTime() - db.getTime();
+      } else if (da) return -1;
+      else if (db) return 1;
+      return (a.session_time || "").localeCompare(b.session_time || "");
     });
   }, [sessions, search, statusFilter, classFilter, dateMode, filterDay, filterWeek, filterMonth]);
 
