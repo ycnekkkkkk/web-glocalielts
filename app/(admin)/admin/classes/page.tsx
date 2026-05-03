@@ -12,8 +12,12 @@ import { useClasses } from "@/hooks/useClasses";
 import {
   DAY_COLUMNS, DayColumn, generateSessionDates, formatDateFull, parseSessionDate,
 } from "@/lib/scheduleUtils";
-import type { Class } from "@/types";
-import { GraduationCap, Pencil, Plus, Search, Trash2, Users } from "lucide-react";
+import { Class } from "@/types";
+import { 
+  GraduationCap, Pencil, Plus, Search, Trash2, Users, 
+  CheckCircle2, Clock, XCircle, ArrowRight, BookOpen, UserCheck, 
+  Calendar, Layers, Sparkles
+} from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, Fragment, useRef } from "react";
 import toast from "react-hot-toast";
@@ -39,14 +43,19 @@ const DAY_LABELS: Record<DayColumn, string> = {
 };
 
 function statusBadge(status: string) {
-  const map: Record<string, { v: "success"|"info"|"gray"|"danger"; l: string }> = {
-    active:    { v: "success", l: "Đang học" },
-    upcoming:  { v: "info",    l: "Sắp khai giảng" },
-    completed: { v: "gray",    l: "Kết thúc" },
-    cancelled: { v: "danger",  l: "Đã hủy" },
+  const map: Record<string, { v: "success"|"info"|"gray"|"danger"|"warning"; l: string; icon: any }> = {
+    active:    { v: "success", l: "Đang học", icon: <CheckCircle2 className="w-3 h-3" /> },
+    upcoming:  { v: "info",    l: "Sắp khai giảng", icon: <Clock className="w-3 h-3" /> },
+    completed: { v: "gray",    l: "Kết thúc", icon: <CheckCircle2 className="w-3 h-3" /> },
+    cancelled: { v: "danger",  l: "Đã hủy", icon: <XCircle className="w-3 h-3" /> },
   };
-  const m = map[status] || { v: "gray" as const, l: status };
-  return <Badge variant={m.v}>{m.l}</Badge>;
+  const m = map[status] || { v: "gray" as const, l: status, icon: <Layers className="w-3 h-3" /> };
+  return (
+    <Badge variant={m.v} className="gap-1.5 py-1 px-3 shadow-sm border border-black/5">
+      {m.icon}
+      {m.l}
+    </Badge>
+  );
 }
 
 type FormData = Omit<Class, "id"|"created_at"|"updated_at"|"teacher"|"enrollments"> & { academic_manager_id?: string | null; teacher_salary_per_hour?: number | null; };
@@ -476,12 +485,53 @@ export default function AdminClassesPage() {
 
   return (
     <PageWrapper>
-      <div className="page-header flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <h1 className="page-title">Quản lý lớp học</h1>
-          <p className="page-subtitle">{classes.length} lớp · {filtered.length} đang hiển thị</p>
+      {/* Premium Hero Header - Mobile optimized */}
+      <div className="relative mb-6 md:mb-8 p-5 md:p-8 rounded-[2rem] md:rounded-3xl bg-gradient-to-br from-brand-600 via-brand-700 to-indigo-800 overflow-hidden shadow-2xl shadow-brand-200/50">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl opacity-50" />
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-brand-400/20 rounded-full -ml-24 -mb-24 blur-2xl opacity-50" />
+        
+        <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 md:w-16 md:h-16 bg-white/20 backdrop-blur-xl rounded-2xl flex items-center justify-center shadow-inner border border-white/20">
+              <GraduationCap className="w-6 h-6 md:w-9 md:h-9 text-white" />
+            </div>
+            <div>
+              <h1 className="text-xl md:text-3xl font-black text-white tracking-tight leading-none mb-1 md:mb-2">Quản lý lớp học</h1>
+              <div className="flex items-center gap-2 text-brand-100/80 text-[10px] md:text-sm font-bold uppercase tracking-wider">
+                <Sparkles className="w-3 h-3 md:w-4 md:h-4" />
+                <span>Smart Education System</span>
+              </div>
+            </div>
+          </div>
+          <Button 
+            className="w-full sm:w-auto bg-white text-brand-700 hover:bg-brand-50 border-none shadow-xl hover:scale-105 active:scale-95 transition-all py-5 md:py-7 px-8 rounded-2xl font-black text-sm md:text-base"
+            icon={<Plus className="w-5 h-5" />} 
+            onClick={openCreate}
+          >
+            Tạo lớp mới
+          </Button>
         </div>
-        <Button icon={<Plus className="w-4 h-4" />} onClick={openCreate}>Tạo lớp mới</Button>
+      </div>
+
+      {/* Stats Summary - Responsive Grid */}
+      <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6 md:mb-8">
+        {[
+          { label: "Tổng lớp học", val: classes.length, icon: Layers, color: "brand" },
+          { label: "Đang hoạt động", val: classes.filter(c => c.status === 'active').length, icon: CheckCircle2, color: "emerald" },
+          { label: "Sắp khai giảng", val: classes.filter(c => c.status === 'upcoming').length, icon: Clock, color: "sky" },
+          { label: "Tổng học viên", val: classes.reduce((acc, c) => acc + (c.enrollments?.[0]?.count ?? 0), 0), icon: Users, color: "indigo" },
+        ].map((stat, idx) => (
+          <div key={idx} className="bg-white p-4 md:p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg transition-all group overflow-hidden relative">
+            <div className={`absolute top-0 right-0 w-16 h-16 bg-${stat.color}-500/5 rounded-full -mr-8 -mt-8 group-hover:scale-150 transition-transform duration-500`} />
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">{stat.label}</p>
+            <div className="flex items-end justify-between relative">
+              <h3 className={`text-2xl md:text-3xl font-black text-gray-900 group-hover:text-${stat.color}-600 transition-colors`}>{stat.val}</h3>
+              <div className={`p-2.5 bg-${stat.color}-50 rounded-xl group-hover:rotate-12 transition-transform`}>
+                <stat.icon className={`w-5 h-5 text-${stat.color}-600`} />
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
 
       {classesError && (
@@ -490,168 +540,146 @@ export default function AdminClassesPage() {
         </div>
       )}
 
-      <Card>
-        <div className="p-4 border-b border-gray-100 flex items-center gap-3 flex-wrap">
-          <div className="flex-1 min-w-48">
-            <Input
-              placeholder="Tìm theo tên lớp hoặc giáo viên..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              icon={<Search className="w-4 h-4" />}
-            />
+      <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-2xl shadow-gray-200/50 overflow-hidden mb-12">
+        <div className="p-5 md:p-8 border-b border-gray-100 bg-gray-50/20 flex flex-col md:flex-row md:items-center gap-4">
+          <div className="flex-1">
+            <div className="relative group">
+              <Input
+                placeholder="Tìm tên lớp, giáo viên hoặc trình độ..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                icon={<Search className="w-5 h-5 text-gray-400 group-focus-within:text-brand-600 transition-colors" />}
+                className="pl-12 py-5 md:py-6 rounded-2xl border-gray-200 focus:border-brand-500 focus:ring-4 focus:ring-brand-50 shadow-sm"
+              />
+            </div>
           </div>
-          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-500 bg-gray-50 border border-gray-200 px-2.5 py-1 rounded-full">
-            <span className="w-1.5 h-1.5 rounded-full bg-brand-500" />
-            {filtered.length} / {classes.length} lớp
-          </span>
+          <div className="flex items-center self-end md:self-auto gap-2 text-[11px] font-black text-gray-500 px-4 py-2 bg-white rounded-xl border border-gray-200 shadow-sm">
+            <div className="w-2 h-2 rounded-full bg-brand-500 animate-pulse" />
+            {filtered.length} KẾT QUẢ
+          </div>
         </div>
 
         {loading ? (
-          <div className="p-4"><SkeletonTable /></div>
+          <div className="p-8"><SkeletonTable /></div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-8 px-4 text-gray-400">
-            <GraduationCap className="w-8 h-8 mx-auto mb-2 opacity-40" />
-            <p className="text-xs">Không tìm thấy lớp học nào</p>
+          <div className="text-center py-20 md:py-32 px-6">
+            <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
+              <GraduationCap className="w-12 h-12 text-gray-200" />
+            </div>
+            <h3 className="text-xl font-black text-gray-900">Không có dữ liệu phù hợp</h3>
+            <p className="text-gray-500 mt-2 max-w-xs mx-auto text-sm">Thử điều chỉnh bộ lọc hoặc tạo một lớp học mới để bắt đầu.</p>
           </div>
         ) : (
-          <>
-            {/* ── Desktop: compact 2-row table ── */}
-            <div className="hidden md:block overflow-x-auto px-4">
-              <table className="w-full table-fixed">
-                <colgroup>
-                  <col className="w-8" />
-                  <col className="w-44" />
-                  <col className="w-10" />
-                  <col className="w-20" />
-                  <col className="w-24" />
-                </colgroup>
-                <thead>
-                  <tr className="border-b border-gray-200 text-[10px] font-semibold text-gray-500 bg-gray-50/60">
-                    <th className="text-left px-2 py-2">#</th>
-                    <th className="text-left px-2 py-2 max-w-44">Lớp</th>
-                    <th className="text-center px-2 py-2">HV</th>
-                    <th className="text-left px-2 py-2">Trạng thái</th>
-                    <th className="text-right px-2 py-2">Thao tác</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {filtered.map((cls, i) => {
-                    const count = cls.enrollments?.[0]?.count ?? 0;
-                    return (
-                      <Fragment key={cls.id}>
-                        {/* Row 1: key info */}
-                        <tr className="group hover:bg-brand-50/40 transition-colors">
-                          <td className="px-2 py-1.5 text-[10px] text-gray-400 font-mono align-top">{String(i + 1).padStart(2, "0")}</td>
-                          <td className="px-2 py-1.5 max-w-44">
-                            <div className="flex items-center gap-1.5">
-                              <div className="w-6 h-6 bg-linear-to-br from-brand-100 to-brand-200 rounded flex items-center justify-center shrink-0 mt-0.5">
-                                <GraduationCap className="w-3 h-3 text-brand-600" />
-                              </div>
-                              <div className="min-w-0 max-w-36">
-                                <p className="text-[11px] font-semibold text-gray-900 truncate">{cls.name}</p>
-                                {cls.class_type === "1on1" && (
-                                  <span className="inline-block text-[9px] font-bold text-purple-600 bg-purple-50 px-1 rounded border border-purple-100">1:1</span>
-                                )}
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-2 py-1.5 text-center align-top">
-                            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-gray-100 text-[10px] font-bold text-gray-600 mt-0.5">{count}</span>
-                          </td>
-                          <td className="px-2 py-1.5 align-top">
-                            <div className="mt-0.5">{statusBadge(cls.status)}</div>
-                          </td>
-                          <td className="px-2 py-1.5 align-top">
-                            <div className="flex items-center justify-end gap-0.5 opacity-60 group-hover:opacity-100 transition-opacity pt-0.5">
-                              <Link href={`/admin/classes/${encodeURIComponent(cls.name)}`}>
-                                <Button variant="subtle" size="sm" className="text-brand-600 hover:bg-brand-50 text-[10px] px-1.5 py-0.5">Chi tiết</Button>
-                              </Link>
-                              <Button variant="subtle" size="sm" icon={<Pencil className="w-2.5 h-2.5" />} onClick={() => openEdit(cls)} className="!p-1" />
-                              <Button variant="subtle" size="sm" icon={<Trash2 className="w-2.5 h-2.5" />} onClick={() => { setSelected(cls); setModal("delete"); }} className="text-red-500 hover:bg-red-50 !p-1" />
-                            </div>
-                          </td>
-                        </tr>
-                        {/* Row 2: detail info */}
-                        <tr className="group hover:bg-brand-50/20 transition-colors text-[10px]">
-                          <td className="px-2 py-0.5" />
-                          <td className="px-2 py-0.5 text-gray-400" colSpan={4}>
-                            <div className="flex flex-wrap items-center gap-x-4 gap-y-0.5">
-                              <span>
-                                <span className="text-gray-400">GV: </span>
-                                <span className="text-gray-600">{cls.teacher?.full_name || "–"}</span>
-                              </span>
-                              <span>
-                                <span className="text-gray-400">Lịch: </span>
-                                <span className="text-gray-600">{cls.schedule || "–"}</span>
-                              </span>
-                              <span>
-                                <span className="text-gray-400">Học phí: </span>
-                                <span className="text-gray-700 font-medium">{cls.tuition_fee ? `${new Intl.NumberFormat("vi-VN").format(cls.tuition_fee)}đ` : "–"}</span>
-                              </span>
-                            </div>
-                          </td>
-                        </tr>
-                      </Fragment>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-            {/* ── Mobile: stacked cards ── */}
-            <div className="md:hidden space-y-2 px-3 py-2">
-              {filtered.map((cls, i) => {
+          <div className="p-4 md:p-8 bg-gray-50/10">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-8">
+              {filtered.map((cls) => {
                 const count = cls.enrollments?.[0]?.count ?? 0;
                 return (
-                  <div key={cls.id} className="bg-white rounded-xl border border-gray-100 p-3 shadow-sm">
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <div className="w-8 h-8 bg-gradient-to-br from-brand-100 to-brand-200 rounded-lg flex items-center justify-center shrink-0">
-                          <GraduationCap className="w-4 h-4 text-brand-600" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-xs font-semibold text-gray-900 truncate">{cls.name}</p>
+                  <div 
+                    key={cls.id} 
+                    className="group relative bg-white rounded-[2rem] border border-gray-100 p-5 md:p-7 shadow-sm hover:shadow-2xl hover:shadow-brand-100/40 hover:-translate-y-2 transition-all duration-500 ease-out"
+                  >
+                    {/* Status Badge */}
+                    <div className="absolute top-5 right-5 md:top-7 md:right-7 scale-90 md:scale-100">
+                      {statusBadge(cls.status)}
+                    </div>
+
+                    <div className="flex items-start gap-4 mb-6 md:mb-8">
+                      <div className="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-br from-brand-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-brand-100 shrink-0 group-hover:rotate-6 transition-transform">
+                        <BookOpen className="w-6 h-6 md:w-8 md:h-8 text-white" />
+                      </div>
+                      <div className="min-w-0 pr-20 md:pr-24">
+                        <h3 className="text-base md:text-xl font-black text-gray-900 leading-tight mb-2 truncate group-hover:text-brand-600 transition-colors">
+                          {cls.name}
+                        </h3>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge variant="purple" className="text-[9px] font-black uppercase tracking-tighter px-2 bg-indigo-50 text-indigo-700 border border-indigo-100">
+                            {cls.level_in || "ALL LEVELS"}
+                          </Badge>
                           {cls.class_type === "1on1" && (
-                            <span className="inline-block mt-0.5 text-[10px] font-bold text-purple-600 bg-purple-50 px-1 py-0.5 rounded border border-purple-100">1:1</span>
+                            <Badge variant="warning" className="text-[9px] font-black uppercase tracking-tighter px-2 bg-amber-50 text-amber-700 border border-amber-100">1:1 SOLO</Badge>
                           )}
                         </div>
                       </div>
-                      {statusBadge(cls.status)}
                     </div>
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] text-gray-500 mb-3">
-                      <div>
-                        <span className="text-gray-400">GV: </span>
-                        <span className="text-gray-700">{cls.teacher?.full_name || "–"}</span>
+
+                    <div className="grid grid-cols-2 gap-3 md:gap-4 mb-6 md:mb-8">
+                      <div className="bg-gray-50 rounded-2xl p-3 md:p-4 border border-gray-100 group-hover:bg-brand-50/30 transition-colors">
+                        <div className="flex items-center gap-2 text-gray-400 mb-1">
+                          <Users className="w-3 h-3" />
+                          <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest">Học viên</span>
+                        </div>
+                        <p className="text-sm md:text-lg font-black text-gray-900">{count} <span className="text-[10px] font-bold text-gray-400">HV</span></p>
                       </div>
-                      <div>
-                        <span className="text-gray-400">HV: </span>
-                        <span className="text-gray-700 font-semibold">{count}</span>
-                      </div>
-                      <div className="col-span-2">
-                        <span className="text-gray-400">Lịch: </span>
-                        <span className="text-gray-700">{cls.schedule || "–"}</span>
-                      </div>
-                      <div className="col-span-2">
-                        <span className="text-gray-400">Học phí: </span>
-                        <span className="text-gray-700 font-semibold">
-                          {cls.tuition_fee ? `${new Intl.NumberFormat("vi-VN").format(cls.tuition_fee)}đ` : "–"}
-                        </span>
+                      <div className="bg-gray-50 rounded-2xl p-3 md:p-4 border border-gray-100 group-hover:bg-brand-50/30 transition-colors">
+                        <div className="flex items-center gap-2 text-gray-400 mb-1">
+                          <Calendar className="w-3 h-3" />
+                          <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest">Lịch học</span>
+                        </div>
+                        <p className="text-[10px] md:text-[12px] font-black text-gray-900 truncate" title={cls.schedule || "Chưa có lịch"}>
+                          {cls.schedule || "N/A"}
+                        </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+
+                    <div className="flex items-center justify-between gap-3 p-4 bg-gray-50 rounded-2xl border border-gray-100 mb-6 md:mb-8 group-hover:border-brand-100 transition-colors">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-9 h-9 md:w-10 md:h-10 rounded-xl bg-white border border-gray-200 flex items-center justify-center overflow-hidden shadow-sm">
+                          {cls.teacher?.full_name ? (
+                            <div className="bg-gradient-to-br from-brand-50 to-brand-100 w-full h-full flex items-center justify-center text-brand-700 font-black text-sm uppercase">
+                              {cls.teacher.full_name.charAt(0)}
+                            </div>
+                          ) : (
+                            <Users className="w-5 h-5 text-gray-300" />
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[9px] text-gray-400 font-black uppercase tracking-tighter mb-0.5">Giảng viên</p>
+                          <p className="text-xs md:text-sm font-black text-gray-800 truncate leading-none">{cls.teacher?.full_name || "Chưa phân công"}</p>
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-[9px] text-gray-400 font-black uppercase tracking-tighter mb-0.5">Tiến độ</p>
+                        <p className="text-xs md:text-sm font-black text-gray-900 leading-none">
+                          {cls.sessions_done || 0}/{cls.total_sessions || 0}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
                       <Link href={`/admin/classes/${encodeURIComponent(cls.name)}`} className="flex-1">
-                        <Button variant="subtle" size="sm" className="w-full justify-center text-brand-600 hover:bg-brand-50 text-[11px]">Chi tiết</Button>
+                        <Button 
+                          variant="primary" 
+                          size="lg" 
+                          className="w-full justify-center rounded-2xl font-black text-xs md:text-sm bg-brand-600 hover:bg-brand-700 shadow-xl shadow-brand-100 border-none py-4 md:py-6"
+                        >
+                          Chi tiết
+                        </Button>
                       </Link>
-                      <Button variant="subtle" size="sm" icon={<Pencil className="w-3 h-3" />} onClick={() => openEdit(cls)} className="!p-1.5" />
-                      <Button variant="subtle" size="sm" icon={<Trash2 className="w-3 h-3" />} onClick={() => { setSelected(cls); setModal("delete"); }} className="text-red-500 hover:bg-red-50 !p-1.5" />
+                      <div className="flex items-center gap-1">
+                        <Button 
+                          variant="subtle" 
+                          size="md" 
+                          icon={<Pencil className="w-4 h-4 md:w-5 md:h-5" />} 
+                          onClick={() => openEdit(cls)} 
+                          className="rounded-2xl border border-gray-200 hover:border-brand-200 hover:text-brand-600 bg-white p-3 md:p-4" 
+                        />
+                        <Button 
+                          variant="subtle" 
+                          size="md" 
+                          icon={<Trash2 className="w-4 h-4 md:w-5 md:h-5" />} 
+                          onClick={() => { setSelected(cls); setModal("delete"); }} 
+                          className="rounded-2xl border border-gray-200 hover:border-red-200 hover:text-red-600 text-red-500 bg-white p-3 md:p-4" 
+                        />
+                      </div>
                     </div>
                   </div>
                 );
               })}
             </div>
-          </>
+          </div>
         )}
-      </Card>
+      </div>
 
       {/* Create / Edit Modal */}
       <Modal open={modal === "create" || modal === "edit"} onClose={() => setModal(null)}
