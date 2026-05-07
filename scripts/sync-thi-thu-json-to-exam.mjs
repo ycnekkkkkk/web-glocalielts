@@ -26,6 +26,7 @@ function escapeHtml(s) {
 function buildListening(listeningRaw) {
   const blocks = [];
   const questions = [];
+  const answers = {};
 
   for (const [idx, part] of (listeningRaw.parts || []).entries()) {
     const section = `listening_part_${idx + 1}`;
@@ -47,6 +48,15 @@ function buildListening(listeningRaw) {
         section,
         url: part.audioUrl,
         label: `Nghe audio ${label}`,
+      });
+    }
+
+    if (part.image) {
+      blocks.push({
+        type: "image",
+        section,
+        src: part.image,
+        alt: `Listening Map/Diagram`
       });
     }
 
@@ -95,9 +105,19 @@ function buildListening(listeningRaw) {
     for (const q of part.questions || []) {
       const id = `l${q.id}`;
       const stem = String(q.stem || "").trim();
-      const qType = q.type === "text" ? "text" : "single_choice";
-      const options = Array.isArray(q.options) ? q.options : undefined;
-      questions.push({ id, stem, type: qType, options, section, display_no: Number(q.id) || undefined });
+      const qType = q.type === "text" ? "text" : q.type || "single_choice";
+      const options = Array.isArray(q.options) ? q.options : (qType === "true_false_not_given" ? ["True", "False", "Not Given"] : undefined);
+      questions.push({ id, stem, type: qType, options, section, display_no: Number(q.id) || undefined, options_map: part.options_map });
+
+      const ans = part.answers?.[String(q.id)];
+      if (ans) {
+        if (typeof ans === "string" && ans.length === 1 && /[A-Z]/.test(ans) && options) {
+          const idxAns = ans.charCodeAt(0) - 65;
+          answers[id] = options[idxAns] ?? ans;
+        } else {
+          answers[id] = ans;
+        }
+      }
     }
   }
 
@@ -105,6 +125,7 @@ function buildListening(listeningRaw) {
     title: listeningRaw.title || "Listening",
     blocks,
     questions,
+    answers,
   };
 }
 
@@ -162,8 +183,12 @@ function buildReading(readingRaw) {
       });
       const ans = p.answers?.[String(q.id)];
       if (typeof ans === "string") {
-        const idxAns = ans.toUpperCase().charCodeAt(0) - 65;
-        answers[id] = options[idxAns] ?? ans;
+        if (ans.length === 1 && /[A-Z]/.test(ans)) {
+          const idxAns = ans.charCodeAt(0) - 65;
+          answers[id] = options[idxAns] ?? ans;
+        } else {
+          answers[id] = ans;
+        }
       }
     }
   }
@@ -186,6 +211,7 @@ function buildWriting(writingRaw) {
     let html = `<h3>Task ${escapeHtml(t.task)}</h3>`;
     if (t.instruction) html += `<p>${escapeHtml(t.instruction)}</p>`;
     if (t.prompt) html += `<p><strong>Prompt:</strong> ${escapeHtml(t.prompt)}</p>`;
+    
     if (t.data?.headers && t.data?.rows) {
       const header = `<tr><th>Company</th>${t.data.headers
         .map((h) => `<th>${escapeHtml(h)}</th>`)
@@ -200,6 +226,14 @@ function buildWriting(writingRaw) {
       if (t.data.unit) html += `<p><em>Unit: ${escapeHtml(t.data.unit)}</em></p>`;
     }
     blocks.push({ type: "text", html });
+
+    if (t.image) {
+      blocks.push({
+        type: "image",
+        src: t.image,
+        alt: `Task ${t.task} Image`
+      });
+    }
   }
   return {
     title: writingRaw.title || "Writing",
@@ -249,23 +283,28 @@ async function main() {
     .eq("id", exam.id);
   if (upErr) throw upErr;
 
+  // Update answers from Listening
+  const listeningPack = buildListening(listeningRaw);
+  const { data: answerRow } = await supabase
+    .from("mock_skill_exam_answers")
+    .select("answers")
+    .eq("exam_id", exam.id)
+    .maybeSingle();
+  const prevAnswers = answerRow?.answers || {};
+  const merged = {
+    ...prevAnswers,
+    listening: { ...prevAnswers.listening, ...listeningPack.answers },
+  };
+
   if (readingRaw) {
-    const { data: answerRow } = await supabase
-      .from("mock_skill_exam_answers")
-      .select("answers")
-      .eq("exam_id", exam.id)
-      .maybeSingle();
-    const prevAnswers = answerRow?.answers || {};
     const readingPack = buildReading(readingRaw);
-    const merged = {
-      ...prevAnswers,
-      reading: readingPack.answers,
-    };
-    const { error: ansErr } = await supabase
-      .from("mock_skill_exam_answers")
-      .upsert({ exam_id: exam.id, answers: merged, updated_at: new Date().toISOString() }, { onConflict: "exam_id" });
-    if (ansErr) throw ansErr;
+    merged.reading = { ...prevAnswers.reading, ...readingPack.answers };
   }
+
+  const { error: ansErr } = await supabase
+    .from("mock_skill_exam_answers")
+    .upsert({ exam_id: exam.id, answers: merged, updated_at: new Date().toISOString() }, { onConflict: "exam_id" });
+  if (ansErr) throw ansErr;
 
   console.log("Updated exam from thi_thu/*.json:", exam.slug);
 }

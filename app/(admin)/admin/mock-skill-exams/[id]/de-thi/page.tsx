@@ -496,10 +496,10 @@ function AnswerKeyEditor({
   onChange,
 }: {
   content: MockSkillContentPublic;
-  answers: { listening: Record<string, string>; reading: Record<string, string> };
+  answers: { listening: Record<string, any>; reading: Record<string, any> };
   onChange: (a: typeof answers) => void;
 }) {
-  function set(skill: "listening" | "reading", id: string, val: string) {
+  function set(skill: "listening" | "reading", id: string, val: any) {
     onChange({ ...answers, [skill]: { ...answers[skill], [id]: val } });
   }
 
@@ -542,13 +542,18 @@ function AnswerKeyEditor({
       );
     }
     // single_choice / multiple_choice
+    const currentVal = Array.isArray(val) ? val : (val ? [val] : []);
     return (
       <select
         className="flex-1 rounded-lg border border-gray-200 px-2 py-1 text-sm bg-white"
-        value={val}
-        onChange={(e) => set(skill, q.id, e.target.value)}
+        multiple={true}
+        size={Math.min(4, (q.options || []).length)}
+        value={currentVal}
+        onChange={(e) => {
+          const selected = Array.from(e.target.selectedOptions, o => o.value);
+          set(skill, q.id, selected.length === 1 ? selected[0] : selected);
+        }}
       >
-        <option value="">— chọn —</option>
         {(q.options || []).map((o, i) => (
           <option key={i} value={o}>{String.fromCharCode(65 + i)}. {o}</option>
         ))}
@@ -622,7 +627,7 @@ export default function AdminMockSkillEditorPage({ params }: { params: Promise<{
   const [description, setDescription] = useState("");
   const [isActive, setIsActive] = useState(false);
   const [content, setContent] = useState<MockSkillContentPublic>(emptyContent());
-  const [answerKey, setAnswerKey] = useState<{ listening: Record<string, string>; reading: Record<string, string> }>({
+  const [answerKey, setAnswerKey] = useState<{ listening: Record<string, any>; reading: Record<string, any> }>({
     listening: {},
     reading: {},
   });
@@ -637,7 +642,7 @@ export default function AdminMockSkillEditorPage({ params }: { params: Promise<{
       ]);
       const examJson = (await examRes.json().catch(() => ({}))) as { exam?: MockSkillExamDef; error?: string };
       const answerJson = (await answerRes.json().catch(() => ({}))) as {
-        answers?: { listening: Record<string, string>; reading: Record<string, string> };
+        answers?: { listening: Record<string, any>; reading: Record<string, any> };
       };
       if (cancelled) return;
 

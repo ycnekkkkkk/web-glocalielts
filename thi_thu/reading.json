@@ -1,98 +1,156 @@
 {
   "reading": {
-    "title": "IELTS Reading Test",
+    "title": "IELTS Academic Reading Mock Test 1",
     "passages": [
       {
         "passage": 1,
-        "title": "Urban Trees and Public Health",
-        "instruction": "Questions 1-13. Choose the correct answer A, B, C or D.",
+        "title": "MAKING TIME FOR SCIENCE",
+        "instruction": "You should spend about 20 minutes on Questions 1–13, which are based on Reading Passage 1.",
         "text": [
-          "City planners have recently renewed interest in planting trees as part of urban health policy. Earlier approaches viewed trees mainly as decorative elements, but a larger body of evidence now links green streets to measurable health outcomes. Residents in areas with higher tree coverage often report lower stress, reduced noise irritation, and greater willingness to walk for short journeys.",
-          "One reason is microclimate control. Tree canopies reduce direct sunlight on roads and pavements, limiting the urban heat island effect. During summer, this can lower local temperatures by several degrees. Cooler streets can encourage outdoor activity, especially among children and older people who avoid heat exposure.",
-          "Trees can also influence air quality. Leaves and bark trap some particulate matter from traffic, although the effect varies by species and street design. In narrow streets with heavy congestion, poorly placed dense planting may slow air circulation. For this reason, urban foresters increasingly choose mixed species and spacing strategies rather than uniform rows.",
-          "However, practical barriers remain. Maintenance costs are significant over the long term. Young trees require irrigation and protection, while mature trees can damage pavements or underground utilities if roots are unmanaged. Municipal budgets often prioritize short-term infrastructure projects that produce visible results within election cycles.",
-          "Despite these challenges, several cities have adopted tree equity programs. These programs map neighborhoods by income, existing canopy, and health risk indicators. Funding is then directed toward districts with the least tree cover and highest vulnerability to heat and respiratory illness. Early evaluations suggest that targeted planting can narrow environmental health gaps between wealthier and poorer districts.",
-          "Experts caution that trees are not a complete solution. They work best alongside safer cycling routes, reduced vehicle emissions, and better building design. Still, as one urban health researcher noted, trees are unusual because they provide multiple benefits at once: cooling, shade, visual relief, and social value."
+          "Chronobiology might sound a little futuristic – like something from a science fiction novel, perhaps – but it’s actually a field of study that concerns one of the oldest processes life on this planet has ever known: short-term rhythms of time and their effect on flora and fauna.",
+          "This can take many forms. Marine life, for example, is influenced by tidal patterns. Animals tend to be active or inactive depending on the position of the sun or moon. Numerous creatures, humans included, are largely diurnal – that is, they like to come out during the hours of sunlight. Nocturnal animals, such as bats and possums, prefer to forage by night. A third group are known as crepuscular: they thrive in the low-light of dawn and dusk and remain inactive at other hours.",
+          "When it comes to humans, chronobiologists are interested in what is known as the circadian rhythm. This is the complete cycle our bodies are naturally geared to undergo within the passage of a twenty-four hour day. Aside from sleeping at night and waking during the day, each cycle involves many other factors such as changes in blood pressure and body temperature. Not everyone has an identical circadian rhythm. ‘Night people’, for example, often describe how they find it very hard to operate during the morning, but become alert and focused by evening. This is a benign variation within circadian rhythms known as a chronotype.",
+          "Scientists have limited abilities to create durable modifications of chronobiological demands. Recent therapeutic developments for humans such as artificial light machines and melatonin administration can reset our circadian rhythms, for example, but our bodies can tell the difference and health suffers when we breach these natural rhythms for extended periods of time. Plants appear no more malleable in this respect; studies demonstrate that vegetables grown in season and ripened on the tree are far higher in essential nutrients than those grown in greenhouses and ripened by laser.",
+          "Knowledge of chronobiological patterns can have many pragmatic implications for our day-to-day lives. While contemporary living can sometimes appear to subjugate biology – after all, who needs circadian rhythms when we have caffeine pills, energy drinks, shift work and cities that never sleep? – keeping in synch with our body clock is important.",
+          "The average urban resident, for example, rouses at the eye-blearing time of 6.04 a.m., which researchers believe to be far too early. One study found that even rising at 7.00 a.m. has deleterious effects on health unless exercise is performed for 30 minutes afterward. The optimum moment has been whittled down to 7.22 a.m.; muscle aches, headaches and moodiness were reported to be lowest by participants in the study who awoke then.",
+          "Once you’re up and ready to go, what then? If you’re trying to shed some extra pounds, dieticians are adamant: never skip breakfast. This disorients your circadian rhythm and puts your body in starvation mode. The recommended course of action is to follow an intense workout with a carbohydrate-rich breakfast; the other way round and weight loss results are not as pronounced.",
+          "Morning is also great for breaking out the vitamins. Supplement absorption by the body is not temporal-dependent, but naturopath Pam Stone notes that the extra boost at breakfast helps us get energised for the day ahead. For improved absorption, Stone suggests pairing supplements with a food in which they are soluble and steering clear of caffeinated beverages. Finally, Stone warns to take care with storage; high potency is best for absorption, and warmth and humidity are known to deplete the potency of a supplement.",
+          "After-dinner espressos are becoming more of a tradition – we have the Italians to thank for that – but to prepare for a good night’s sleep we are better off putting the brakes on caffeine consumption as early as 3 p.m. With a seven hour half-life, a cup of coffee containing 90 mg of caffeine taken at this hour could still leave 45 mg of caffeine in your nervous system at ten o’clock that evening. It is essential that, by the time you are ready to sleep, your body is rid of all traces.",
+          "Evenings are important for winding down before sleep; however, dietician Geraldine Georgeou warns that an after-five carbohydrate-fast is more cultural myth than chronobiological demand. This will deprive your body of vital energy needs. Overloading your gut could lead to indigestion, though. Our digestive tracts do not shut down for the night entirely, but their work slows to a crawl as our bodies prepare for sleep. Consuming a modest snack should be entirely sufficient."
         ],
         "questions": [
-          { "id": 1, "stem": "According to the passage, earlier urban tree policies mainly considered trees as", "type": "single_choice", "options": ["critical cooling infrastructure", "decorative features", "noise barriers for highways", "sources of city revenue"] },
-          { "id": 2, "stem": "Higher tree coverage is associated with", "type": "single_choice", "options": ["higher commuting times", "lower reports of stress", "more private car use", "increased road noise"] },
-          { "id": 3, "stem": "Tree canopies help reduce", "type": "single_choice", "options": ["public transport demand", "rainfall in city centers", "urban heat island intensity", "winter wind speed"] },
-          { "id": 4, "stem": "The passage suggests older adults may spend more time outdoors when", "type": "single_choice", "options": ["public parks close earlier", "temperatures are lower", "tree roots are removed", "air humidity rises"] },
-          { "id": 5, "stem": "The effect of trees on air quality depends partly on", "type": "single_choice", "options": ["national tax policy", "species and street layout", "daily tourism levels", "average building age"] },
-          { "id": 6, "stem": "In some narrow, congested streets, dense planting may", "type": "single_choice", "options": ["improve crosswinds", "reduce tree diseases", "slow air movement", "increase bus frequency"] },
-          { "id": 7, "stem": "Municipal governments often prefer projects that", "type": "single_choice", "options": ["have long maintenance cycles", "deliver visible short-term outcomes", "are managed by volunteers", "focus only on tree research"] },
-          { "id": 8, "stem": "Tree equity programs allocate money using data on", "type": "single_choice", "options": ["house prices and school rankings", "tourism and retail sales", "canopy, income, and health risks", "river levels and rainfall"] },
-          { "id": 9, "stem": "Early results of targeted planting indicate", "type": "single_choice", "options": ["no measurable effect", "reduced environmental health inequality", "higher utility costs in rich areas", "declining support for tree policies"] },
-          { "id": 10, "stem": "The author says trees are most effective when combined with", "type": "single_choice", "options": ["more private parking", "fewer building regulations", "broader transport and emissions policies", "higher street lighting intensity"] },
-          { "id": 11, "stem": "Which challenge is mentioned for mature trees?", "type": "single_choice", "options": ["They need daily fertilizer", "They can damage pavements and utilities", "They cannot survive in mixed groups", "They always reduce visibility for drivers"] },
-          { "id": 12, "stem": "Why do experts prefer mixed species strategies?", "type": "single_choice", "options": ["To standardize maintenance tools", "To avoid all pruning work", "To improve outcomes across different street conditions", "To increase fruit production"] },
-          { "id": 13, "stem": "The final paragraph mainly emphasizes that trees", "type": "single_choice", "options": ["are too expensive for cities", "should replace transport reform", "offer multiple co-benefits but are not a complete answer", "work only in wealthy neighborhoods"] }
+          { "id": "1", "display_no": 1, "stem": "Chronobiology is the study of how living things have evolved over time.", "type": "true_false_not_given" },
+          { "id": "2", "display_no": 2, "stem": "The rise and fall of sea levels affects how sea creatures behave.", "type": "true_false_not_given" },
+          { "id": "3", "display_no": 3, "stem": "Most animals are active during the daytime.", "type": "true_false_not_given" },
+          { "id": "4", "display_no": 4, "stem": "Circadian rhythms identify how we do different things on different days.", "type": "true_false_not_given" },
+          { "id": "5", "display_no": 5, "stem": "A ‘night person’ can still have a healthy circadian rhythm.", "type": "true_false_not_given" },
+          { "id": "6", "display_no": 6, "stem": "New therapies can permanently change circadian rhythms without causing harm.", "type": "true_false_not_given" },
+          { "id": "7", "display_no": 7, "stem": "Naturally-produced vegetables have more nutritional value.", "type": "true_false_not_given" },
+          { "id": "8", "display_no": 8, "stem": "What did researchers identify as the ideal time to wake up in the morning?", "type": "single_choice", "options": ["6.04", "7.00", "7.22", "7.30"] },
+          { "id": "9", "display_no": 9, "stem": "In order to lose weight, we should", "type": "single_choice", "options": ["avoid eating breakfast", "eat a low carbohydrate breakfast", "exercise before breakfast", "exercise after breakfast"] },
+          { "id": "10", "display_no": 10, "stem": "Which is NOT mentioned as a way to improve supplement absorption?", "type": "single_choice", "options": ["avoiding drinks containing caffeine while taking supplements", "taking supplements at breakfast", "taking supplements with foods that can dissolve them", "storing supplements in a cool, dry environment"] },
+          { "id": "11", "display_no": 11, "stem": "The best time to stop drinking coffee is", "type": "single_choice", "options": ["mid-afternoon", "10 p.m.", "only when feeling anxious", "after dinner"] },
+          { "id": "12", "display_no": 12, "stem": "In the evening, we should", "type": "single_choice", "options": ["stay away from carbohydrates", "stop exercising", "eat as much as possible", "eat a light meal"] },
+          { "id": "13", "display_no": 13, "stem": "Which of the following phrases best describes the main aim of Reading Passage 1?", "type": "single_choice", "options": ["to suggest healthier ways of eating, sleeping and exercising", "to describe how modern life has made chronobiology largely irrelevant", "to introduce chronobiology and describe some practical applications", "to plan a daily schedule that can alter our natural chronobiological rhythms"] }
         ],
-        "answers": { "1": "B", "2": "B", "3": "C", "4": "B", "5": "B", "6": "C", "7": "B", "8": "C", "9": "B", "10": "C", "11": "B", "12": "C", "13": "C" }
+        "answers": {
+          "1": "FALSE",
+          "2": "TRUE",
+          "3": "NOT GIVEN",
+          "4": "FALSE",
+          "5": "TRUE",
+          "6": "FALSE",
+          "7": "TRUE",
+          "8": "C",
+          "9": "C",
+          "10": "B",
+          "11": "A",
+          "12": "D",
+          "13": "C"
+        }
       },
       {
         "passage": 2,
-        "title": "How Sleep Supports Learning",
-        "instruction": "Questions 14-26. Choose the correct answer A, B, C or D.",
+        "title": "The Triune Brain",
+        "instruction": "You should spend about 20 minutes on Questions 14–26, which are based on Reading Passage 2.",
         "text": [
-          "For many years, students were advised to treat sleep as optional during exam periods. Recent neuroscience research has challenged that belief. Sleep is now understood as an active biological process that helps stabilize memory and regulate attention.",
-          "During waking study sessions, the brain encodes new information in temporary patterns of neural activity. During sleep, particularly non-rapid eye movement stages, these patterns are replayed and gradually integrated with existing knowledge. This process is often called consolidation.",
-          "Researchers have tested this in controlled experiments. Participants who learned word lists and then slept generally recalled more items than participants who remained awake for an equivalent interval. Similar effects have been found in motor learning tasks, such as finger-sequence practice.",
-          "Sleep also helps selective memory. Not every detail is retained equally. Information judged as important, emotionally meaningful, or expected to be tested tends to receive stronger consolidation. In educational settings, this suggests that clear learning goals may influence what the sleeping brain prioritizes.",
-          "However, duration alone does not explain outcomes. Fragmented sleep with repeated awakenings can weaken consolidation even if total hours appear adequate. Consistent sleep timing also matters, since irregular schedules may disrupt circadian rhythms and reduce next-day alertness.",
-          "Some students attempt to compensate by extending sleep at weekends. While partial recovery is possible, it does not fully reverse weekday deficits in concentration or mood. Experts therefore recommend regular sleep patterns across the week.",
-          "Short daytime naps can provide limited benefits. A nap of around 20 to 30 minutes may improve alertness and reduce fatigue, while longer naps can produce sleep inertia, a temporary period of grogginess after waking. Naps are best viewed as supplements, not substitutes for nighttime sleep.",
-          "Educational institutions are beginning to respond. Universities have introduced workshops on sleep literacy, and some schools are experimenting with later start times. Early evidence suggests improvements in attendance and self-reported wellbeing, though long-term academic effects are still being studied."
+          "The first of our three brains to evolve is what scientists call the reptilian cortex. This brain sustains the elementary activities of animal survival such as respiration, adequate rest and a beating heart. We are not required to consciously “think” about these activities. The reptilian cortex also houses the “startle centre”, a mechanism that facilitates swift reactions to unexpected occurrences in our surroundings. That panicked lurch you experience when a door slams shut somewhere in the house, or the heightened awareness you feel when a twig cracks in a nearby bush while out on an evening stroll are both examples of the reptilian cortex at work. When it comes to our interaction with others, the reptilian brain offers up only the most basic impulses: aggression, mating, and territorial defence. There is no great difference, in this sense, between a crocodile defending its spot along the river and a turf war between two urban gangs.",
+          "Although the lizard may stake a claim to its habitat, it exerts total indifference toward the well-being of its young. Listen to the anguished squeal of a dolphin separated from its pod or witness the sight of elephants mourning their dead, however, and it is clear that a new development is at play. Scientists have identified this as the limbic cortex. Unique to mammals, the limbic cortex impels creatures to nurture their offspring by delivering feelings of tenderness and warmth to the parent when children are nearby. These same sensations also cause mammals to develop various types of social relations and kinship networks. When we are with others of “our kind” – be it at soccer practice, church, school or a nightclub – we experience positive sensations of togetherness, solidarity and comfort. If we spend too long away from these networks, then loneliness sets in and encourages us to seek companionship.",
+          "Only human capabilities extend far beyond the scope of these two cortexes. Humans eat, sleep and play, but we also speak, plot, rationalise and debate finer points of morality. Our unique abilities are the result of an expansive third brain – the neocortex – which engages with logic, reason and ideas. The power of the neocortex comes from its ability to think beyond the present, concrete moment. While other mammals are mainly restricted to impulsive actions (although some, such as apes, can learn and remember simple lessons), humans can think about the “big picture”. We can string together simple lessons (for example, an apple drops downwards from a tree; hurting others causes unhappiness) to develop complex theories of physical or social phenomena (such as the laws of gravity and a concern for human rights).",
+          "The neocortex is also responsible for the process by which we decide on and commit to particular courses of action. Strung together over time, these choices can accumulate into feats of progress unknown to other animals. Anticipating a better grade on the following morning’s exam, a student can ignore the limbic urge to socialise and go to sleep early instead. Over three years, this ongoing sacrifice translates into a first class degree and a scholarship to graduate school; over a lifetime, it can mean ground-breaking contributions to human knowledge and development. The ability to sacrifice our drive for immediate satisfaction in order to benefit later is a product of the neocortex.",
+          "Understanding the triune brain can help us appreciate the different natures of brain damage and psychological disorders. The most devastating form of brain damage, for example, is a condition in which someone is understood to be brain dead. In this state a person appears merely unconscious – sleeping, perhaps – but this is illusory. Here, the reptilian brain is functioning on autopilot despite the permanent loss of other cortexes.",
+          "Disturbances to the limbic cortex are registered in a different manner. Pups with limbic damage can move around and feed themselves well enough but do not register the presence of their littermates. Scientists have observed how, after a limbic lobotomy, “one impaired monkey stepped on his outraged peers as if treading on a log or a rock”. In our own species, limbic damage is closely related to sociopathic behaviour. Sociopaths in possession of fully-functioning neocortexes are often shrewd and emotionally intelligent people but lack any ability to relate to, empathise with or express concern for others.",
+          "One of the neurological wonders of history occurred when a railway worker named Phineas Gage survived an incident during which a metal rod skewered his skull, taking a considerable amount of his neocortex with it. Though Gage continued to live and work as before, his fellow employees observed a shift in the equilibrium of his personality. Gage’s animal propensities were now sharply pronounced while his intellectual abilities suffered; garrulous or obscene jokes replaced his once quick wit. New findings suggest, however, that Gage managed to soften these abrupt changes over time and rediscover an appropriate social manner. This would indicate that reparative therapy has the potential to help patients with advanced brain trauma to gain an improved quality of life."
         ],
         "questions": [
-          { "id": 14, "stem": "Older exam advice often suggested sleep was", "type": "single_choice", "options": ["essentially optional", "more important than revision", "harmful for memory", "unrelated to stress"] },
-          { "id": 15, "stem": "In the passage, consolidation refers to", "type": "single_choice", "options": ["the loss of temporary memories", "integration of new learning during sleep", "the growth of new brain cells during study", "faster reading speed before exams"] },
-          { "id": 16, "stem": "Word-list experiments show that sleeping participants typically", "type": "single_choice", "options": ["remember fewer items", "show no difference", "remember more items", "forget all emotional words"] },
-          { "id": 17, "stem": "The passage says selective memory is influenced by whether information is", "type": "single_choice", "options": ["written in color", "seen before lunch", "perceived as important or test-relevant", "shared in groups"] },
-          { "id": 18, "stem": "Fragmented sleep can reduce memory consolidation even when", "type": "single_choice", "options": ["students avoid caffeine", "total sleep hours seem sufficient", "revision is repeated twice", "lights are turned off early"] },
-          { "id": 19, "stem": "Irregular sleep timing may mainly disrupt", "type": "single_choice", "options": ["visual memory", "language production", "circadian rhythms", "long-term intelligence"] },
-          { "id": 20, "stem": "Weekend catch-up sleep is described as", "type": "single_choice", "options": ["fully effective", "partially helpful but incomplete", "harmful in all cases", "better than weekday sleep"] },
-          { "id": 21, "stem": "A 20-30 minute nap may improve", "type": "single_choice", "options": ["alertness", "verbal creativity only", "deep memory consolidation", "nighttime sleep duration"] },
-          { "id": 22, "stem": "Longer naps may cause", "type": "single_choice", "options": ["rapid memory loss", "sleep inertia", "permanent fatigue", "circadian reset"] },
-          { "id": 23, "stem": "The author views naps as", "type": "single_choice", "options": ["a replacement for night sleep", "useful but supplementary", "ineffective for students", "only suitable on weekends"] },
-          { "id": 24, "stem": "Institutions have responded by", "type": "single_choice", "options": ["banning late-night study", "reducing coursework volume", "introducing sleep education and schedule changes", "requiring mandatory naps"] },
-          { "id": 25, "stem": "Current evidence about long-term grade outcomes is", "type": "single_choice", "options": ["already conclusive", "still limited", "negative overall", "unavailable due to ethics"] },
-          { "id": 26, "stem": "The main message of the passage is that sleep", "type": "single_choice", "options": ["is irrelevant if study time is long", "mainly benefits emotional memory only", "plays an active role in learning quality", "should be reduced during exam week"] }
+          {
+            "id": "14", "display_no": 14, "stem": "Giving up short-term happiness for future gains", "type": "matching",
+            "options": ["A", "B", "C"],
+            "options_map": { "A": "The reptilian cortex", "B": "The limbic cortex", "C": "The neocortex" }
+          },
+          {
+            "id": "15", "display_no": 15, "stem": "Maintaining the bodily functions necessary for life", "type": "matching",
+            "options": ["A", "B", "C"],
+            "options_map": { "A": "The reptilian cortex", "B": "The limbic cortex", "C": "The neocortex" }
+          },
+          {
+            "id": "16", "display_no": 16, "stem": "Experiencing the pain of losing another", "type": "matching",
+            "options": ["A", "B", "C"],
+            "options_map": { "A": "The reptilian cortex", "B": "The limbic cortex", "C": "The neocortex" }
+          },
+          {
+            "id": "17", "display_no": 17, "stem": "Forming communities and social groups", "type": "matching",
+            "options": ["A", "B", "C"],
+            "options_map": { "A": "The reptilian cortex", "B": "The limbic cortex", "C": "The neocortex" }
+          },
+          {
+            "id": "18", "display_no": 18, "stem": "Making a decision and carrying it out", "type": "matching",
+            "options": ["A", "B", "C"],
+            "options_map": { "A": "The reptilian cortex", "B": "The limbic cortex", "C": "The neocortex" }
+          },
+          {
+            "id": "19", "display_no": 19, "stem": "Guarding areas of land", "type": "matching",
+            "options": ["A", "B", "C"],
+            "options_map": { "A": "The reptilian cortex", "B": "The limbic cortex", "C": "The neocortex" }
+          },
+          {
+            "id": "20", "display_no": 20, "stem": "Developing explanations for things", "type": "matching",
+            "options": ["A", "B", "C"],
+            "options_map": { "A": "The reptilian cortex", "B": "The limbic cortex", "C": "The neocortex" }
+          },
+          {
+            "id": "21", "display_no": 21, "stem": "Looking after one’s young", "type": "matching",
+            "options": ["A", "B", "C"],
+            "options_map": { "A": "The reptilian cortex", "B": "The limbic cortex", "C": "The neocortex" }
+          },
+          {
+            "id": "22", "display_no": 22, "stem": "Responding quickly to sudden movement and noise", "type": "matching",
+            "options": ["A", "B", "C"],
+            "options_map": { "A": "The reptilian cortex", "B": "The limbic cortex", "C": "The neocortex" }
+          },
+          { "id": "23", "display_no": 23, "stem": "A person with only a functioning reptilian cortex is known as __________.", "type": "text" },
+          { "id": "24", "display_no": 24, "stem": "__________ in humans is associated with limbic disruption.", "type": "text" },
+          { "id": "25", "display_no": 25, "stem": "An industrial accident caused Phineas Gage to lose part of his __________.", "type": "text" },
+          { "id": "26", "display_no": 26, "stem": "After his accident, co-workers noticed an imbalance between Gage’s __________ and higher-order thinking.", "type": "text" }
         ],
-        "answers": { "14": "A", "15": "B", "16": "C", "17": "C", "18": "B", "19": "C", "20": "B", "21": "A", "22": "B", "23": "B", "24": "C", "25": "B", "26": "C" }
+        "answers": {
+          "14": "C", "15": "A", "16": "B", "17": "B", "18": "C", "19": "A", "20": "C", "21": "B", "22": "A",
+          "23": "brain dead", "24": "sociopathic behaviour", "25": "neocortex", "26": "animal propensities"
+        }
       },
       {
         "passage": 3,
-        "title": "Tracking Plastic in the Oceans",
-        "instruction": "Questions 27-40. Choose the correct answer A, B, C or D.",
+        "title": "HELIUM’S FUTURE UP IN THE AIR",
+        "instruction": "Questions 27-40.",
         "text": [
-          "Ocean plastic pollution is often discussed through dramatic images of floating debris. Yet scientists emphasize that visible waste is only one part of the problem. A substantial proportion of marine plastic exists as fragments too small to be seen easily from ships or coastlines.",
-          "To estimate distribution, researchers combine surface net sampling, satellite drift models, and shoreline surveys. No single method is complete. Nets can miss particles below mesh size, while shoreline counts are influenced by tides, local cleanup efforts, and tourism patterns.",
-          "One challenge is the movement of plastic across regions. Items released in one country can travel long distances through currents before beaching elsewhere. This complicates legal responsibility and often creates tension between coastal communities and upstream producers.",
-          "Scientists also distinguish between primary and secondary microplastics. Primary microplastics are manufactured at small sizes, such as some industrial pellets. Secondary microplastics result from larger objects degrading through sunlight, wave action, and mechanical abrasion.",
-          "Potential ecological impacts include ingestion by fish, seabirds, and plankton-feeding organisms. Ingestion can reduce feeding efficiency and expose animals to associated chemicals. However, researchers caution that risk levels vary by species, habitat, and concentration.",
-          "Policy responses increasingly target prevention rather than cleanup alone. Extended producer responsibility schemes require manufacturers to share waste-management costs. Deposit-return systems can improve collection rates for beverage containers. Some cities have also restricted certain single-use items.",
-          "Technological innovation contributes but is not a stand-alone solution. Biodegradable materials may perform differently across environments and can still require specific disposal conditions. Advanced sorting systems can improve recycling streams but depend on stable funding and public participation.",
-          "Most experts argue that long-term progress depends on coordinated action across product design, consumer behavior, and infrastructure. Monitoring remains critical: without consistent data, it is difficult to evaluate whether interventions genuinely reduce marine plastic loads."
+          "A In recent years we have all been exposed to dire media reports concerning the impending demise of global coal and oil reserves, but the depletion of another key non-renewable resource continues without receiving much press at all. Helium – an inert, odourless, monatomic element known to lay people as the substance that makes balloons float and voices squeak when inhaled – could be gone from this planet within a generation.",
+          "B Helium itself is not rare; there is actually a plentiful supply of it in the cosmos. In fact, 24 per cent of our galaxy’s elemental mass consists of helium, which makes it the second most abundant element in our universe. Because of its lightness, however, most helium vanished from our own planet many years ago. Consequently, only a miniscule proportion – 0.00052%, to be exact – remains in earth’s atmosphere. Helium is the by-product of millennia of radioactive decay from the elements thorium and uranium. The helium is mostly trapped in subterranean natural gas bunkers and commercially extracted through a method known as fractional distillation.",
+          "C The loss of helium on Earth would affect society greatly. Defying the perception of it as a novelty substance for parties and gimmicks, the element actually has many vital applications in society. Probably the most well known commercial usage is in airships and blimps (non-flammable helium replaced hydrogen as the lifting gas du jour after the Hindenburg catastrophe in 1932, during which an airship burst into flames and crashed to the ground killing some passengers and crew). But helium is also instrumental in deep-sea diving, where it is blended with nitrogen to mitigate the dangers of inhaling ordinary air under high pressure; as a cleaning agent for rocket engines; and, in its most prevalent use, as a coolant for superconducting magnets in hospital MRI scanners.",
+          "D The possibility of losing helium forever poses the threat of a real crisis because its unique qualities are extraordinarily difficult, if not impossible to duplicate. Helium is even cheerfully derided as a “loner” element since it does not adhere to other molecules like its cousin, hydrogen. Another important attribute is helium’s unique boiling point, which is lower than that for any other element. The worsening global shortage could render millions of dollars of high-value, life-saving equipment totally useless.",
+          "E The source of the problem is the Helium Privatisation Act (HPA), an American law passed in 1996 that requires the U.S. National Helium Reserve to liquidate its helium assets by 2015 regardless of the market price. The result is artificially low prices, discouraging recycling and careful usage.",
+          "F A number of steps need to be taken in order to avert a costly predicament in the coming decades. Firstly, all existing supplies of helium ought to be conserved and released only by permit. Secondly, conservation should be obligatory and enforced. Lastly, research into alternatives to helium must begin in earnest."
         ],
         "questions": [
-          { "id": 27, "stem": "The passage says visible ocean debris represents", "type": "single_choice", "options": ["the entire pollution problem", "a small part of a wider issue", "mainly natural materials", "only historical pollution"] },
-          { "id": 28, "stem": "Why do researchers use multiple measurement methods?", "type": "single_choice", "options": ["to reduce fieldwork costs", "because each method has limitations", "to avoid satellite data", "because nets are banned"] },
-          { "id": 29, "stem": "Shoreline counts may be distorted by", "type": "single_choice", "options": ["mesh size and salinity only", "shipping fuel prices", "tides, cleanup activity, and tourism", "fish migration routes"] },
-          { "id": 30, "stem": "Long-distance transport of plastic complicates", "type": "single_choice", "options": ["tourist access to beaches", "assignment of legal responsibility", "weather forecasting", "deep-sea mapping"] },
-          { "id": 31, "stem": "Primary microplastics are", "type": "single_choice", "options": ["broken down from bottles", "only found near ports", "manufactured at small size", "created by plankton"] },
-          { "id": 32, "stem": "Secondary microplastics are produced through", "type": "single_choice", "options": ["controlled industrial heating", "degradation of larger items", "volcanic activity", "chemical treatment in factories"] },
-          { "id": 33, "stem": "Ingestion of microplastics may", "type": "single_choice", "options": ["always kill marine animals quickly", "improve feeding efficiency", "affect feeding and chemical exposure", "only affect seabirds"] },
-          { "id": 34, "stem": "The passage says ecological risk is", "type": "single_choice", "options": ["uniform across all species", "dependent on context", "irrelevant in coastal areas", "highest only in winter"] },
-          { "id": 35, "stem": "Current policy emphasis is shifting toward", "type": "single_choice", "options": ["deep-ocean cleanup only", "prevention and system design", "private beach management", "marine tourism campaigns"] },
-          { "id": 36, "stem": "Extended producer responsibility means producers", "type": "single_choice", "options": ["control coast guards", "finance part of waste management", "ban imports directly", "operate recycling plants alone"] },
-          { "id": 37, "stem": "Deposit-return systems are used to", "type": "single_choice", "options": ["replace all packaging", "increase container collection", "reduce fishing effort", "monitor ocean currents"] },
-          { "id": 38, "stem": "The passage suggests biodegradable materials", "type": "single_choice", "options": ["solve pollution in all conditions", "are always recyclable", "may need specific disposal contexts", "cannot be used in packaging"] },
-          { "id": 39, "stem": "Advanced sorting technologies require", "type": "single_choice", "options": ["no public participation", "stable funding and participation", "only volunteer labor", "international military support"] },
-          { "id": 40, "stem": "The final paragraph emphasizes the need for", "type": "single_choice", "options": ["single-country action only", "less monitoring to save cost", "coordinated systems and consistent data", "short-term cleanup targets only"] }
+          { "id": "27", "display_no": 27, "stem": "A use for helium which makes an activity safer", "type": "matching", "options": ["A", "B", "C", "D", "E", "F"], "options_map": { "A": "Paragraph A", "B": "Paragraph B", "C": "Paragraph C", "D": "Paragraph D", "E": "Paragraph E", "F": "Paragraph F" } },
+          { "id": "28", "display_no": 28, "stem": "The possibility of creating an alternative to helium", "type": "matching", "options": ["A", "B", "C", "D", "E", "F"], "options_map": { "A": "Paragraph A", "B": "Paragraph B", "C": "Paragraph C", "D": "Paragraph D", "E": "Paragraph E", "F": "Paragraph F" } },
+          { "id": "29", "display_no": 29, "stem": "A term which describes the process of how helium is taken out of the ground", "type": "matching", "options": ["A", "B", "C", "D", "E", "F"], "options_map": { "A": "Paragraph A", "B": "Paragraph B", "C": "Paragraph C", "D": "Paragraph D", "E": "Paragraph E", "F": "Paragraph F" } },
+          { "id": "30", "display_no": 30, "stem": "A reason why users of helium do not make efforts to conserve it", "type": "matching", "options": ["A", "B", "C", "D", "E", "F"], "options_map": { "A": "Paragraph A", "B": "Paragraph B", "C": "Paragraph C", "D": "Paragraph D", "E": "Paragraph E", "F": "Paragraph F" } },
+          { "id": "31", "display_no": 31, "stem": "A contrast between helium’s chemical properties and how non-scientists think about it", "type": "matching", "options": ["A", "B", "C", "D", "E", "F"], "options_map": { "A": "Paragraph A", "B": "Paragraph B", "C": "Paragraph C", "D": "Paragraph D", "E": "Paragraph E", "F": "Paragraph F" } },
+          { "id": "32", "display_no": 32, "stem": "Helium chooses to be on its own.", "type": "single_choice", "options": ["Yes", "No", "Not Given"] },
+          { "id": "33", "display_no": 33, "stem": "Helium is a very cold substance.", "type": "single_choice", "options": ["Yes", "No", "Not Given"] },
+          { "id": "34", "display_no": 34, "stem": "High-tech industries in Asia use more helium than laboratories and manufacturers in other parts of the world.", "type": "single_choice", "options": ["Yes", "No", "Not Given"] },
+          { "id": "35", "display_no": 35, "stem": "The US Congress understood the possible consequences of the HPA.", "type": "single_choice", "options": ["Yes", "No", "Not Given"] },
+          { "id": "36", "display_no": 36, "stem": "Sobotka argues that big business and users of helium need to help look after helium stocks because ______ will not be encouraged through buying and selling alone.", "type": "text" },
+          { "id": "37", "display_no": 37, "stem": "Richardson believes that the ______ needs to be withdrawn, as the U.S. provides most of the world’s helium.", "type": "text" },
+          { "id": "38", "display_no": 38, "stem": "He argues that higher costs would mean people have ______ to use the resource many times over.", "type": "text" },
+          { "id": "39", "display_no": 39, "stem": "People should need a ______ to access helium that we still have.", "type": "text" },
+          { "id": "40", "display_no": 40, "stem": "Furthermore, a ______ should ensure that helium is used carefully.", "type": "text" }
         ],
-        "answers": { "27": "B", "28": "B", "29": "C", "30": "B", "31": "C", "32": "B", "33": "C", "34": "B", "35": "B", "36": "B", "37": "B", "38": "C", "39": "B", "40": "C" }
+        "answers": {
+          "27": "C", "28": "D", "29": "B", "30": "E", "31": "A",
+          "32": "Yes", "33": "Not given", "34": "Not given", "35": "No",
+          "36": "prudent practice", "37": "privatisation policy", "38": "incentives", "39": "permit", "40": "regulatory agency"
+        }
       }
     ]
   }

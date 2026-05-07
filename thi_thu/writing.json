@@ -1,71 +1,18 @@
 {
     "writing": {
-        "title": "IELTS Writing Test",
+        "title": "IELTS Writing Mock Test 1",
         "tasks": [
             {
-                "task": 1,
+                "task": "1",
                 "instruction": "You should spend about 20 minutes on this task.",
-                "type": "report",
-                "prompt": "The table below shows expenditures of four car companies on advertising in the UK in 2002.",
-                "data": {
-                    "headers": [
-                        "Press",
-                        "Cinema",
-                        "Outdoor",
-                        "Radio",
-                        "TV"
-                    ],
-                    "rows": [
-                        {
-                            "company": "Renault",
-                            "values": [
-                                45,
-                                6,
-                                7,
-                                15,
-                                59
-                            ]
-                        },
-                        {
-                            "company": "Rover",
-                            "values": [
-                                38,
-                                0,
-                                2,
-                                15,
-                                45
-                            ]
-                        },
-                        {
-                            "company": "Vauxhall",
-                            "values": [
-                                8,
-                                5,
-                                7,
-                                15,
-                                65
-                            ]
-                        },
-                        {
-                            "company": "Cetirizine",
-                            "values": [
-                                12,
-                                0,
-                                3,
-                                15,
-                                70
-                            ]
-                        }
-                    ],
-                    "unit": "millions of dollars"
-                },
-                "minWords": 150
+                "prompt": "The graph below shows the information about... (Please refer to the image below)",
+                "minWords": 150,
+                "image": "/images/test-1/writing_t1_image1.png"
             },
             {
-                "task": 2,
-                "instruction": "You should spend about 40 minutes on this task.",
-                "type": "essay",
-                "prompt": "The best way to ensure the growth of children is to make parents take parenting courses. Do you agree or disagree? Give reasons for your answer and include any relevant examples from your own knowledge or experience.",
+                "task": "2",
+                "instruction": "You should spend about 40 minutes on this task. Write at least 250 words.",
+                "prompt": "News plays an important part of most people’s lives. Why is news so important to people? Why is so much news dedicated to bad news? Should the news focus on good news instead?",
                 "minWords": 250
             }
         ]

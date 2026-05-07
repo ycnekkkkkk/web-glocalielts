@@ -1,425 +1,123 @@
 {
     "listening": {
-        "title": "IELTS Listening Test",
+        "title": "IELTS Listening Mock Test 1",
         "parts": [
             {
                 "part": 1,
                 "instruction": "Complete the notes below. Write ONE WORD AND/OR A NUMBER for each answer.",
-                "audioUrl": "https://www.youtube.com/watch?v=mNaooUv6nhc&list=PLQoFvrOxWqR4cqAYBjrv9petggWGB_ATM&index=1",
+                "audioUrl": "/audio/test-1/Listening Test 1 Section 1.m4a",
                 "questions": [
-                    {
-                        "id": 1,
-                        "stem": "Role",
-                        "type": "text"
-                    },
-                    {
-                        "id": 2,
-                        "stem": "Location: Fordham _____ Centre",
-                        "type": "text"
-                    },
-                    {
-                        "id": 3,
-                        "stem": "_____ Road, Fordham",
-                        "type": "text"
-                    },
-                    {
-                        "id": 4,
-                        "stem": "Work involves making _____ and reorganising them",
-                        "type": "text"
-                    },
-                    {
-                        "id": 5,
-                        "stem": "Maintaining the internal _____",
-                        "type": "text"
-                    },
-                    {
-                        "id": 6,
-                        "stem": "Requirement (essential): _____",
-                        "type": "text"
-                    },
-                    {
-                        "id": 7,
-                        "stem": "A calm and _____ manner",
-                        "type": "text"
-                    },
-                    {
-                        "id": 8,
-                        "stem": "Other info: a _____ job",
-                        "type": "text"
-                    },
-                    {
-                        "id": 9,
-                        "stem": "Hours: 7.45 a.m. to _____ p.m.",
-                        "type": "text"
-                    },
-                    {
-                        "id": 10,
-                        "stem": "_____ is available onsite",
-                        "type": "text"
-                    }
-                ]
-            },
-            {
-                "part": 2,
-                "instruction": "Choose the correct letter A, B or C.",
-                "audioUrl": "https://www.youtube.com/watch?v=6hwBW39h5uI&list=PLQoFvrOxWqR4cqAYBjrv9petggWGB_ATM&index=2",
-                "questions": [
-                    {
-                        "id": 11,
-                        "stem": "The museum building was originally",
-                        "type": "single_choice",
-                        "options": [
-                            "a factory",
-                            "a private home",
-                            "a hall of residence"
-                        ]
-                    },
-                    {
-                        "id": 12,
-                        "stem": "The university uses part of the museum building as",
-                        "type": "single_choice",
-                        "options": [
-                            "teaching rooms",
-                            "a research library",
-                            "administration offices"
-                        ]
-                    },
-                    {
-                        "id": 13,
-                        "stem": "What does the guide say about the entrance fee?",
-                        "type": "single_choice",
-                        "options": [
-                            "Visitors decide whether or not they wish to pay",
-                            "Only children and students receive a discount",
-                            "The museum charges extra for special exhibitions"
-                        ]
-                    },
-                    {
-                        "id": 14,
-                        "stem": "What are visitors advised to leave in the cloakroom?",
-                        "type": "single_choice",
-                        "options": [
-                            "cameras",
-                            "coats",
-                            "bags"
-                        ]
-                    }
-                ]
-            },
-            {
-                "part": 2,
-                "instruction": "Choose SIX answers from the box (A–H).",
-                "questions": [
-                    {
-                        "id": 15,
-                        "stem": "Four Seasons",
-                        "type": "matching",
-                        "options": [
-                            "A",
-                            "B",
-                            "C",
-                            "D",
-                            "E",
-                            "F",
-                            "G",
-                            "H"
-                        ]
-                    },
-                    {
-                        "id": 16,
-                        "stem": "Farmhouse Kitchen",
-                        "type": "matching",
-                        "options": [
-                            "A",
-                            "B",
-                            "C",
-                            "D",
-                            "E",
-                            "F",
-                            "G",
-                            "H"
-                        ]
-                    },
-                    {
-                        "id": 17,
-                        "stem": "A Year on the Farm",
-                        "type": "matching",
-                        "options": [
-                            "A",
-                            "B",
-                            "C",
-                            "D",
-                            "E",
-                            "F",
-                            "G",
-                            "H"
-                        ]
-                    },
-                    {
-                        "id": 18,
-                        "stem": "Wagon Walk",
-                        "type": "matching",
-                        "options": [
-                            "A",
-                            "B",
-                            "C",
-                            "D",
-                            "E",
-                            "F",
-                            "G",
-                            "H"
-                        ]
-                    },
-                    {
-                        "id": 19,
-                        "stem": "Bees are Magic",
-                        "type": "matching",
-                        "options": [
-                            "A",
-                            "B",
-                            "C",
-                            "D",
-                            "E",
-                            "F",
-                            "G",
-                            "H"
-                        ]
-                    },
-                    {
-                        "id": 20,
-                        "stem": "The Pond",
-                        "type": "matching",
-                        "options": [
-                            "A",
-                            "B",
-                            "C",
-                            "D",
-                            "E",
-                            "F",
-                            "G",
-                            "H"
-                        ]
-                    }
+                    { "id": "1", "display_no": 1, "stem": "work in a ______ section", "type": "text" },
+                    { "id": "2", "display_no": 2, "stem": "reference number", "type": "text" },
+                    { "id": "3", "display_no": 3, "stem": "in a ______ office", "type": "text" },
+                    { "id": "4", "display_no": 4, "stem": "in a ______", "type": "text" },
+                    { "id": "5", "display_no": 5, "stem": "______ go to office", "type": "text" },
+                    { "id": "6", "display_no": 6, "stem": "Local jobs can be found in the ______", "type": "text" },
+                    { "id": "7", "display_no": 7, "stem": "Buy the ______ to get one free magazine", "type": "text" },
+                    { "id": "8", "display_no": 8, "stem": "Advisable to go to an ______ instead of the recruitment seminar", "type": "text" },
+                    { "id": "9", "display_no": 9, "stem": "one of the ______ (if no former boss)", "type": "text" },
+                    { "id": "10", "display_no": 10, "stem": "Fill out a ______ form at the end of the course", "type": "text" }
                 ],
-                "options_map": {
-                    "A": "Parents must supervise their children",
-                    "B": "There are new things to see",
-                    "C": "It is closed today",
-                    "D": "This is only for school groups",
-                    "E": "There is a quiz for visitors",
-                    "F": "It features something created by students",
-                    "G": "An expert is here today",
-                    "H": "There is a one-way system"
+                "answers": {
+                    "1": "warehouse",
+                    "2": "Hitcher",
+                    "3": "supermarket",
+                    "4": "bakery",
+                    "5": "ARW204",
+                    "6": ["adverts", "advertisements"],
+                    "7": "newspaper",
+                    "8": "agency",
+                    "9": "tutors",
+                    "10": "feedback"
+                }
+            },
+            {
+                "part": 2,
+                "instruction": "Questions 11-15: Choose the correct letter A, B or C. Questions 16-20: Label the map below.",
+                "audioUrl": "/audio/test-1/Listening Test 1 Section 2.m4a",
+                "image": "/images/test-1/listening_t1_map.png",
+                "questions": [
+                    { "id": "11", "display_no": 11, "stem": "The reason why David is replacing Jane is that", "type": "single_choice", "options": ["she is unwell", "she is very busy", "she is inexperienced"] },
+                    { "id": "12", "display_no": 12, "stem": "Problem for the museum currently", "type": "single_choice", "options": ["lack of staff", "lack of publicity", "lack of money"] },
+                    { "id": "13", "display_no": 13, "stem": "Why thieves succeeded", "type": "single_choice", "options": ["security device outdated", "guard not trained", "they knew target"] },
+                    { "id": "14", "display_no": 14, "stem": "Security improvement", "type": "single_choice", "options": ["more CCTV", "more guards", "more computers"] },
+                    { "id": "15", "display_no": 15, "stem": "Librarian requirement", "type": "single_choice", "options": ["responsible", "experienced", "highly-trained"] },
+                    { "id": "16", "display_no": 16, "stem": "Box Office", "type": "matching", "options": ["A", "B", "C", "D", "E", "F", "G", "H", "I"] },
+                    { "id": "17", "display_no": 17, "stem": "Children’s Room", "type": "matching", "options": ["A", "B", "C", "D", "E", "F", "G", "H", "I"] },
+                    { "id": "18", "display_no": 18, "stem": "Cafe", "type": "matching", "options": ["A", "B", "C", "D", "E", "F", "G", "H", "I"] },
+                    { "id": "19", "display_no": 19, "stem": "Multimedia Room", "type": "matching", "options": ["A", "B", "C", "D", "E", "F", "G", "H", "I"] },
+                    { "id": "20", "display_no": 20, "stem": "Showroom", "type": "matching", "options": ["A", "B", "C", "D", "E", "F", "G", "H", "I"] }
+                ],
+                "answers": {
+                    "11": "A",
+                    "12": "B",
+                    "13": "C",
+                    "14": "A",
+                    "15": "B",
+                    "16": "C",
+                    "17": "B",
+                    "18": "E",
+                    "19": "H",
+                    "20": "G"
                 }
             },
             {
                 "part": 3,
-                "instruction": "Questions 21–22: Choose TWO answers (A–E).",
-                "audioUrl": "https://www.youtube.com/watch?v=oGKnYMM1fRE&list=PLQoFvrOxWqR4cqAYBjrv9petggWGB_ATM&index=3",
+                "instruction": "Questions 21-26: Choose the correct letter A, B or C. Questions 27-30: Choose TWO letters, A-E.",
+                "audioUrl": "/audio/test-1/Listening Test 1 Section 3.m4a",
                 "questions": [
-                    {
-                        "id": 21,
-                        "stem": "Skill shown",
-                        "type": "multiple_choice",
-                        "options": [
-                            "solving problems",
-                            "following instructions",
-                            "working cooperatively",
-                            "learning through play",
-                            "developing hand-eye coordination"
-                        ]
-                    },
-                    {
-                        "id": 22,
-                        "stem": "Skill shown",
-                        "type": "multiple_choice",
-                        "options": [
-                            "solving problems",
-                            "following instructions",
-                            "working cooperatively",
-                            "learning through play",
-                            "developing hand-eye coordination"
-                        ]
-                    }
-                ]
-            },
-            {
-                "part": 3,
-                "instruction": "Questions 23–27: Match each child with the correct comment.",
-                "questions": [
-                    {
-                        "id": 23,
-                        "stem": "Sid",
-                        "type": "matching",
-                        "options": [
-                            "A",
-                            "B",
-                            "C",
-                            "D",
-                            "E",
-                            "F",
-                            "G"
-                        ]
-                    },
-                    {
-                        "id": 24,
-                        "stem": "Jack",
-                        "type": "matching",
-                        "options": [
-                            "A",
-                            "B",
-                            "C",
-                            "D",
-                            "E",
-                            "F",
-                            "G"
-                        ]
-                    },
-                    {
-                        "id": 25,
-                        "stem": "Naomi",
-                        "type": "matching",
-                        "options": [
-                            "A",
-                            "B",
-                            "C",
-                            "D",
-                            "E",
-                            "F",
-                            "G"
-                        ]
-                    },
-                    {
-                        "id": 26,
-                        "stem": "Anya",
-                        "type": "matching",
-                        "options": [
-                            "A",
-                            "B",
-                            "C",
-                            "D",
-                            "E",
-                            "F",
-                            "G"
-                        ]
-                    },
-                    {
-                        "id": 27,
-                        "stem": "Zara",
-                        "type": "matching",
-                        "options": [
-                            "A",
-                            "B",
-                            "C",
-                            "D",
-                            "E",
-                            "F",
-                            "G"
-                        ]
-                    }
+                    { "id": "21", "display_no": 21, "stem": "Current focus", "type": "single_choice", "options": ["Specialising in one product", "Variety of products", "More retail outlets"] },
+                    { "id": "22", "display_no": 22, "stem": "How students learned about software", "type": "single_choice", "options": ["Professor contacted company", "Newspaper article", "Student part-time work"] },
+                    { "id": "23", "display_no": 23, "stem": "Students’ opinion of software", "type": "single_choice", "options": ["Hard to predict", "Slow for design", "Good interface"] },
+                    { "id": "24", "display_no": 24, "stem": "How students evaluated company impact", "type": "single_choice", "options": ["Visited IT department", "Talked to manager", "Checked accounts"] },
+                    { "id": "25", "display_no": 25, "stem": "Reason for face-to-face interview", "type": "single_choice", "options": ["Prepare for exams", "Less disturbance", "Less realistic"] },
+                    { "id": "26", "display_no": 26, "stem": "Students' exam performance", "type": "single_choice", "options": ["Very disappointing", "Significantly good", "Above average"] },
+                    { "id": "27", "display_no": 27, "stem": "Effects on company (choose TWO)", "type": "single_choice", "options": ["Gain more profit", "Hire more staff", "Increase sales", "Reduce production time", "Cut labour costs"] },
+                    { "id": "28", "display_no": 28, "stem": "Effects on company (choose TWO)", "type": "single_choice", "options": ["Gain more profit", "Hire more staff", "Increase sales", "Reduce production time", "Cut labour costs"] },
+                    { "id": "29", "display_no": 29, "stem": "Effects on new clients (choose TWO)", "type": "single_choice", "options": ["More involvement in design", "More contacts", "Work from home", "Save time", "Reduce labour costs"] },
+                    { "id": "30", "display_no": 30, "stem": "Effects on new clients (choose TWO)", "type": "single_choice", "options": ["More involvement in design", "More contacts", "Work from home", "Save time", "Reduce labour costs"] }
                 ],
-                "options_map": {
-                    "A": "demonstrated independence",
-                    "B": "asked for teacher support",
-                    "C": "developed a competitive attitude",
-                    "D": "seemed to find the activity calming",
-                    "E": "seemed pleased with the results",
-                    "F": "seemed confused",
-                    "G": "seemed to find the activity easy"
+                "answers": {
+                    "21": "A",
+                    "22": "B",
+                    "23": "A",
+                    "24": "C",
+                    "25": "B",
+                    "26": "C",
+                    "27": ["B", "E"],
+                    "28": ["B", "E"],
+                    "29": ["A", "D"],
+                    "30": ["A", "D"]
                 }
-            },
-            {
-                "part": 3,
-                "instruction": "Questions 28–30: Choose the correct answer A, B or C.",
-                "questions": [
-                    {
-                        "id": 28,
-                        "stem": "Before starting an origami activity, it is important for the teacher to",
-                        "type": "single_choice",
-                        "options": [
-                            "make models that demonstrate the different stages",
-                            "check children understand the terminology involved",
-                            "tell children not to worry if they find the activity difficult"
-                        ]
-                    },
-                    {
-                        "id": 29,
-                        "stem": "Teachers may be unwilling to use origami because",
-                        "type": "single_choice",
-                        "options": [
-                            "they may not think that crafts are important",
-                            "they may not have the necessary skills",
-                            "they may worry that it will take up too much time"
-                        ]
-                    },
-                    {
-                        "id": 30,
-                        "stem": "Students decide to use origami in maths teaching practice",
-                        "type": "single_choice",
-                        "options": [
-                            "to correct a particular misunderstanding",
-                            "to set a challenge",
-                            "to introduce a new concept"
-                        ]
-                    }
-                ]
             },
             {
                 "part": 4,
                 "instruction": "Complete the notes below. Write ONE WORD ONLY.",
-                "audioUrl": "https://www.youtube.com/watch?v=_cskUdSXwYM&list=PLQoFvrOxWqR4cqAYBjrv9petggWGB_ATM&index=4",
+                "audioUrl": "/audio/test-1/Listening Test 1 Section 4.m4a",
                 "questions": [
-                    {
-                        "id": 31,
-                        "stem": "We know more about its overall _____ than about its author",
-                        "type": "text"
-                    },
-                    {
-                        "id": 32,
-                        "stem": "Social issues such as _____ and education",
-                        "type": "text"
-                    },
-                    {
-                        "id": 33,
-                        "stem": "Victor Hugo had to live elsewhere in _____",
-                        "type": "text"
-                    },
-                    {
-                        "id": 34,
-                        "stem": "Sale of some _____ he had written",
-                        "type": "text"
-                    },
-                    {
-                        "id": 35,
-                        "stem": "Portraits, _____ and tapestries",
-                        "type": "text"
-                    },
-                    {
-                        "id": 36,
-                        "stem": "Cheap _____ made of wood",
-                        "type": "text"
-                    },
-                    {
-                        "id": 37,
-                        "stem": "Wallpaper and _____ with Chinese design",
-                        "type": "text"
-                    },
-                    {
-                        "id": 38,
-                        "stem": "A view of the _____",
-                        "type": "text"
-                    },
-                    {
-                        "id": 39,
-                        "stem": "Poor _____ entertained in his house",
-                        "type": "text"
-                    },
-                    {
-                        "id": 40,
-                        "stem": "Victor Hugo’s _____ gave ownership to Paris",
-                        "type": "text"
-                    }
-                ]
+                    { "id": "31", "display_no": 31, "stem": "free ______ service", "type": "text" },
+                    { "id": "32", "display_no": 32, "stem": "hospital to be ______", "type": "text" },
+                    { "id": "33", "display_no": 33, "stem": "prior ______", "type": "text" },
+                    { "id": "34", "display_no": 34, "stem": "website improvements for local ______", "type": "text" },
+                    { "id": "35", "display_no": 35, "stem": "extra ______ for staff success", "type": "text" },
+                    { "id": "36", "display_no": 36, "stem": "opinions of the ______", "type": "text" },
+                    { "id": "37", "display_no": 37, "stem": "effectiveness of ______", "type": "text" },
+                    { "id": "38", "display_no": 38, "stem": "______ disturbance", "type": "text" },
+                    { "id": "39", "display_no": 39, "stem": "______ surgery", "type": "text" },
+                    { "id": "40", "display_no": 40, "stem": "more effective ______", "type": "text" }
+                ],
+                "answers": {
+                    "31": "transportation",
+                    "32": "clean",
+                    "33": "information",
+                    "34": "residents",
+                    "35": "bonus",
+                    "36": "visitors",
+                    "37": "communication",
+                    "38": "sleep",
+                    "39": "plastic",
+                    "40": "planning"
+                }
             }
         ]
     }
