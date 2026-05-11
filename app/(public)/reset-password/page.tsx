@@ -20,16 +20,19 @@ export default function ResetPasswordPage() {
 
   useEffect(() => {
     const supabase = createBrowserClient();
-    // Check if we have a session (the recovery link should have signed us in)
-    supabase.auth.getSession().then((res) => {
-      const session = res.data.session;
-      if (!session) {
+    
+    async function checkSession() {
+      // Check if we have a session (the recovery link should have signed us in)
+      const { data } = await supabase.auth.getSession();
+      if (!data.session) {
         toast.error("Liên kết hết hạn hoặc không hợp lệ. Vui lòng yêu cầu lại.");
         router.replace("/forgot-password");
       } else {
         setIsVerifying(false);
       }
-    });
+    }
+    
+    void checkSession();
   }, [router]);
 
   async function handleSubmit(e: React.FormEvent) {
