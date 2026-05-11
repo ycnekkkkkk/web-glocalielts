@@ -284,6 +284,14 @@ export default function RoleLoginForm({
                 }
                 required
               />
+              <div className="flex justify-end">
+                <Link
+                  href="/forgot-password"
+                  className={`text-xs font-medium ${config.accentClass} hover:opacity-80 transition-opacity`}
+                >
+                  Quên mật khẩu?
+                </Link>
+              </div>
               <Button type="submit" loading={loading} className="w-full" size="lg">
                 Đăng nhập
               </Button>

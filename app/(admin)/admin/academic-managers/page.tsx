@@ -7,7 +7,7 @@ import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import Avatar from "@/components/ui/Avatar";
 import { createBrowserClient } from "@/lib/supabase/client";
-import { BookOpen, Copy, Eye, EyeOff, KeyRound, Plus, Search, Trash2, UserCheck } from "lucide-react";
+import { BookOpen, Copy, Eye, EyeOff, KeyRound, Lock, Plus, Search, Trash2, UserCheck } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
 import toast from "react-hot-toast";
 
@@ -37,6 +37,9 @@ export default function AdminAcademicManagersPage() {
   // Delete modal
   const [deleteTarget, setDeleteTarget] = useState<ManagerAccount | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [resetPw, setResetPw] = useState("");
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resettingMgr, setResettingMgr] = useState<ManagerAccount | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -148,6 +151,28 @@ export default function AdminAcademicManagersPage() {
     }
   }
 
+  async function handleResetPassword(e: React.FormEvent) {
+    e.preventDefault();
+    if (!resettingMgr || !resetPw) return;
+    setSaving(true);
+    try {
+      const res = await fetch("/api/admin/reset-user-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: resettingMgr.id, newPassword: resetPw }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      toast.success(`Đã đổi mật khẩu cho ${resettingMgr.full_name}`);
+      setShowResetModal(false);
+      setResetPw("");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Có lỗi xảy ra");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+
   function copyToClipboard(text: string, label: string) {
     navigator.clipboard.writeText(text).then(() => toast.success(`Đã sao chép ${label}`));
   }
@@ -220,6 +245,13 @@ export default function AdminAcademicManagersPage() {
                   )}
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={() => { setResettingMgr(mgr); setResetPw(""); setShowResetModal(true); }}
+                    title="Đặt lại mật khẩu"
+                    className="p-2 rounded-lg text-gray-400 hover:text-orange-600 hover:bg-orange-50 transition-colors"
+                  >
+                    <Lock className="w-4 h-4" />
+                  </button>
                   <button
                     onClick={() => setCreatedCreds({ email: mgr.email || "", password: "••••••••", name: mgr.full_name || "" })}
                     title="Xem thông tin đăng nhập"
@@ -389,6 +421,28 @@ export default function AdminAcademicManagersPage() {
           </div>
         )}
       </Modal>
+      {/* Reset Password Modal */}
+      <Modal open={showResetModal} onClose={() => setShowResetModal(false)} title={`Đặt lại mật khẩu – ${resettingMgr?.full_name}`}>
+        <form onSubmit={handleResetPassword} className="space-y-4">
+          <p className="text-sm text-gray-500">
+            Đặt lại mật khẩu mới cho học vụ. Người dùng sẽ dùng mật khẩu này để đăng nhập ngay lập tức.
+          </p>
+          <Input
+            label="Mật khẩu mới *"
+            type="password"
+            value={resetPw}
+            onChange={e => setResetPw(e.target.value)}
+            placeholder="Nhập ít nhất 6 ký tự"
+            required
+            autoFocus
+          />
+          <div className="flex gap-3 pt-2">
+            <Button type="button" variant="secondary" className="flex-1" onClick={() => setShowResetModal(false)}>Hủy</Button>
+            <Button type="submit" loading={saving} className="flex-1">Cập nhật mật khẩu</Button>
+          </div>
+        </form>
+      </Modal>
+
     </PageWrapper>
   );
 }

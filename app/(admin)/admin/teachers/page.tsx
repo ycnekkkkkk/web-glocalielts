@@ -8,7 +8,7 @@ import Avatar from "@/components/ui/Avatar";
 import Modal from "@/components/ui/Modal";
 import { createBrowserClient } from "@/lib/supabase/client";
 import {
-  BookOpen, Calendar, CheckCircle, ChevronRight,
+  BookOpen, Calendar, CheckCircle, ChevronRight, Lock,
   Mail, Search, Trash2, UserPlus, Users, X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -59,6 +59,9 @@ export default function AdminTeachersPage() {
   const [creating, setCreating]         = useState(false);
   const [detailTeacher, setDetailTeacher] = useState<TeacherWithClasses | null>(null);
   const [deletingTeacherId, setDeletingTeacherId] = useState<string | null>(null);
+  const [resetPw, setResetPw] = useState("");
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resettingTeacher, setResettingTeacher] = useState<TeacherWithClasses | null>(null);
 
   // ── load ───────────────────────────────────────────────────────────────────
   const loadTeachers = useCallback(async () => {
@@ -221,6 +224,28 @@ export default function AdminTeachersPage() {
     }
   }
 
+  async function handleResetPassword(e: React.FormEvent) {
+    e.preventDefault();
+    if (!resettingTeacher || !resetPw) return;
+    setCreating(true);
+    try {
+      const res = await fetch("/api/admin/reset-user-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: resettingTeacher.id, newPassword: resetPw }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      toast.success(`Đã đổi mật khẩu cho ${resettingTeacher.full_name}`);
+      setShowResetModal(false);
+      setResetPw("");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Có lỗi xảy ra");
+    } finally {
+      setCreating(false);
+    }
+  }
+
+
   // ─── render ────────────────────────────────────────────────────────────────
   return (
     <PageWrapper>
@@ -359,6 +384,15 @@ export default function AdminTeachersPage() {
               {/* Actions */}
               <div className="pt-4 border-t border-gray-100">
                 <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    icon={<Lock className="w-3.5 h-3.5" />}
+                    onClick={() => { setResettingTeacher(t); setResetPw(""); setShowResetModal(true); }}
+                  >
+                    Reset PW
+                  </Button>
                   <Button
                     variant="outline"
                     size="sm"
@@ -532,6 +566,28 @@ export default function AdminTeachersPage() {
           </div>
         </form>
       </Modal>
+      {/* Reset Password Modal */}
+      <Modal open={showResetModal} onClose={() => setShowResetModal(false)} title={`Đặt lại mật khẩu – ${resettingTeacher?.full_name}`}>
+        <form onSubmit={handleResetPassword} className="space-y-4">
+          <p className="text-sm text-gray-500">
+            Đặt lại mật khẩu mới cho giáo viên. Người dùng sẽ dùng mật khẩu này để đăng nhập ngay lập tức.
+          </p>
+          <Input
+            label="Mật khẩu mới *"
+            type="password"
+            value={resetPw}
+            onChange={e => setResetPw(e.target.value)}
+            placeholder="Nhập ít nhất 6 ký tự"
+            required
+            autoFocus
+          />
+          <div className="flex gap-3 pt-2">
+            <Button type="button" variant="secondary" className="flex-1" onClick={() => setShowResetModal(false)}>Hủy</Button>
+            <Button type="submit" loading={creating} className="flex-1">Cập nhật mật khẩu</Button>
+          </div>
+        </form>
+      </Modal>
+
     </PageWrapper>
   );
 }

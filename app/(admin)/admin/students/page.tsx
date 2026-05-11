@@ -12,7 +12,7 @@ import { useStudents } from "@/hooks/useStudents";
 import { useEnrollments } from "@/hooks/useEnrollments";
 import type { Class, Student } from "@/types";
 import {
-  AlertCircle, GraduationCap, Mail, Pencil, Phone, Search, Trash2, UserPlus,
+  AlertCircle, GraduationCap, Lock, Mail, Pencil, Phone, Search, Trash2, UserPlus,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
@@ -22,9 +22,10 @@ export default function AdminStudentsPage() {
   const { students, loading, error: studentsError, createStudent, updateStudent, deleteStudent, reload } = useStudents();
   const [classes, setClasses] = useState<Class[]>([]);
 
-  const [modal, setModal] = useState<null | "create" | "edit" | "delete" | "enroll">(null);
+  const [modal, setModal] = useState<null | "create" | "edit" | "delete" | "enroll" | "reset-password">(null);
   const [selected, setSelected] = useState<Student | null>(null);
   const [form, setForm] = useState({ full_name: "", phone: "", email: "", password: "", parent_info: "" });
+  const [resetPw, setResetPw] = useState("");
   const [enrollForm, setEnrollForm] = useState({ class_id: "" });
   const [saving, setSaving] = useState(false);
 
@@ -150,6 +151,28 @@ export default function AdminStudentsPage() {
     }
   }
 
+  async function handleResetPassword(e: React.FormEvent) {
+    e.preventDefault();
+    if (!selected || !resetPw) return;
+    setSaving(true);
+    try {
+      const res = await fetch("/api/admin/reset-user-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: selected.profile_id, newPassword: resetPw }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      toast.success(`Đã đổi mật khẩu cho ${selected.full_name}`);
+      setModal(null);
+      setResetPw("");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Có lỗi xảy ra");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+
   return (
     <PageWrapper>
       <div className="page-header flex items-start justify-between flex-wrap gap-4">
@@ -217,6 +240,8 @@ export default function AdminStudentsPage() {
                           onClick={() => { setSelected(s); setEnrollForm({ class_id: "" }); setModal("enroll"); }}>
                           Đăng ký lớp
                         </Button>
+                        <Button variant="ghost" size="sm" icon={<Lock className="w-3.5 h-3.5" />}
+                          onClick={() => { setSelected(s); setResetPw(""); setModal("reset-password"); }} />
                         <Button variant="ghost" size="sm" icon={<Pencil className="w-3.5 h-3.5" />} onClick={() => openEdit(s)} />
                         <Button variant="ghost" size="sm" icon={<Trash2 className="w-3.5 h-3.5 text-red-500" />}
                           onClick={() => { setSelected(s); setModal("delete"); }} />
@@ -309,6 +334,28 @@ export default function AdminStudentsPage() {
           <div className="flex gap-3 pt-2">
             <Button type="button" variant="secondary" className="flex-1" onClick={() => setModal(null)}>Hủy</Button>
             <Button type="submit" loading={saving} className="flex-1">Xác nhận đăng ký</Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Reset Password Modal */}
+      <Modal open={modal === "reset-password"} onClose={() => setModal(null)} title={`Đặt lại mật khẩu – ${selected?.full_name}`}>
+        <form onSubmit={handleResetPassword} className="space-y-4">
+          <p className="text-sm text-gray-500">
+            Đặt lại mật khẩu mới cho học viên. Người dùng sẽ dùng mật khẩu này để đăng nhập ngay lập tức.
+          </p>
+          <Input
+            label="Mật khẩu mới *"
+            type="password"
+            value={resetPw}
+            onChange={e => setResetPw(e.target.value)}
+            placeholder="Nhập ít nhất 6 ký tự"
+            required
+            autoFocus
+          />
+          <div className="flex gap-3 pt-2">
+            <Button type="button" variant="secondary" className="flex-1" onClick={() => setModal(null)}>Hủy</Button>
+            <Button type="submit" loading={saving} className="flex-1">Cập nhật mật khẩu</Button>
           </div>
         </form>
       </Modal>
