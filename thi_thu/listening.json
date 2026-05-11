@@ -68,14 +68,38 @@
                 "questions": [
                     { "id": "21", "display_no": 21, "stem": "Current focus", "type": "single_choice", "options": ["Specialising in one product", "Variety of products", "More retail outlets"] },
                     { "id": "22", "display_no": 22, "stem": "How students learned about software", "type": "single_choice", "options": ["Professor contacted company", "Newspaper article", "Student part-time work"] },
-                    { "id": "23", "display_no": 23, "stem": "Students’ opinion of software", "type": "single_choice", "options": ["Hard to predict", "Slow for design", "Good interface"] },
+                    { "id": "23", "display_no": 23, "stem": "Students' opinion of software", "type": "single_choice", "options": ["Hard to predict", "Slow for design", "Good interface"] },
                     { "id": "24", "display_no": 24, "stem": "How students evaluated company impact", "type": "single_choice", "options": ["Visited IT department", "Talked to manager", "Checked accounts"] },
                     { "id": "25", "display_no": 25, "stem": "Reason for face-to-face interview", "type": "single_choice", "options": ["Prepare for exams", "Less disturbance", "Less realistic"] },
                     { "id": "26", "display_no": 26, "stem": "Students' exam performance", "type": "single_choice", "options": ["Very disappointing", "Significantly good", "Above average"] },
-                    { "id": "27", "display_no": 27, "stem": "Effects on company (choose TWO)", "type": "single_choice", "options": ["Gain more profit", "Hire more staff", "Increase sales", "Reduce production time", "Cut labour costs"] },
-                    { "id": "28", "display_no": 28, "stem": "Effects on company (choose TWO)", "type": "single_choice", "options": ["Gain more profit", "Hire more staff", "Increase sales", "Reduce production time", "Cut labour costs"] },
-                    { "id": "29", "display_no": 29, "stem": "Effects on new clients (choose TWO)", "type": "single_choice", "options": ["More involvement in design", "More contacts", "Work from home", "Save time", "Reduce labour costs"] },
-                    { "id": "30", "display_no": 30, "stem": "Effects on new clients (choose TWO)", "type": "single_choice", "options": ["More involvement in design", "More contacts", "Work from home", "Save time", "Reduce labour costs"] }
+                    {
+                        "id": "27",
+                        "display_no": 27,
+                        "stem": "Questions 27-28: Choose TWO letters A-E. Which TWO effects did the software have on the company? (Answer 1 of 2)",
+                        "type": "single_choice",
+                        "options": ["A. Gain more profit", "B. Hire more staff", "C. Increase sales", "D. Reduce production time", "E. Cut labour costs"]
+                    },
+                    {
+                        "id": "28",
+                        "display_no": 28,
+                        "stem": "Questions 27-28: Choose TWO letters A-E. Which TWO effects did the software have on the company? (Answer 2 of 2)",
+                        "type": "single_choice",
+                        "options": ["A. Gain more profit", "B. Hire more staff", "C. Increase sales", "D. Reduce production time", "E. Cut labour costs"]
+                    },
+                    {
+                        "id": "29",
+                        "display_no": 29,
+                        "stem": "Questions 29-30: Choose TWO letters A-E. Which TWO effects did the software have on new clients? (Answer 1 of 2)",
+                        "type": "single_choice",
+                        "options": ["A. More involvement in design", "B. More contacts", "C. Work from home", "D. Save time", "E. Reduce labour costs"]
+                    },
+                    {
+                        "id": "30",
+                        "display_no": 30,
+                        "stem": "Questions 29-30: Choose TWO letters A-E. Which TWO effects did the software have on new clients? (Answer 2 of 2)",
+                        "type": "single_choice",
+                        "options": ["A. More involvement in design", "B. More contacts", "C. Work from home", "D. Save time", "E. Reduce labour costs"]
+                    }
                 ],
                 "answers": {
                     "21": "A",
@@ -84,10 +108,10 @@
                     "24": "C",
                     "25": "B",
                     "26": "C",
-                    "27": ["B", "E"],
-                    "28": ["B", "E"],
-                    "29": ["A", "D"],
-                    "30": ["A", "D"]
+                    "27": "B. Hire more staff",
+                    "28": "E. Cut labour costs",
+                    "29": "A. More involvement in design",
+                    "30": "D. Save time"
                 }
             },
             {

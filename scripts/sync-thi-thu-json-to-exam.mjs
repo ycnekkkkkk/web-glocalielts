@@ -131,7 +131,10 @@ function buildListening(listeningRaw) {
 
 function buildSpeaking(speakingRaw) {
   const blocks = [];
+  const parts = [];
+
   for (const p of speakingRaw.parts || []) {
+    // Build HTML block (for fallback display)
     let html = `<h3>Part ${escapeHtml(p.part)}</h3>`;
     if (p.type) html += `<p><em>${escapeHtml(p.type)}</em></p>`;
     if (Array.isArray(p.questions) && p.questions.length) {
@@ -143,10 +146,22 @@ function buildSpeaking(speakingRaw) {
     }
     if (p.follow_up) html += `<p><strong>Follow-up:</strong> ${escapeHtml(p.follow_up)}</p>`;
     blocks.push({ type: "text", html });
+
+    // Structured part data for TTS UI
+    parts.push({
+      part: String(p.part),
+      type: p.type || undefined,
+      questions: Array.isArray(p.questions) && p.questions.length ? p.questions : undefined,
+      task: p.task || undefined,
+      cues: Array.isArray(p.cues) && p.cues.length ? p.cues : undefined,
+      follow_up: p.follow_up || undefined,
+    });
   }
+
   return {
     title: speakingRaw.title || "Speaking",
     blocks,
+    parts,
     prompt: "Hoàn thành đầy đủ Part 1, Part 2 và Part 3 theo đề.",
   };
 }
@@ -155,6 +170,8 @@ function buildReading(readingRaw) {
   const blocks = [];
   const questions = [];
   const answers = {};
+
+  const MCQ_TYPES = new Set(["single_choice", "matching", "multiple_choice"]);
 
   for (const [idx, p] of (readingRaw.passages || []).entries()) {
     const section = `reading_passage_${idx + 1}`;
@@ -172,23 +189,55 @@ function buildReading(readingRaw) {
     for (const q of p.questions || []) {
       const id = `r${q.id}`;
       const stem = String(q.stem || "").trim();
-      const options = Array.isArray(q.options) ? q.options : [];
+      // Preserve the actual question type from JSON
+      const qType = q.type || "text";
+      const options = Array.isArray(q.options) ? q.options : (qType === "true_false_not_given" ? undefined : []);
+      const options_map = q.options_map || undefined;
       questions.push({
         id,
         stem,
-        type: "single_choice",
+        type: qType,
         options,
+        options_map,
         section,
         display_no: Number(q.id) || undefined,
       });
+
       const ans = p.answers?.[String(q.id)];
-      if (typeof ans === "string") {
-        if (ans.length === 1 && /[A-Z]/.test(ans)) {
-          const idxAns = ans.charCodeAt(0) - 65;
-          answers[id] = options[idxAns] ?? ans;
+      if (ans === undefined || ans === null) continue;
+
+      if (qType === "true_false_not_given") {
+        // true_false_not_given: answer key is index (0/1/2) or text (TRUE/FALSE/NOT GIVEN)
+        if (typeof ans === "number") {
+          answers[id] = ans; // already index
         } else {
-          answers[id] = ans;
+          const norm = String(ans).trim().toUpperCase();
+          if (norm === "TRUE" || norm === "YES") answers[id] = 0;
+          else if (norm === "FALSE" || norm === "NO") answers[id] = 1;
+          else if (norm === "NOT GIVEN") answers[id] = 2;
+          else answers[id] = ans;
         }
+      } else if (qType === "text") {
+        // text: store as-is
+        answers[id] = String(ans).trim().toLowerCase();
+      } else if (MCQ_TYPES.has(qType)) {
+        if (typeof ans === "number") {
+          // Already an index — store as corresponding option text
+          answers[id] = (options || [])[ans] ?? String(ans);
+        } else if (typeof ans === "string") {
+          if (ans.length === 1 && /[A-Z]/.test(ans) && options && options.length > 0) {
+            // Letter format "A","B","C" → resolve to option text
+            const idxAns = ans.charCodeAt(0) - 65;
+            answers[id] = options[idxAns] ?? ans;
+          } else {
+            // Already option text or a letter key for matching
+            answers[id] = ans;
+          }
+        } else {
+          answers[id] = String(ans);
+        }
+      } else {
+        answers[id] = ans;
       }
     }
   }
@@ -205,39 +254,46 @@ function buildReading(readingRaw) {
 
 function buildWriting(writingRaw) {
   const blocks = [];
+  const tasks = [];
   let maxWords = 0;
+
   for (const t of writingRaw.tasks || []) {
     maxWords = Math.max(maxWords, Number(t.minWords || 0));
+
+    // Build HTML block (fallback / display)
     let html = `<h3>Task ${escapeHtml(t.task)}</h3>`;
     if (t.instruction) html += `<p>${escapeHtml(t.instruction)}</p>`;
     if (t.prompt) html += `<p><strong>Prompt:</strong> ${escapeHtml(t.prompt)}</p>`;
-    
+
     if (t.data?.headers && t.data?.rows) {
-      const header = `<tr><th>Company</th>${t.data.headers
-        .map((h) => `<th>${escapeHtml(h)}</th>`)
-        .join("")}</tr>`;
-      const body = t.data.rows
-        .map((r) => {
-          const cells = (r.values || []).map((v) => `<td>${escapeHtml(v)}</td>`).join("");
-          return `<tr><td>${escapeHtml(r.company)}</td>${cells}</tr>`;
-        })
-        .join("");
+      const header = `<tr><th>Company</th>${t.data.headers.map((h) => `<th>${escapeHtml(h)}</th>`).join("")}</tr>`;
+      const body = t.data.rows.map((r) => {
+        const cells = (r.values || []).map((v) => `<td>${escapeHtml(v)}</td>`).join("");
+        return `<tr><td>${escapeHtml(r.company)}</td>${cells}</tr>`;
+      }).join("");
       html += `<div class="overflow-auto"><table><thead>${header}</thead><tbody>${body}</tbody></table></div>`;
       if (t.data.unit) html += `<p><em>Unit: ${escapeHtml(t.data.unit)}</em></p>`;
     }
     blocks.push({ type: "text", html });
 
     if (t.image) {
-      blocks.push({
-        type: "image",
-        src: t.image,
-        alt: `Task ${t.task} Image`
-      });
+      blocks.push({ type: "image", src: t.image, alt: `Task ${t.task} Image` });
     }
+
+    // Structured task for per-textarea UI
+    tasks.push({
+      task: String(t.task),
+      instruction: t.instruction || undefined,
+      prompt: t.prompt || undefined,
+      minWords: t.minWords ? Number(t.minWords) : undefined,
+      imageBlock: t.image ? { src: t.image, alt: `Task ${t.task} Image` } : undefined,
+    });
   }
+
   return {
     title: writingRaw.title || "Writing",
     blocks,
+    tasks,
     prompt: "Làm đầy đủ Task 1 và Task 2 theo đề.",
     minWords: maxWords || 250,
   };

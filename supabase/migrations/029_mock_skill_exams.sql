@@ -79,7 +79,7 @@ GRANT SELECT ON public.mock_skill_submissions TO authenticated;
 INSERT INTO public.mock_skill_exam_defs (slug, title, description, content_public, is_active)
 VALUES (
   'ielts-full-mock-1',
-  'IELTS — Thi thử 4 kỹ năng (mẫu)',
+  'Đề thi ielts tổng hợp 1',
   'Làm Listening, Reading, Speaking (ghi âm), Writing. Kết quả chi tiết sẽ được gửi qua email sau.',
   $json$
 {

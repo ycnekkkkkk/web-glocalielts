@@ -2,7 +2,7 @@ import PublicSiteFooter from "@/components/layout/PublicSiteFooter";
 import PublicSiteHeader from "@/components/layout/PublicSiteHeader";
 import type { ReactNode } from "react";
 
-export default function PublicPageShell({ hero, children }: { hero?: ReactNode; children: ReactNode }) {
+export default function PublicPageShell({ hero, children, fullWidth }: { hero?: ReactNode; children: ReactNode; fullWidth?: boolean }) {
   return (
     <div className="min-h-screen bg-slate-50 text-gray-900 flex flex-col">
       <PublicSiteHeader />

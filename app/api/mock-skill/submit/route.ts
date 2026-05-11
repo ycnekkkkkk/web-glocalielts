@@ -11,40 +11,13 @@ import {
 import { formatDriveSubmissionFolderName } from "@/lib/mock-skill/format-drive-folder-name";
 import { resolveExamContentPublic } from "@/lib/mock-skill/resolve-content";
 import { scoreListeningReading } from "@/lib/mock-skill/score";
+import { rawScoreToBand } from "@/lib/mock-skill/band-mapping";
 import type { MockSkillAnswers, MockSkillContentPublic } from "@/lib/mock-skill/types";
 import { NextResponse } from "next/server";
-import { z } from "zod";
 
 export const runtime = "nodejs";
 
 const MAX_SPEAKING_BYTES = 24 * 1024 * 1024;
-
-const candidateSchema = z.object({
-  full_name: z.string().trim().min(1).max(200),
-  email: z.string().trim().email().max(320),
-  phone: z.string().trim().max(40).optional(),
-  birth_year: z.string().trim().max(4).optional(),
-  hometown: z.string().trim().max(200).optional(),
-  notes: z.string().trim().max(2000).optional(),
-});
-
-function countWords(s: string): number {
-  return s.trim().split(/\s+/).filter(Boolean).length;
-}
-
-function parsePicks(raw: unknown): Record<string, number> {
-  if (typeof raw !== "string" || !raw.trim()) return {};
-  try {
-    const o = JSON.parse(raw) as Record<string, unknown>;
-    const out: Record<string, number> = {};
-    for (const [k, v] of Object.entries(o)) {
-      if (typeof v === "number" && Number.isInteger(v)) out[k] = v;
-    }
-    return out;
-  } catch {
-    return {};
-  }
-}
 
 function parseMixedAnswers(raw: unknown): Record<string, string | number> {
   if (typeof raw !== "string" || !raw.trim()) return {};
@@ -61,24 +34,6 @@ function parseMixedAnswers(raw: unknown): Record<string, string | number> {
   }
 }
 
-function validateMcqPicks(
-  questions: { id: string; type?: string; options?: string[] }[] | undefined,
-  picks: Record<string, string | number>
-): string | null {
-  if (!questions?.length) return null;
-  const CHOICE_TYPES = new Set(["single_choice", "true_false_not_given", "matching", "multiple_choice"]);
-  for (const q of questions) {
-    if (!q.type || !CHOICE_TYPES.has(q.type)) continue; // text questions — skip
-    const opts = q.options || [];
-    const v = picks[q.id];
-    if (v === undefined) continue;
-    if (typeof v === "number" && (v < 0 || v >= opts.length)) {
-      return `Đáp án không hợp lệ ở câu: ${q.id}`;
-    }
-  }
-  return null;
-}
-
 function validateListeningAnswers(
   questions: Array<{ id: string; type: string; options?: string[] }> | undefined,
   picks: Record<string, string | number>
@@ -89,9 +44,7 @@ function validateListeningAnswers(
     const v = picks[q.id];
     if (v === undefined) continue;
     if (q.type === "text") {
-      if (typeof v !== "string") {
-        return `Đáp án không hợp lệ ở câu: ${q.id}`;
-      }
+      if (typeof v !== "string") return `Đáp án không hợp lệ ở câu: ${q.id}`;
       continue;
     }
     if (CHOICE_TYPES.has(q.type)) {
@@ -105,6 +58,17 @@ function validateListeningAnswers(
 }
 
 export async function POST(request: Request) {
+  // ── Auth: bắt buộc đăng nhập ────────────────────────────────
+  const serverSb = await createServerSupabaseClient();
+  const { data: { user } } = await serverSb.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json(
+      { error: "Bạn cần đăng nhập để nộp bài thi." },
+      { status: 401 }
+    );
+  }
+
   let form: FormData;
   try {
     form = await request.formData();
@@ -117,74 +81,39 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Thiếu mã đề (examSlug)" }, { status: 400 });
   }
 
-  const candidateRaw = typeof form.get("candidate") === "string" ? (form.get("candidate") as string) : "";
-  let candidateJson: unknown;
-  try {
-    candidateJson = candidateRaw.trim() ? JSON.parse(candidateRaw) : {};
-  } catch {
-    return NextResponse.json({ error: "Dữ liệu thí sinh không phải JSON hợp lệ" }, { status: 400 });
-  }
-
   const listeningPicks = parseMixedAnswers(form.get("listeningAnswers"));
-  const readingPicks = parseMixedAnswers(form.get("readingAnswers"));
-  const writingText = String(form.get("writingText") || "");
-  const speakingFile = form.get("speakingAudio");
+  const readingPicks   = parseMixedAnswers(form.get("readingAnswers"));
+  const writingTask1   = String(form.get("writingTask1") || "");
+  const writingTask2   = String(form.get("writingTask2") || "");
+  // Combined text (from legacy or combined field)
+  const writingText    = String(form.get("writingText") || "") ||
+    (writingTask1 || writingTask2 ? `TASK 1:\n${writingTask1}\n\nTASK 2:\n${writingTask2}` : "");
+  const speakingFile   = form.get("speakingAudio");
 
-  const serverSb = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = await serverSb.auth.getUser();
   const admin = createAdminClient();
 
-  const candidateSeed =
-    candidateJson && typeof candidateJson === "object" && !Array.isArray(candidateJson)
-      ? (candidateJson as Record<string, unknown>)
-      : {};
+  // ── Resolve user profile ──────────────────────────────────────
+  const { data: profile } = await admin
+    .from("profiles").select("full_name, email").eq("id", user.id).maybeSingle();
+  const { data: student } = await admin
+    .from("students").select("phone, date_of_birth, current_address").eq("profile_id", user.id).maybeSingle();
 
-  let candidateInput: Record<string, unknown> = {
-    full_name: typeof candidateSeed.full_name === "string" ? candidateSeed.full_name : "",
-    email: typeof candidateSeed.email === "string" ? candidateSeed.email : "",
-    phone: typeof candidateSeed.phone === "string" ? candidateSeed.phone : undefined,
-    birth_year: typeof candidateSeed.birth_year === "string" ? candidateSeed.birth_year : undefined,
-    hometown: typeof candidateSeed.hometown === "string" ? candidateSeed.hometown : undefined,
-    notes: typeof candidateSeed.notes === "string" ? candidateSeed.notes : undefined,
+  const candidate = {
+    full_name:
+      profile?.full_name ||
+      (typeof user.user_metadata?.full_name === "string" ? String(user.user_metadata.full_name) : "") ||
+      "Học viên",
+    email: profile?.email || user.email || "",
+    phone: student?.phone || undefined,
+    birth_year: student?.date_of_birth ? String(student.date_of_birth).slice(0, 4) : undefined,
+    hometown: student?.current_address || undefined,
   };
 
-  if (user) {
-    const { data: profile } = await admin
-      .from("profiles")
-      .select("full_name, email")
-      .eq("id", user.id)
-      .maybeSingle();
-    const { data: student } = await admin
-      .from("students")
-      .select("phone, date_of_birth, current_address")
-      .eq("profile_id", user.id)
-      .maybeSingle();
-
-    const resolvedBirthYear = student?.date_of_birth ? String(student.date_of_birth).slice(0, 4) : undefined;
-
-    candidateInput = {
-      ...candidateInput,
-      full_name:
-        profile?.full_name ||
-        (typeof user.user_metadata?.full_name === "string" ? String(user.user_metadata.full_name) : "") ||
-        String(candidateInput.full_name || "").trim() ||
-        "Học viên",
-      email: profile?.email || user.email || String(candidateInput.email || "").trim(),
-      phone: student?.phone || candidateInput.phone,
-      birth_year: resolvedBirthYear || candidateInput.birth_year,
-      hometown: student?.current_address || candidateInput.hometown,
-    };
+  if (!candidate.email) {
+    return NextResponse.json({ error: "Không lấy được email từ tài khoản" }, { status: 400 });
   }
 
-  const parsedCandidate = candidateSchema.safeParse(candidateInput);
-  if (!parsedCandidate.success) {
-    const details = parsedCandidate.error.issues.map((i) => `${i.path.join(".") || "form"}: ${i.message}`).join("; ");
-    return NextResponse.json({ error: "Thông tin thí sinh không hợp lệ", details }, { status: 400 });
-  }
-  const candidate = parsedCandidate.data;
-
+  // ── Load exam ─────────────────────────────────────────────────
   const { data: exam, error: examErr } = await admin
     .from("mock_skill_exam_defs")
     .select("id, slug, title, content_public, content_drive_file_id")
@@ -203,15 +132,12 @@ export async function POST(request: Request) {
 
   const listenErr = validateListeningAnswers(content.listening.questions, listeningPicks);
   if (listenErr) return NextResponse.json({ error: listenErr }, { status: 400 });
-  const readErr = validateMcqPicks(content.reading.questions, readingPicks);
-  if (readErr) return NextResponse.json({ error: readErr }, { status: 400 });
-
-  const wc = countWords(writingText);
 
   if (speakingFile instanceof File && speakingFile.size > MAX_SPEAKING_BYTES) {
-    return NextResponse.json({ error: "File ghi âm quá lớn" }, { status: 400 });
+    return NextResponse.json({ error: "File ghi âm quá lớn (tối đa 24MB)" }, { status: 400 });
   }
 
+  // ── Auto-score L/R ────────────────────────────────────────────
   const { data: answerRow } = await admin
     .from("mock_skill_exam_answers")
     .select("answers")
@@ -219,142 +145,180 @@ export async function POST(request: Request) {
     .maybeSingle();
 
   const answerKey = (answerRow?.answers || {}) as unknown as MockSkillAnswers;
-  // Convert selection indices → option text for ALL choice-based questions
-  const CHOICE_TYPES = new Set(["single_choice", "true_false_not_given", "matching", "multiple_choice"]);
+
+  const MCQ_TYPES = new Set(["single_choice", "matching", "multiple_choice"]);
 
   const listeningForScore: Record<string, string | number> = {};
   for (const q of content.listening.questions || []) {
     const raw = listeningPicks[q.id];
-    if (CHOICE_TYPES.has(q.type) && typeof raw === "number") {
+    if (q.type === "true_false_not_given") {
+      listeningForScore[q.id] = typeof raw === "number" ? raw : (typeof raw === "string" ? raw.trim() : "");
+    } else if (MCQ_TYPES.has(q.type) && typeof raw === "number") {
       listeningForScore[q.id] = q.options?.[raw] ?? "";
     } else {
-      listeningForScore[q.id] = typeof raw === "string" ? raw : "";
+      listeningForScore[q.id] = typeof raw === "string" ? raw.trim() : "";
     }
   }
 
   const readingForScore: Record<string, string | number> = {};
   for (const q of content.reading.questions || []) {
     const raw = readingPicks[q.id];
-    if (CHOICE_TYPES.has(q.type) && typeof raw === "number") {
+    if (q.type === "true_false_not_given") {
+      readingForScore[q.id] = typeof raw === "number" ? raw : (typeof raw === "string" ? raw.trim() : "");
+    } else if (MCQ_TYPES.has(q.type) && typeof raw === "number") {
       readingForScore[q.id] = q.options?.[raw] ?? "";
     } else {
-      readingForScore[q.id] = typeof raw === "string" ? raw : "";
+      readingForScore[q.id] = typeof raw === "string" ? raw.trim() : "";
     }
   }
 
-  const scores = scoreListeningReading(
-    {
-      listening: answerKey.listening || {},
-      reading: answerKey.reading || {},
-    },
+  const rawScores = scoreListeningReading(
+    { listening: answerKey.listening || {}, reading: answerKey.reading || {} },
     listeningForScore,
     readingForScore
   );
+
+  const lrScores = {
+    listening: rawScores.listening
+      ? {
+          ...rawScores.listening,
+          band: rawScoreToBand(rawScores.listening.correct, rawScores.listening.total, "listening"),
+        }
+      : undefined,
+    reading: rawScores.reading
+      ? {
+          ...rawScores.reading,
+          band: rawScoreToBand(rawScores.reading.correct, rawScores.reading.total, "reading_academic"),
+        }
+      : undefined,
+  };
+
+  // ── Insert submission ─────────────────────────────────────────
+  const submittedAt = new Date();
+
+  // answers_raw: lưu toàn bộ bài làm thô
+  const answersRaw: Record<string, unknown> = {
+    listening: listeningForScore,
+    reading: readingForScore,
+    writingText,
+    writingTask1,
+    writingTask2,
+    speakingMimeType: speakingFile instanceof File ? speakingFile.type : null,
+    speakingSize: speakingFile instanceof File ? speakingFile.size : 0,
+  };
 
   const { data: inserted, error: insErr } = await admin
     .from("mock_skill_submissions")
     .insert({
       exam_id: exam.id,
-      auth_user_id: user?.id ?? null,
+      auth_user_id: user.id,
       candidate: candidate as unknown as Record<string, unknown>,
-      status: "processing",
+      scores: lrScores as unknown as Record<string, unknown>,
+      answers_raw: answersRaw,
+      status: "pending",
     })
     .select("id")
     .single();
 
   if (insErr || !inserted) {
-    console.error(insErr);
+    console.error("[submit] Insert error:", insErr);
     return NextResponse.json({ error: "Không lưu được bài nộp" }, { status: 500 });
   }
 
   const submissionId = inserted.id;
-  const submittedAt = new Date();
+
+  // ── Drive upload (non-blocking best-effort) ───────────────────
+  const skipDrive = process.env.MOCK_SKILL_SKIP_DRIVE === "true";
+  let driveFolderId: string | null = null;
+  let driveFolderUrl: string | null = null;
   const driveFolderLabel = formatDriveSubmissionFolderName(
     candidate.full_name,
     candidate.email,
     submittedAt,
     submissionId
   );
-  const skipDrive = process.env.MOCK_SKILL_SKIP_DRIVE === "true";
-  let driveFolderId: string | null = null;
-  let driveFolderUrl: string | null = null;
-  let errorMessage: string | null = null;
-
-  const manifest = {
-    examSlug,
-    examTitle: exam.title,
-    submissionId,
-    submittedAt: submittedAt.toISOString(),
-    driveFolderLabel,
-    candidate,
-    authUserId: user?.id ?? null,
-    listeningAnswers: listeningForScore,
-    readingAnswers: readingPicks,
-    scores,
-    writingText,
-    writingWordCount: wc,
-  };
 
   if (!skipDrive && isDriveConfigured()) {
     const parentId = getMockSkillDriveParentFolderId()!;
+    console.log("[submit] Drive upload start. speakingFile:", {
+      isFile: speakingFile instanceof File,
+      size: speakingFile instanceof File ? speakingFile.size : 0,
+      type: speakingFile instanceof File ? speakingFile.type : "n/a",
+    });
     try {
       driveFolderId = await createDriveFolder(parentId, driveFolderLabel);
       driveFolderUrl = driveFolderWebViewUrl(driveFolderId);
+      console.log("[submit] Drive folder created:", driveFolderId);
+
+      const manifest = {
+        examSlug,
+        examTitle: exam.title,
+        submissionId,
+        submittedAt: submittedAt.toISOString(),
+        candidate,
+        authUserId: user.id,
+        lrScores,
+        listeningAnswers: listeningForScore,
+        readingAnswers: readingForScore,
+        writingWordCount: writingText.trim().split(/\s+/).filter(Boolean).length,
+      };
 
       await uploadDriveFile(
-        driveFolderId,
-        "submission.json",
-        "application/json",
+        driveFolderId, "submission.json", "application/json",
         Buffer.from(JSON.stringify(manifest, null, 2), "utf8")
       );
-      await uploadDriveFile(driveFolderId, "writing.txt", "text/plain; charset=utf-8", Buffer.from(writingText, "utf8"));
+      await uploadDriveFile(
+        driveFolderId, "writing.txt", "text/plain; charset=utf-8",
+        Buffer.from(writingText, "utf8")
+      );
+      console.log("[submit] submission.json + writing.txt uploaded");
 
       if (speakingFile instanceof File && speakingFile.size > 0) {
         const buf = Buffer.from(await speakingFile.arrayBuffer());
         const mime = speakingFile.type || "audio/webm";
         const ext = mime.includes("mp4") ? "m4a" : mime.includes("mpeg") ? "mp3" : "webm";
-        await uploadDriveFile(driveFolderId, `speaking.${ext}`, mime || "audio/webm", buf);
+        console.log("[submit] Uploading speaking audio:", { size: buf.length, mime, ext });
+        const driveFileId = await uploadDriveFile(driveFolderId, `speaking.${ext}`, mime, buf);
+        console.log("[submit] Speaking uploaded to Drive:", driveFileId);
+        // Save Drive audio URL into answers_raw
+        await admin.from("mock_skill_submissions").update({
+          answers_raw: {
+            ...answersRaw,
+            speakingDriveFileId: driveFileId,
+            speakingDriveUrl: `https://drive.google.com/file/d/${driveFileId}/view`,
+            speakingFileName: `speaking.${ext}`,
+          },
+        }).eq("id", submissionId);
       } else {
+        console.log("[submit] No speaking audio (size=0 or not File) — uploading placeholder");
         await uploadDriveFile(
-          driveFolderId,
-          "speaking-placeholder.txt",
-          "text/plain; charset=utf-8",
-          Buffer.from("(Không có file ghi âm đính kèm)", "utf8")
+          driveFolderId, "speaking-placeholder.txt", "text/plain; charset=utf-8",
+          Buffer.from("(Không có file ghi âm)", "utf8")
         );
       }
+
+      // Update drive info + keep status pending
+      await admin.from("mock_skill_submissions").update({
+        drive_folder_id: driveFolderId,
+        drive_folder_url: driveFolderUrl,
+      }).eq("id", submissionId);
+      console.log("[submit] Drive upload complete ✓");
+
     } catch (e) {
-      console.error("[mock-skill] Drive upload failed:", e);
-      errorMessage = e instanceof Error ? e.message : "Drive upload failed";
+      console.error("[mock-skill] Drive upload FAILED:", e instanceof Error ? e.message : e);
+      if (e instanceof Error && e.stack) console.error(e.stack.split("\n").slice(0,5).join("\n"));
     }
-  } else if (!skipDrive && !isDriveConfigured()) {
-    errorMessage =
-      "Drive chưa cấu hình OAuth. Cần GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET (hoặc GOOGLE_SECRET), GOOGLE_REFRESH_TOKEN, và GOOGLE_DRIVE_FOLDER_ID hoặc MOCK_SKILL_DRIVE_PARENT_FOLDER_ID. Xem web/docs/GOOGLE_DRIVE_OAUTH_SETUP.md. Hoặc MOCK_SKILL_SKIP_DRIVE=true khi dev.";
+  } else {
+    console.log("[submit] Drive skipped. skipDrive:", skipDrive, "isDriveConfigured:", isDriveConfigured());
   }
 
-  const finalStatus = skipDrive || driveFolderId !== null ? "completed" : "failed";
-
-  await admin
-    .from("mock_skill_submissions")
-    .update({
-      drive_folder_id: driveFolderId,
-      drive_folder_url: driveFolderUrl,
-      scores: scores as unknown as Record<string, unknown>,
-      status: finalStatus,
-      error_message: errorMessage,
-    })
-    .eq("id", submissionId);
-
-  if (finalStatus === "completed") {
-    void sendMockSkillConfirmationEmail(candidate.email, { examTitle: exam.title });
-  }
+  // ── Send confirmation email ───────────────────────────────────
+  void sendMockSkillConfirmationEmail(candidate.email, { examTitle: exam.title });
 
   return NextResponse.json({
     ok: true,
     submissionId,
-    status: finalStatus,
-    message:
-      finalStatus === "completed"
-        ? "Đã nộp bài. Kết quả chi tiết sẽ được gửi về email của bạn trong vài giờ."
-        : errorMessage || "Nộp bài thất bại",
+    status: "pending",
+    message: "Kết quả của bạn sẽ được cập nhật trên trang cá nhân và gửi về email của bạn trong vài giờ.",
   });
 }

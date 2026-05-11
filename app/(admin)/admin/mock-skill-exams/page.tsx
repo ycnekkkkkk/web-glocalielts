@@ -6,7 +6,7 @@ import Button from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { createBrowserClient } from "@/lib/supabase/client";
 import type { MockSkillExamDef } from "@/types";
-import { ExternalLink, Eye } from "lucide-react";
+import { BookOpen, ExternalLink, Eye, Play, Plus, Settings, UploadCloud, Users } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
@@ -46,11 +46,12 @@ export default function AdminMockSkillExamsPage() {
       toast.error(error.message);
       return;
     }
-    toast.success(next ? "Đã bật đề" : "Đã tắt đề");
+    toast.success(next ? "Đã bật đề thi" : "Đã tắt đề thi");
     setExams((prev) => prev.map((e) => (e.id === exam.id ? { ...e, is_active: next } : e)));
   }
 
   async function pushExamToDrive(exam: MockSkillExamDef) {
+    if (!confirm("Bạn có chắc muốn chuyển đề này lên Google Drive để tối ưu dung lượng Supabase?")) return;
     setPushingId(exam.id);
     try {
       const res = await fetch(`/api/admin/mock-skill-exams/${exam.id}/push-to-drive`, { method: "POST" });
@@ -59,7 +60,7 @@ export default function AdminMockSkillExamsPage() {
         toast.error(json.error || "Đẩy đề lên Drive thất bại");
         return;
       }
-      toast.success("Đã chuyển đề lên Drive");
+      toast.success("Đã chuyển đề lên Drive thành công");
       setExams((prev) =>
         prev.map((e) =>
           e.id === exam.id
@@ -76,70 +77,126 @@ export default function AdminMockSkillExamsPage() {
 
   return (
     <PageWrapper>
-      <div className="page-header flex items-start justify-between flex-wrap gap-4">
-        <div>
-          <h1 className="page-title">Thi thử 4 kỹ năng</h1>
-          <p className="page-subtitle">Quản lý đề IELTS (Listening, Reading, Speaking, Writing). Nội dung đề cập nhật qua form editor.</p>
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-brand-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-brand-500/20 shrink-0">
+            <BookOpen className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-black text-gray-900 tracking-tight">Quản lý Đề Thi Thử</h1>
+            <p className="text-sm text-gray-500 font-medium">Cấu hình hệ thống bài thi IELTS 4 Kỹ năng</p>
+          </div>
         </div>
         <Link href="/admin/mock-skill-exams/new">
-          <Button variant="primary">+ Tạo đề mới</Button>
+          <Button variant="primary" icon={<Plus className="w-4 h-4" />}>Tạo đề mới</Button>
         </Link>
       </div>
 
-
-      <Card>
-        {loading ? (
-          <div className="p-8 text-center text-gray-500">Đang tải…</div>
-        ) : exams.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">Chưa có đề. Chạy migration 029 hoặc thêm bản ghi trong bảng mock_skill_exam_defs.</div>
-        ) : (
-          <div className="divide-y divide-gray-100">
-            {exams.map((exam) => (
-              <div key={exam.id} className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 hover:bg-gray-50/80">
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-gray-900">{exam.title}</p>
-                  <p className="text-xs text-gray-500 mt-0.5 font-mono">{exam.slug}</p>
-                  {exam.description && <p className="text-sm text-gray-600 mt-2">{exam.description}</p>}
-                  <div className="mt-2 flex flex-wrap gap-2 items-center">
-                    <Badge variant={exam.is_active ? "success" : "gray"}>{exam.is_active ? "Đang mở" : "Đã tắt"}</Badge>
+      {loading ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          {[1, 2, 3, 4].map(i => (
+            <Card key={i} className="h-48 animate-pulse bg-white border border-gray-100" />
+          ))}
+        </div>
+      ) : exams.length === 0 ? (
+        <Card className="p-12 text-center flex flex-col items-center justify-center border-dashed border-gray-200">
+          <div className="w-16 h-16 rounded-full bg-gray-50 flex items-center justify-center mb-4">
+            <BookOpen className="w-8 h-8 text-gray-300" />
+          </div>
+          <h3 className="text-lg font-bold text-gray-900 mb-1">Chưa có đề thi nào</h3>
+          <p className="text-sm text-gray-500 mb-6 max-w-md">Hãy tạo một đề thi mới hoặc chạy migration để tải dữ liệu mẫu vào hệ thống.</p>
+          <Link href="/admin/mock-skill-exams/new">
+            <Button variant="primary" icon={<Plus className="w-4 h-4" />}>Tạo đề đầu tiên</Button>
+          </Link>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+          {exams.map((exam) => (
+            <Card key={exam.id} className="group hover:border-brand-300 hover:shadow-xl hover:shadow-brand-500/5 transition-all duration-300 overflow-hidden flex flex-col border-gray-200">
+              <div className="p-5 flex-1 relative">
+                {/* Decorative background blur */}
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-brand-50 to-transparent opacity-50 rounded-bl-full pointer-events-none" />
+                
+                <div className="flex justify-between items-start mb-3 relative z-10">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant={exam.is_active ? "success" : "gray"}>
+                      <span className="flex items-center gap-1.5">
+                        <span className={`w-1.5 h-1.5 rounded-full ${exam.is_active ? 'bg-emerald-500 animate-pulse' : 'bg-gray-400'}`}></span>
+                        {exam.is_active ? "Đang mở" : "Đã đóng"}
+                      </span>
+                    </Badge>
                     <Badge variant={exam.content_drive_file_id ? "info" : "warning"}>
-                      {exam.content_drive_file_id ? "Nội dung: Drive" : "Nội dung: Supabase"}
+                      <span className="flex items-center gap-1">
+                        <UploadCloud className="w-3 h-3" />
+                        {exam.content_drive_file_id ? "Data: Drive" : "Data: DB"}
+                      </span>
                     </Badge>
                   </div>
+                  <p className="text-[10px] text-gray-400 font-mono bg-gray-50 px-2 py-0.5 rounded border border-gray-100 hidden sm:block">
+                    {exam.slug}
+                  </p>
                 </div>
-                <div className="flex flex-wrap gap-2 shrink-0">
-                  <Button variant="outline" size="sm" onClick={() => toggleActive(exam)}>
-                    {exam.is_active ? "Tắt đề" : "Bật đề"}
-                  </Button>
-                  <Link href={`/admin/mock-skill-exams/${exam.id}/de-thi`}>
-                    <Button size="sm" variant="outline" icon={<Eye className="w-3.5 h-3.5" />}>
-                      Xem đề
-                    </Button>
-                  </Link>
+
+                <div className="relative z-10">
+                  <h3 className="text-lg font-bold text-gray-900 leading-snug mb-1.5 group-hover:text-brand-700 transition-colors">
+                    {exam.title}
+                  </h3>
+                  <p className="text-sm text-gray-500 line-clamp-2">
+                    {exam.description || "Không có mô tả cho đề thi này."}
+                  </p>
+                </div>
+              </div>
+
+              {/* Actions Bar */}
+              <div className="px-5 py-3 border-t border-gray-100 bg-gray-50/50 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
                   <Link href={`/admin/mock-skill-exams/${exam.id}/ket-qua`}>
-                    <Button size="sm" variant="primary" icon={<ExternalLink className="w-3.5 h-3.5" />}>
-                      Xem kết quả
+                    <Button size="sm" variant="primary" className="shadow-sm" icon={<Users className="w-3.5 h-3.5" />}>
+                      Kết quả
                     </Button>
                   </Link>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    loading={pushingId === exam.id}
-                    onClick={() => pushExamToDrive(exam)}
+                  <Link href={`/admin/mock-skill-exams/${exam.id}/de-thi`}>
+                    <Button size="sm" variant="outline" className="bg-white" icon={<Eye className="w-3.5 h-3.5" />}>
+                      Nội dung
+                    </Button>
+                  </Link>
+                </div>
+
+                <div className="flex items-center gap-1">
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    className="text-gray-400 hover:text-brand-600 px-2"
+                    onClick={() => toggleActive(exam)}
+                    title={exam.is_active ? "Tạm đóng đề" : "Mở đề"}
                   >
-                    Chuyển đề lên Drive
+                    <Settings className="w-4 h-4" />
                   </Button>
-                  <Link href={`/thi-thu/${exam.slug}`} target="_blank" rel="noopener noreferrer">
-                    <Button size="sm" variant="ghost">
-                      Mở trang thí sinh
+                  
+                  {!exam.content_drive_file_id && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-amber-500 hover:text-amber-700 hover:bg-amber-50 px-2"
+                      loading={pushingId === exam.id}
+                      onClick={() => pushExamToDrive(exam)}
+                      title="Chuyển dữ liệu JSON lên Drive để giảm tải Database"
+                    >
+                      <UploadCloud className="w-4 h-4" />
+                    </Button>
+                  )}
+                  
+                  <Link href={`/thi-thu/${exam.slug}`} target="_blank" title="Thi thử dưới góc độ thí sinh">
+                    <Button size="sm" variant="ghost" className="text-gray-400 hover:text-brand-600 px-2">
+                      <Play className="w-4 h-4" />
                     </Button>
                   </Link>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
-      </Card>
+            </Card>
+          ))}
+        </div>
+      )}
     </PageWrapper>
   );
 }

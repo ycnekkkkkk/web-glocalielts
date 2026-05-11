@@ -133,3 +133,21 @@ export async function trashDriveFile(fileId: string): Promise<void> {
     console.warn("[drive] trashDriveFile failed:", fileId, e);
   }
 }
+
+/** Download file content from Drive as Buffer (for audio grading etc.) */
+export async function getDriveFileContent(fileId: string): Promise<{ buffer: Buffer; mimeType: string }> {
+  const drive = getDriveClient();
+  if (!drive) throw new Error("Drive client not configured");
+
+  // Get metadata for mimeType
+  const meta = await drive.files.get({ fileId, fields: "mimeType", supportsAllDrives: true });
+  const mimeType = meta.data.mimeType || "application/octet-stream";
+
+  // Download content
+  const res = await drive.files.get(
+    { fileId, alt: "media", supportsAllDrives: true },
+    { responseType: "arraybuffer" }
+  );
+  const buffer = Buffer.from(res.data as ArrayBuffer);
+  return { buffer, mimeType };
+}

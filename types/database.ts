@@ -583,9 +583,13 @@ export interface MockSkillSubmission {
   drive_folder_id: string | null;
   drive_folder_url: string | null;
   scores: Record<string, unknown> | null;
-  status: "processing" | "completed" | "failed";
+  /** Raw student answers (writing text, listening/reading picks, speaking drive info) */
+  answers_raw: Record<string, unknown> | null;
+  status: "pending" | "grading" | "graded" | "processing" | "completed" | "failed";
+  is_released: boolean;
   error_message: string | null;
   submitted_at: string;
+  graded_at: string | null;
   created_at: string;
 }
 

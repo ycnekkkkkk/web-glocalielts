@@ -41,12 +41,12 @@
           "5": "TRUE",
           "6": "FALSE",
           "7": "TRUE",
-          "8": "C",
-          "9": "C",
-          "10": "B",
-          "11": "A",
-          "12": "D",
-          "13": "C"
+          "8": "7.22",
+          "9": "exercise before breakfast",
+          "10": "taking supplements at breakfast",
+          "11": "mid-afternoon",
+          "12": "eat a light meal",
+          "13": "to introduce chronobiology and describe some practical applications"
         }
       },
       {
@@ -128,7 +128,9 @@
           "C The loss of helium on Earth would affect society greatly. Defying the perception of it as a novelty substance for parties and gimmicks, the element actually has many vital applications in society. Probably the most well known commercial usage is in airships and blimps (non-flammable helium replaced hydrogen as the lifting gas du jour after the Hindenburg catastrophe in 1932, during which an airship burst into flames and crashed to the ground killing some passengers and crew). But helium is also instrumental in deep-sea diving, where it is blended with nitrogen to mitigate the dangers of inhaling ordinary air under high pressure; as a cleaning agent for rocket engines; and, in its most prevalent use, as a coolant for superconducting magnets in hospital MRI scanners.",
           "D The possibility of losing helium forever poses the threat of a real crisis because its unique qualities are extraordinarily difficult, if not impossible to duplicate. Helium is even cheerfully derided as a “loner” element since it does not adhere to other molecules like its cousin, hydrogen. Another important attribute is helium’s unique boiling point, which is lower than that for any other element. The worsening global shortage could render millions of dollars of high-value, life-saving equipment totally useless.",
           "E The source of the problem is the Helium Privatisation Act (HPA), an American law passed in 1996 that requires the U.S. National Helium Reserve to liquidate its helium assets by 2015 regardless of the market price. The result is artificially low prices, discouraging recycling and careful usage.",
-          "F A number of steps need to be taken in order to avert a costly predicament in the coming decades. Firstly, all existing supplies of helium ought to be conserved and released only by permit. Secondly, conservation should be obligatory and enforced. Lastly, research into alternatives to helium must begin in earnest."
+          "F A number of steps need to be taken in order to avert a costly predicament in the coming decades. Firstly, all existing supplies of helium ought to be conserved and released only by permit. Secondly, conservation should be obligatory and enforced. Lastly, research into alternatives to helium must begin in earnest.",
+          "G Lee Sobotka is a professor of chemistry and physics at Washington University, and the leading expert on helium. He says the biggest single step we can take to prevent helium running out is to recycle the helium that we currently use. This is economically beneficial, he says, but is not enough on its own to ensure prudent practice. We need to put in place both legal requirements and economic incentives to make recycling and careful use obligatory, not merely optional.",
+          "H Nobel laureate Robert Richardson, a physicist at Cornell University who won his prize for work on helium-3 (a stable isotope of helium), recently advocated a rethink of the current privatisation policy governing the gas. He believes the helium being sold by the U.S. National Helium Reserve is being priced too cheaply and that the price should rise 20-fold in order to make it economically worthwhile to recycle the gas. He argues that higher costs would mean people have incentives to use the resource many times over. He also asks that people should need a permit to access helium that we still have. Furthermore, a regulatory agency should ensure that helium is used carefully."
         ],
         "questions": [
           { "id": "27", "display_no": 27, "stem": "A use for helium which makes an activity safer", "type": "matching", "options": ["A", "B", "C", "D", "E", "F"], "options_map": { "A": "Paragraph A", "B": "Paragraph B", "C": "Paragraph C", "D": "Paragraph D", "E": "Paragraph E", "F": "Paragraph F" } },
@@ -136,10 +138,10 @@
           { "id": "29", "display_no": 29, "stem": "A term which describes the process of how helium is taken out of the ground", "type": "matching", "options": ["A", "B", "C", "D", "E", "F"], "options_map": { "A": "Paragraph A", "B": "Paragraph B", "C": "Paragraph C", "D": "Paragraph D", "E": "Paragraph E", "F": "Paragraph F" } },
           { "id": "30", "display_no": 30, "stem": "A reason why users of helium do not make efforts to conserve it", "type": "matching", "options": ["A", "B", "C", "D", "E", "F"], "options_map": { "A": "Paragraph A", "B": "Paragraph B", "C": "Paragraph C", "D": "Paragraph D", "E": "Paragraph E", "F": "Paragraph F" } },
           { "id": "31", "display_no": 31, "stem": "A contrast between helium’s chemical properties and how non-scientists think about it", "type": "matching", "options": ["A", "B", "C", "D", "E", "F"], "options_map": { "A": "Paragraph A", "B": "Paragraph B", "C": "Paragraph C", "D": "Paragraph D", "E": "Paragraph E", "F": "Paragraph F" } },
-          { "id": "32", "display_no": 32, "stem": "Helium chooses to be on its own.", "type": "single_choice", "options": ["Yes", "No", "Not Given"] },
-          { "id": "33", "display_no": 33, "stem": "Helium is a very cold substance.", "type": "single_choice", "options": ["Yes", "No", "Not Given"] },
-          { "id": "34", "display_no": 34, "stem": "High-tech industries in Asia use more helium than laboratories and manufacturers in other parts of the world.", "type": "single_choice", "options": ["Yes", "No", "Not Given"] },
-          { "id": "35", "display_no": 35, "stem": "The US Congress understood the possible consequences of the HPA.", "type": "single_choice", "options": ["Yes", "No", "Not Given"] },
+          { "id": "32", "display_no": 32, "stem": "Helium chooses to be on its own.", "type": "true_false_not_given" },
+          { "id": "33", "display_no": 33, "stem": "Helium is a very cold substance.", "type": "true_false_not_given" },
+          { "id": "34", "display_no": 34, "stem": "High-tech industries in Asia use more helium than laboratories and manufacturers in other parts of the world.", "type": "true_false_not_given" },
+          { "id": "35", "display_no": 35, "stem": "The US Congress understood the possible consequences of the HPA.", "type": "true_false_not_given" },
           { "id": "36", "display_no": 36, "stem": "Sobotka argues that big business and users of helium need to help look after helium stocks because ______ will not be encouraged through buying and selling alone.", "type": "text" },
           { "id": "37", "display_no": 37, "stem": "Richardson believes that the ______ needs to be withdrawn, as the U.S. provides most of the world’s helium.", "type": "text" },
           { "id": "38", "display_no": 38, "stem": "He argues that higher costs would mean people have ______ to use the resource many times over.", "type": "text" },
@@ -148,7 +150,10 @@
         ],
         "answers": {
           "27": "C", "28": "D", "29": "B", "30": "E", "31": "A",
-          "32": "Yes", "33": "Not given", "34": "Not given", "35": "No",
+          "32": 0,
+          "33": 2,
+          "34": 2,
+          "35": 1,
           "36": "prudent practice", "37": "privatisation policy", "38": "incentives", "39": "permit", "40": "regulatory agency"
         }
       }
