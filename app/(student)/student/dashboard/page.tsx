@@ -504,7 +504,7 @@ export default function StudentDashboard() {
             {[
               { title: t.convenient, text: t.conten01, icon: Sparkles, color: "text-indigo-600", bg: "bg-indigo-50/50 border-indigo-100" },
               { title: t.expense, text: t.conten02, icon: Banknote, color: "text-emerald-600", bg: "bg-emerald-50/50 border-emerald-100" },
-              { title: t.tam, text: t.content03 ?? t.conten03, icon: Heart, color: "text-rose-600", bg: "bg-rose-50/50 border-rose-100" }
+              { title: t.tam, text: t.conten03, icon: Heart, color: "text-rose-600", bg: "bg-rose-50/50 border-rose-100" }
             ].map((card, cidx) => {
               const CardIcon = card.icon;
               return (
