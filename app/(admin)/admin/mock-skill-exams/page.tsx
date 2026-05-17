@@ -6,7 +6,7 @@ import Button from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { createBrowserClient } from "@/lib/supabase/client";
 import type { MockSkillExamDef } from "@/types";
-import { BookOpen, ExternalLink, Eye, Play, Plus, Settings, UploadCloud, Users } from "lucide-react";
+import { BookOpen, ExternalLink, Eye, Play, Plus, Settings, UploadCloud, Users, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
@@ -48,6 +48,43 @@ export default function AdminMockSkillExamsPage() {
     }
     toast.success(next ? "Đã bật đề thi" : "Đã tắt đề thi");
     setExams((prev) => prev.map((e) => (e.id === exam.id ? { ...e, is_active: next } : e)));
+  }
+
+  async function deleteExam(exam: MockSkillExamDef) {
+    if (!confirm(`Bạn có chắc chắn muốn XÓA VĨNH VIỄN đề thi "${exam.title}"?\nHành động này không thể hoàn tác và sẽ xóa tất cả kết quả/đáp án liên quan!`)) {
+      return;
+    }
+
+    const toastId = toast.loading("Đang xóa đề thi...");
+    try {
+      const supabase = createBrowserClient();
+
+      // First clear any answers connected to this exam
+      const { error: ansErr } = await supabase
+        .from("mock_skill_exam_answers")
+        .delete()
+        .eq("exam_id", exam.id);
+
+      if (ansErr) {
+        console.warn("Lỗi khi xóa đáp án liên quan:", ansErr.message);
+      }
+
+      // Then delete the exam definition
+      const { error } = await supabase
+        .from("mock_skill_exam_defs")
+        .delete()
+        .eq("id", exam.id);
+
+      if (error) {
+        toast.error(error.message, { id: toastId });
+        return;
+      }
+
+      toast.success("Đã xóa đề thi thành công!", { id: toastId });
+      setExams((prev) => prev.filter((e) => e.id !== exam.id));
+    } catch (err: any) {
+      toast.error("Lỗi kết nối", { id: toastId });
+    }
   }
 
   async function pushExamToDrive(exam: MockSkillExamDef) {
@@ -191,6 +228,16 @@ export default function AdminMockSkillExamsPage() {
                       <Play className="w-4 h-4" />
                     </Button>
                   </Link>
+
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    className="text-red-500 hover:text-red-700 hover:bg-red-50 px-2"
+                    onClick={() => deleteExam(exam)}
+                    title="Xóa đề thi vĩnh viễn"
+                  >
+                    <Trash2 className="w-4.5 h-4.5" />
+                  </Button>
                 </div>
               </div>
             </Card>

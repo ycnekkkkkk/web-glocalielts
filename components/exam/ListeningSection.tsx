@@ -5,6 +5,7 @@ import { QuestionRenderer } from "./QuestionRenderer";
 import { QuestionPalette } from "./QuestionPalette";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Pause, Play, Volume2, SkipBack, SkipForward } from "lucide-react";
+import { parseIeltsTextToHtml, renderIeltsTextToReact } from "@/utils/ieltsParser";
 
 // ── Audio Player ──────────────────────────────────────────────────
 
@@ -163,30 +164,127 @@ function AudioBlockPlayer({ url, label }: AudioBlockPlayerProps) {
   );
 }
 
+// ── Inline Blank Document Parser ──────────────────────────────────
+
+function renderTextWithBlanks(
+  htmlText: string,
+  answers: Record<string, string | number>,
+  onChange: (next: Record<string, string | number>) => void,
+  questions: MockSkillQuestion[]
+) {
+  const compiledHtml = parseIeltsTextToHtml(htmlText);
+  // Regex to match (1) followed by dots, underscores or spaces
+  const regex = /\((\d+)\)(?:\s*(?:_+|…+|\.{3,}))?/g;
+  
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match;
+  
+  while ((match = regex.exec(compiledHtml)) !== null) {
+    const matchIndex = match.index;
+    const qNumStr = match[1];
+    
+    // Find the corresponding question in questions array
+    const question = questions.find(
+      q => q.id === `l${qNumStr}` || String(q.display_no) === qNumStr || q.id === qNumStr
+    );
+    
+    // Add text before the match
+    if (matchIndex > lastIndex) {
+      parts.push(
+        <span
+          key={`txt-${matchIndex}`}
+          dangerouslySetInnerHTML={{ __html: compiledHtml.substring(lastIndex, matchIndex) }}
+        />
+      );
+    }
+    
+    if (question) {
+      const qId = question.id;
+      const val = answers[qId] !== undefined ? String(answers[qId]) : "";
+      
+      parts.push(
+        <span key={`input-${qId}`} className="inline-flex items-center gap-1 mx-1.5 align-baseline">
+          <span className="w-5 h-5 rounded-full bg-brand-100 text-brand-700 font-black text-[10px] flex items-center justify-center flex-shrink-0 select-none shadow-sm border border-brand-200">
+            {qNumStr}
+          </span>
+          <input
+            type="text"
+            value={val}
+            placeholder="..."
+            onChange={(e) => {
+              onChange({
+                ...answers,
+                [qId]: e.target.value,
+              });
+            }}
+            className="w-24 sm:w-32 rounded-lg border-2 border-brand-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 px-2 py-1 text-xs font-bold text-gray-900 shadow-sm focus:outline-none transition-all text-center bg-brand-50/10 hover:bg-white focus:bg-white"
+          />
+        </span>
+      );
+    } else {
+      // If no question found, keep the text as is
+      parts.push(<span key={`fail-${matchIndex}`}>{match[0]}</span>);
+    }
+    
+    lastIndex = regex.lastIndex;
+  }
+  
+  if (lastIndex < htmlText.length) {
+    parts.push(
+      <span
+        key={`txt-end`}
+        dangerouslySetInnerHTML={{ __html: htmlText.substring(lastIndex) }}
+      />
+    );
+  }
+  
+  if (parts.length === 0) {
+    return <div dangerouslySetInnerHTML={{ __html: htmlText }} />;
+  }
+  
+  return (
+    <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed [&_p]:my-2 whitespace-pre-wrap">
+      {parts}
+    </div>
+  );
+}
+
 // ── Content Blocks ────────────────────────────────────────────────
 
-function ContentBlocks({ blocks }: { blocks: MockSkillBlock[] }) {
+interface ContentBlocksProps {
+  blocks: MockSkillBlock[];
+  questions?: MockSkillQuestion[];
+  answers?: Record<string, string | number>;
+  onChange?: (next: Record<string, string | number>) => void;
+}
+
+function ContentBlocks({
+  blocks,
+  questions = [],
+  answers = {},
+  onChange,
+}: ContentBlocksProps) {
   return (
     <div className="space-y-4">
       {blocks.map((b, i) => {
         if (b.type === "text") {
           return (
-            <div
-              key={i}
-              className="prose prose-sm max-w-none text-gray-700 leading-relaxed [&_p]:my-2 whitespace-pre-wrap"
-              dangerouslySetInnerHTML={{ __html: b.html }}
-            />
+            <div key={i} className="mb-4">
+              {renderIeltsTextToReact(b.html, answers, onChange, questions)}
+            </div>
           );
         }
         if (b.type === "image") {
           return (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              key={i}
-              src={b.src}
-              alt={b.alt || ""}
-              className="max-w-full rounded-xl border border-gray-100 shadow-sm"
-            />
+            <div key={i} className="my-4 flex justify-center">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={b.src}
+                alt={b.alt || "Hình ảnh đề thi"}
+                className="max-w-full max-h-[380px] rounded-2xl border border-gray-200/80 shadow-md object-contain hover:shadow-lg transition-shadow duration-300 bg-white p-1"
+              />
+            </div>
           );
         }
         if (b.type === "audio") {
@@ -242,26 +340,75 @@ export function ListeningSection({
     sectionOrder.map((section) => {
       const sBlocks = data.blocks.filter((b) => b.section === section);
       const sQs = data.questions.filter((q) => q.section === section);
+
+      // Find which questions are already rendered inline in this section
+      const inlineQuestionIds = new Set<string>();
+      const inlineRegex = /\((\d+)\)/g;
+      const blockRegex = /\[QUESTIONS:\s*(\d+)\s*-\s*(\d+)\]/gi;
+
+      sBlocks.forEach(b => {
+        if (b.type === "text") {
+          let match;
+          inlineRegex.lastIndex = 0;
+          while ((match = inlineRegex.exec(b.html)) !== null) {
+            const qNumStr = match[1];
+            const foundQ = sQs.find(
+              q => q.id === `l${qNumStr}` || String(q.display_no) === qNumStr || q.id === qNumStr
+            );
+            if (foundQ) {
+              inlineQuestionIds.add(foundQ.id);
+            }
+          }
+
+          let blockMatch;
+          blockRegex.lastIndex = 0;
+          while ((blockMatch = blockRegex.exec(b.html)) !== null) {
+            const startNum = parseInt(blockMatch[1], 10);
+            const endNum = parseInt(blockMatch[2], 10);
+            if (Number.isInteger(startNum) && Number.isInteger(endNum)) {
+              for (let num = startNum; num <= endNum; num++) {
+                const foundQ = sQs.find(
+                  q => q.id === `l${num}` || String(q.display_no) === String(num) || q.id === String(num)
+                );
+                if (foundQ) {
+                  inlineQuestionIds.add(foundQ.id);
+                }
+              }
+            }
+          }
+        }
+      });
+
       return (
         <div key={section} className="space-y-4 rounded-2xl border border-gray-100 bg-gray-50/50 p-4 sm:p-5">
           {sBlocks.length > 0 && (
             <div className="bg-white rounded-xl p-4 border border-gray-100">
-              <ContentBlocks blocks={sBlocks} />
+              <ContentBlocks
+                blocks={sBlocks}
+                questions={sQs}
+                answers={answers}
+                onChange={onChange}
+              />
             </div>
           )}
-          <div className="space-y-4">
-            {sQs.map((q) => (
-              <QuestionRenderer
-                key={q.id}
-                question={q}
-                value={answers[q.id]}
-                onChange={(v) => { onChange({ ...answers, [q.id]: v }); setActiveQId(q.id); }}
-                flagged={flagged.includes(q.id)}
-                onFlag={() => onFlag(q.id)}
-                displayNo={getDisplayNo(q)}
-              />
-            ))}
-          </div>
+          
+          {sQs.filter(q => !inlineQuestionIds.has(q.id)).length > 0 && (
+            <div className="space-y-4">
+              {sQs
+                .filter(q => !inlineQuestionIds.has(q.id))
+                .map((q) => (
+                  <QuestionRenderer
+                    key={q.id}
+                    question={q}
+                    value={answers[q.id]}
+                    onChange={(v) => { onChange({ ...answers, [q.id]: v }); setActiveQId(q.id); }}
+                    flagged={flagged.includes(q.id)}
+                    onFlag={() => onFlag(q.id)}
+                    displayNo={getDisplayNo(q)}
+                  />
+                ))}
+            </div>
+          )}
         </div>
       );
     })

@@ -138,18 +138,18 @@ export default function StudentOnlineCourseDetailPage({ params }: { params: Prom
     // Guest
     if (!userId) {
       return (
-        <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5 space-y-3">
+        <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-5 space-y-3">
           <div className="flex items-start gap-3">
             <Phone className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
             <div>
-              <p className="text-sm font-semibold text-amber-800">Liên hệ Glocal IELTS để được tư vấn</p>
-              <p className="text-xs text-amber-700 mt-1">
+              <p className="text-sm font-semibold text-amber-800 leading-normal">Liên hệ Glocal IELTS để được tư vấn</p>
+              <p className="text-xs text-amber-700 mt-1 leading-normal">
                 Đăng nhập để xem thông tin đầy đủ và đăng ký khóa học này.
               </p>
             </div>
           </div>
-          <Link href={`/login?next=/student/online-courses/${slug}`}>
-            <Button variant="primary" icon={<LogIn className="w-4 h-4" />} className="w-full sm:w-auto">
+          <Link href={`/login?next=/student/online-courses/${slug}`} className="block w-full">
+            <Button variant="primary" icon={<LogIn className="w-4 h-4" />} className="w-full justify-center">
               Đăng nhập
             </Button>
           </Link>
@@ -160,13 +160,13 @@ export default function StudentOnlineCourseDetailPage({ params }: { params: Prom
     // Has access
     if (hasAccess) {
       return (
-        <div className="mt-6 rounded-2xl border border-green-200 bg-green-50 p-5 flex flex-col sm:flex-row sm:items-center gap-4">
-          <div className="flex items-center gap-2 text-green-700">
-            <CheckCircle2 className="w-5 h-5" />
-            <p className="text-sm font-semibold">Bạn đã được cấp quyền truy cập khóa học này</p>
+        <div className="mb-6 rounded-2xl border border-green-200 bg-green-50 p-5 flex flex-col gap-4">
+          <div className="flex items-start gap-2.5 text-green-700">
+            <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5" />
+            <p className="text-sm font-semibold leading-normal">Bạn đã được cấp quyền truy cập khóa học này</p>
           </div>
-          <Link href={`/student/online-courses/${slug}/learn`} className="sm:ml-auto">
-            <Button variant="primary" className="w-full sm:w-auto">Vào học ngay →</Button>
+          <Link href={`/student/online-courses/${slug}/learn`} className="w-full">
+            <Button variant="primary" className="w-full justify-center">Vào học ngay →</Button>
           </Link>
         </div>
       );
@@ -175,9 +175,9 @@ export default function StudentOnlineCourseDetailPage({ params }: { params: Prom
     // Request approved (but no access row yet — edge case)
     if (requestStatus === "approved") {
       return (
-        <div className="mt-6 rounded-2xl border border-green-200 bg-green-50 p-4 flex items-center gap-3">
-          <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
-          <p className="text-sm text-green-800 font-medium">Yêu cầu đã được duyệt. Quyền truy cập sẽ sớm được cấp.</p>
+        <div className="mb-6 rounded-2xl border border-green-200 bg-green-50 p-4 flex items-start gap-3">
+          <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
+          <p className="text-sm text-green-800 font-semibold leading-normal">Yêu cầu đã được duyệt. Quyền truy cập sẽ sớm được cấp.</p>
         </div>
       );
     }
@@ -185,15 +185,17 @@ export default function StudentOnlineCourseDetailPage({ params }: { params: Prom
     // Request rejected
     if (requestStatus === "rejected") {
       return (
-        <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 space-y-2">
-          <div className="flex items-center gap-2 text-red-700">
-            <XCircle className="w-5 h-5 shrink-0" />
-            <p className="text-sm font-semibold">Yêu cầu của bạn đã bị từ chối</p>
+        <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 space-y-3">
+          <div className="flex items-start gap-2.5 text-red-700">
+            <XCircle className="w-5 h-5 shrink-0 mt-0.5" />
+            <p className="text-sm font-semibold leading-normal">Yêu cầu của bạn đã bị từ chối</p>
           </div>
           {request?.admin_note && (
-            <p className="text-xs text-red-600 ml-7">Lý do: {request.admin_note}</p>
+            <p className="text-xs text-red-600 ml-7 leading-normal bg-white/50 p-2 rounded-lg border border-red-100">
+              Lý do: {request.admin_note}
+            </p>
           )}
-          <p className="text-xs text-gray-500 ml-7">Bạn có thể nhắn tin với admin để biết thêm thông tin.</p>
+          <p className="text-xs text-gray-500 ml-7 leading-normal">Bạn có thể nhắn tin với admin để biết thêm thông tin.</p>
         </div>
       );
     }
@@ -201,11 +203,11 @@ export default function StudentOnlineCourseDetailPage({ params }: { params: Prom
     // Request pending
     if (requestStatus === "pending") {
       return (
-        <div className="mt-6 rounded-2xl border border-blue-200 bg-blue-50 p-4 flex items-center gap-3">
-          <Clock className="w-5 h-5 text-blue-600 shrink-0" />
+        <div className="mb-6 rounded-2xl border border-blue-200 bg-blue-50 p-4 flex items-start gap-3">
+          <Clock className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-semibold text-blue-800">Đã gửi yêu cầu, đang chờ admin duyệt</p>
-            <p className="text-xs text-blue-600 mt-0.5">Nhắn tin với admin nếu bạn muốn hỏi thêm thông tin.</p>
+            <p className="text-sm font-semibold text-blue-800 leading-normal">Đã gửi yêu cầu, đang chờ admin duyệt</p>
+            <p className="text-xs text-blue-600 mt-1 leading-normal">Nhắn tin với admin nếu bạn muốn hỏi thêm thông tin.</p>
           </div>
         </div>
       );
@@ -213,35 +215,38 @@ export default function StudentOnlineCourseDetailPage({ params }: { params: Prom
 
     // No request yet — show buy button
     return (
-      <div className="mt-6 space-y-3">
+      <div className="mb-6 space-y-3">
         <div className="rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50 to-indigo-50/80 p-5">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          <div className="space-y-4">
             <div>
               <p className="text-xs font-semibold text-brand-600 uppercase tracking-wide">Học phí</p>
-              <p className="text-2xl font-bold text-brand-800 mt-0.5">
+              <p className="text-2xl sm:text-3xl font-black text-brand-800 mt-1 whitespace-nowrap">
                 {course!.price > 0
                   ? `${Math.round(course!.price).toLocaleString("vi-VN")} ${course!.currency}`
                   : "Miễn phí"}
               </p>
             </div>
-            <div className="flex flex-col gap-2 sm:ml-auto">
+
+            <div className="space-y-2">
               <Button
                 variant="primary"
                 icon={<ShoppingCart className="w-4 h-4" />}
                 loading={submitting}
                 onClick={handleRequestPurchase}
-                className="w-full sm:w-auto"
+                className="w-full justify-center py-2.5"
               >
                 Mua ngay
               </Button>
-              <p className="text-xs text-gray-500 text-center">Admin sẽ liên hệ xác nhận thanh toán</p>
+              <p className="text-[10px] sm:text-xs text-gray-500 text-center leading-normal">
+                Glocal IELTS sẽ liên hệ xác nhận thanh toán
+              </p>
             </div>
           </div>
 
           {/* Optional note */}
           <div className="mt-4 pt-4 border-t border-brand-100">
-            <label className="text-xs font-medium text-gray-600 mb-1 block">
-              Ghi chú cho admin (không bắt buộc)
+            <label className="text-xs font-medium text-gray-600 mb-1.5 block">
+              Ghi chú cho Glocal IELTS (không bắt buộc)
             </label>
             <textarea
               rows={2}
@@ -255,7 +260,7 @@ export default function StudentOnlineCourseDetailPage({ params }: { params: Prom
 
         <div className="rounded-2xl border border-amber-100 bg-amber-50/60 p-4 flex items-start gap-3">
           <MessageCircleMore className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
-          <p className="text-xs text-amber-700">
+          <p className="text-xs text-amber-700 leading-normal">
             Bạn cũng có thể <strong>nhắn tin trực tiếp</strong> với admin qua nút chat bên phải để được tư vấn chi tiết hơn.
           </p>
         </div>
@@ -266,87 +271,123 @@ export default function StudentOnlineCourseDetailPage({ params }: { params: Prom
   return (
     <PageWrapper>
       <div className="mb-4">
-        <Link href="/student/online-courses">
-          <Button variant="ghost" size="sm" icon={<ArrowLeft className="w-4 h-4" />}>
-            Khám phá khóa học online
-          </Button>
+        <Link 
+          href="/student/online-courses" 
+          className="group inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-gray-200/80 bg-white hover:bg-gray-50 text-xs font-semibold text-gray-600 hover:text-brand-700 shadow-sm hover:shadow transition-all duration-200"
+        >
+          <ArrowLeft className="w-3.5 h-3.5 text-gray-500 group-hover:text-brand-600 transition-transform group-hover:-translate-x-0.5" />
+          <span>Khám phá khóa học online</span>
         </Link>
       </div>
 
       {loading ? (
-        <div className="h-80 rounded-2xl border border-gray-100 bg-white animate-pulse" />
+        <div className="h-[500px] rounded-3xl border border-gray-100 bg-white animate-pulse" />
       ) : !course ? (
-        <Card className="p-8 border-dashed">
-          <p className="text-gray-500">Khóa học không tồn tại hoặc chưa được xuất bản.</p>
+        <Card className="p-8 border-dashed text-center">
+          <p className="text-gray-500 font-medium">Khóa học không tồn tại hoặc chưa được xuất bản.</p>
         </Card>
       ) : (
-        <Card className="overflow-hidden p-0 border-brand-100/60">
-          {/* Thumbnail hero */}
+        <div className="space-y-6">
+          {/* Banner Hero Card */}
           {thumbnail && (
-            <div className="relative w-full h-56 sm:h-72 bg-gradient-to-br from-brand-100 to-indigo-100 overflow-hidden">
-              <Image
-                src={thumbnail}
-                alt={course.title}
-                fill
-                className="object-cover"
-                priority
-                sizes="(max-width: 896px) 100vw, 896px"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-              <span className="absolute bottom-4 right-4 bg-white/95 backdrop-blur-sm text-brand-700 font-bold text-sm px-4 py-1.5 rounded-full shadow-lg">
-                {course.price > 0 ? `${Math.round(course.price).toLocaleString("vi-VN")} ${course.currency}` : "Miễn phí"}
-              </span>
-            </div>
+            <Card className="overflow-hidden p-0 border-brand-100/40 shadow-sm rounded-3xl">
+              <div className="relative w-full aspect-video sm:aspect-[21/7] bg-gradient-to-br from-brand-100 to-indigo-100 overflow-hidden">
+                <Image
+                  src={thumbnail}
+                  alt={course.title}
+                  fill
+                  className="object-cover"
+                  priority
+                  sizes="(max-width: 1200px) 100vw, 1200px"
+                />
+              </div>
+            </Card>
           )}
 
-          <div className="p-6 sm:p-8">
-            <div className="w-12 h-12 rounded-xl bg-brand-100 flex items-center justify-center mb-4">
-              <BookOpen className="w-6 h-6 text-brand-600" />
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">{course.title}</h1>
-            <p className="text-sm text-gray-500 mt-2 inline-flex items-center gap-1">
-              <UserCircle2 className="w-3.5 h-3.5 text-brand-400" />
-              {course.teacher_name || "Đội ngũ Glocal IELTS"}
-            </p>
+          {/* Grid Layout below Banner */}
+          <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
 
-            {/* Description */}
-            <div className="mt-5 space-y-3">
-              <p className="text-sm text-gray-700 leading-relaxed">
-                {course.short_description || "Khóa học được thiết kế theo lộ trình thực tế và dễ theo dõi."}
-              </p>
-              {course.description && (
-                <p className="text-sm text-gray-600 whitespace-pre-wrap leading-relaxed">{course.description}</p>
-              )}
-            </div>
+            {/* Left Content Card */}
+            <Card className="xl:col-span-8 p-6 sm:p-8 space-y-6 rounded-3xl border-brand-100/40 shadow-sm bg-white">
 
-            {/* Intro video */}
-            {course.demo_video_url && (
-              <div className="mt-6 rounded-2xl border border-brand-100 bg-white p-4 sm:p-5">
-                <h2 className="text-base font-semibold text-gray-900">Video giới thiệu khóa học</h2>
-                <div className="mt-3">
-                  {introEmbed ? (
-                    <div className="relative w-full overflow-hidden rounded-xl border border-gray-200 bg-black aspect-video">
-                      <iframe
-                        src={introEmbed}
-                        title={`Giới thiệu ${course.title}`}
-                        className="absolute inset-0 h-full w-full"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                      />
-                    </div>
-                  ) : (
-                    <a href={course.demo_video_url} target="_blank" rel="noreferrer" className="text-sm text-brand-700 underline break-all">
-                      {course.demo_video_url}
-                    </a>
-                  )}
+              {/* Header info */}
+              <div className="space-y-3 pb-5 border-b border-gray-100">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold text-brand-700 bg-brand-50 border border-brand-100 w-fit">
+                  <BookOpen className="w-3.5 h-3.5" /> Khóa học Online
+                </span>
+
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 leading-tight tracking-tight">
+                  {course.title}
+                </h1>
+
+                <div className="flex flex-wrap gap-2 pt-1">
+                  <div className="flex items-center gap-2 text-xs text-gray-600 font-medium bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100 w-fit">
+                    <UserCircle2 className="w-4 h-4 text-brand-500" />
+                    <span>Mentor: <strong className="text-gray-800">{course.teacher_name || "Đội ngũ Glocal IELTS"}</strong></span>
+                  </div>
                 </div>
               </div>
-            )}
 
-            {/* CTA section */}
-            {renderCTA()}
+              {/* Description Section */}
+              <div className="space-y-3">
+                <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider">📖 Giới thiệu khóa học</h2>
+
+                {/* Short description (only render if it exists and is different from full description) */}
+                {course.short_description && course.short_description.trim() !== course.description?.trim() && (
+                  <p className="text-sm text-gray-700 leading-relaxed font-semibold">
+                    {course.short_description}
+                  </p>
+                )}
+
+                {course.description ? (
+                  <div className="text-sm text-gray-600 whitespace-pre-wrap leading-relaxed bg-gray-50/50 rounded-2xl p-5 border border-gray-100 mt-2">
+                    {course.description}
+                  </div>
+                ) : course.short_description ? (
+                  <div className="text-sm text-gray-600 whitespace-pre-wrap leading-relaxed bg-gray-50/50 rounded-2xl p-5 border border-gray-100 mt-2">
+                    {course.short_description}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500 italic">Khóa học được thiết kế theo lộ trình thực tế và dễ theo dõi.</p>
+                )}
+              </div>
+
+              {/* Intro Video section */}
+              {course.demo_video_url && (
+                <div className="rounded-2xl border border-brand-100/50 bg-white p-5 shadow-sm space-y-3">
+                  <h2 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                    <span className="w-1.5 h-4 bg-brand-600 rounded-full"></span>
+                    Video giới thiệu khóa học
+                  </h2>
+                  <div className="mt-3">
+                    {introEmbed ? (
+                      <div className="relative w-full overflow-hidden rounded-xl border border-gray-200 bg-black aspect-video">
+                        <iframe
+                          src={introEmbed}
+                          title={`Giới thiệu ${course.title}`}
+                          className="absolute inset-0 h-full w-full"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                      </div>
+                    ) : (
+                      <a href={course.demo_video_url} target="_blank" rel="noreferrer" className="text-sm text-brand-700 underline break-all font-medium">
+                        {course.demo_video_url}
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )}
+
+            </Card>
+
+            {/* Right Column: CTA / Sticky purchase box */}
+            <div className="xl:col-span-4 xl:sticky xl:top-6">
+              {renderCTA()}
+            </div>
+
           </div>
-        </Card>
+        </div>
       )}
 
       {/* Floating chat — only for logged-in users */}

@@ -133,8 +133,19 @@ export async function POST(request: Request) {
   const listenErr = validateListeningAnswers(content.listening.questions, listeningPicks);
   if (listenErr) return NextResponse.json({ error: listenErr }, { status: 400 });
 
-  if (speakingFile instanceof File && speakingFile.size > MAX_SPEAKING_BYTES) {
-    return NextResponse.json({ error: "File ghi âm quá lớn (tối đa 24MB)" }, { status: 400 });
+  const audioKeysRaw = form.get("speakingAudioKeys");
+  const audioKeys: string[] = typeof audioKeysRaw === "string" ? JSON.parse(audioKeysRaw) : [];
+
+  let totalSpeakingSize = 0;
+  for (const key of audioKeys) {
+    const file = form.get(key);
+    if (file instanceof File) {
+      totalSpeakingSize += file.size;
+    }
+  }
+
+  if (totalSpeakingSize > MAX_SPEAKING_BYTES) {
+    return NextResponse.json({ error: "Tổng dung lượng file ghi âm quá lớn (tối đa 24MB)" }, { status: 400 });
   }
 
   // ── Auto-score L/R ────────────────────────────────────────────
@@ -146,30 +157,60 @@ export async function POST(request: Request) {
 
   const answerKey = (answerRow?.answers || {}) as unknown as MockSkillAnswers;
 
-  const MCQ_TYPES = new Set(["single_choice", "matching", "multiple_choice"]);
+  const OPTION_LETTERS = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O"];
+
+  function getMatchedActualValue(
+    q: { type: string; options?: string[] },
+    rawStudentPick: unknown,
+    expectedAnswer: unknown
+  ): string | number {
+    if (rawStudentPick === undefined || rawStudentPick === null) return "";
+
+    if (q.type === "text" || q.type === "true_false_not_given") {
+      return typeof rawStudentPick === "number" ? rawStudentPick : String(rawStudentPick).trim();
+    }
+
+    const options = q.options || [];
+    if (typeof rawStudentPick === "number" && rawStudentPick >= 0 && rawStudentPick < options.length) {
+      const optionText = options[rawStudentPick];
+      const letter = OPTION_LETTERS[rawStudentPick] || "";
+      const normExpected = String(expectedAnswer ?? "").trim().toLowerCase();
+      
+      // Match index format (e.g. 2 or "2")
+      if (normExpected === String(rawStudentPick)) {
+        return expectedAnswer as string | number;
+      }
+      // Match letter key (e.g. "c")
+      if (letter && normExpected === letter.toLowerCase()) {
+        return expectedAnswer as string | number;
+      }
+      // Match full option string
+      if (normExpected === optionText.trim().toLowerCase()) {
+        return expectedAnswer as string | number;
+      }
+      // Match option prefix
+      if (optionText.trim().toLowerCase().startsWith(normExpected + ".")) {
+        return expectedAnswer as string | number;
+      }
+      
+      return optionText;
+    }
+
+    return typeof rawStudentPick === "string" ? rawStudentPick.trim() : "";
+  }
 
   const listeningForScore: Record<string, string | number> = {};
   for (const q of content.listening.questions || []) {
     const raw = listeningPicks[q.id];
-    if (q.type === "true_false_not_given") {
-      listeningForScore[q.id] = typeof raw === "number" ? raw : (typeof raw === "string" ? raw.trim() : "");
-    } else if (MCQ_TYPES.has(q.type) && typeof raw === "number") {
-      listeningForScore[q.id] = q.options?.[raw] ?? "";
-    } else {
-      listeningForScore[q.id] = typeof raw === "string" ? raw.trim() : "";
-    }
+    const expected = (answerKey.listening || {})[q.id];
+    listeningForScore[q.id] = getMatchedActualValue(q, raw, expected);
   }
 
   const readingForScore: Record<string, string | number> = {};
   for (const q of content.reading.questions || []) {
     const raw = readingPicks[q.id];
-    if (q.type === "true_false_not_given") {
-      readingForScore[q.id] = typeof raw === "number" ? raw : (typeof raw === "string" ? raw.trim() : "");
-    } else if (MCQ_TYPES.has(q.type) && typeof raw === "number") {
-      readingForScore[q.id] = q.options?.[raw] ?? "";
-    } else {
-      readingForScore[q.id] = typeof raw === "string" ? raw.trim() : "";
-    }
+    const expected = (answerKey.reading || {})[q.id];
+    readingForScore[q.id] = getMatchedActualValue(q, raw, expected);
   }
 
   const rawScores = scoreListeningReading(
@@ -203,8 +244,8 @@ export async function POST(request: Request) {
     writingText,
     writingTask1,
     writingTask2,
-    speakingMimeType: speakingFile instanceof File ? speakingFile.type : null,
-    speakingSize: speakingFile instanceof File ? speakingFile.size : 0,
+    speakingMimeType: audioKeys.length > 0 ? (form.get(audioKeys[0]) as File)?.type : null,
+    speakingSize: totalSpeakingSize,
   };
 
   const { data: inserted, error: insErr } = await admin
@@ -273,24 +314,43 @@ export async function POST(request: Request) {
       );
       console.log("[submit] submission.json + writing.txt uploaded");
 
-      if (speakingFile instanceof File && speakingFile.size > 0) {
-        const buf = Buffer.from(await speakingFile.arrayBuffer());
-        const mime = speakingFile.type || "audio/webm";
-        const ext = mime.includes("mp4") ? "m4a" : mime.includes("mpeg") ? "mp3" : "webm";
-        console.log("[submit] Uploading speaking audio:", { size: buf.length, mime, ext });
-        const driveFileId = await uploadDriveFile(driveFolderId, `speaking.${ext}`, mime, buf);
-        console.log("[submit] Speaking uploaded to Drive:", driveFileId);
-        // Save Drive audio URL into answers_raw
+      const uploadedAudios: Array<{ key: string; name: string; driveFileId: string; driveUrl: string }> = [];
+
+      if (audioKeys.length > 0) {
+        for (const key of audioKeys) {
+          const file = form.get(key);
+          if (file instanceof File && file.size > 0) {
+            const buf = Buffer.from(await file.arrayBuffer());
+            const mime = file.type || "audio/webm";
+            const fileName = file.name;
+            console.log(`[submit] Uploading speaking audio [${key}]:`, { size: buf.length, mime, fileName });
+            
+            const driveFileId = await uploadDriveFile(driveFolderId, fileName, mime, buf);
+            const driveUrl = `https://drive.google.com/file/d/${driveFileId}/view`;
+            uploadedAudios.push({
+              key,
+              name: fileName,
+              driveFileId,
+              driveUrl
+            });
+          }
+        }
+      }
+
+      if (uploadedAudios.length > 0) {
+        // Save all Drive audio details into answers_raw
         await admin.from("mock_skill_submissions").update({
           answers_raw: {
             ...answersRaw,
-            speakingDriveFileId: driveFileId,
-            speakingDriveUrl: `https://drive.google.com/file/d/${driveFileId}/view`,
-            speakingFileName: `speaking.${ext}`,
+            speakingAudios: uploadedAudios,
+            // Fallback for legacy fields
+            speakingDriveFileId: uploadedAudios[0].driveFileId,
+            speakingDriveUrl: uploadedAudios[0].driveUrl,
+            speakingFileName: uploadedAudios[0].name,
           },
         }).eq("id", submissionId);
       } else {
-        console.log("[submit] No speaking audio (size=0 or not File) — uploading placeholder");
+        console.log("[submit] No speaking audio uploaded — uploading placeholder");
         await uploadDriveFile(
           driveFolderId, "speaking-placeholder.txt", "text/plain; charset=utf-8",
           Buffer.from("(Không có file ghi âm)", "utf8")

@@ -10,36 +10,36 @@ import type { NavGroup, NavItem, SidebarTheme } from "@/types";
 const themeConfig = {
   brand: {
     bg: "bg-brand-950",
-    groupLabel: "text-brand-400/70",
-    link: "text-brand-200/70 hover:text-white hover:bg-brand-800/60",
-    active: "bg-brand-600 text-white shadow-lg shadow-brand-600/30",
+    groupLabel: "text-brand-400/60",
+    link: "text-brand-200/70 hover:text-white hover:bg-brand-900/60 hover:translate-x-0.5",
+    active: "bg-gradient-to-r from-brand-500 to-indigo-600 text-white shadow-lg shadow-brand-500/20 border border-brand-400/25",
     activeIcon: "text-white",
     icon: "text-brand-400",
     badge: "bg-brand-600 text-white",
   },
   sky: {
-    bg: "bg-slate-900",
-    groupLabel: "text-slate-400/70",
-    link: "text-slate-300/80 hover:text-white hover:bg-slate-700/60",
-    active: "bg-sky-600 text-white shadow-lg shadow-sky-600/30",
+    bg: "bg-slate-950",
+    groupLabel: "text-slate-400/60",
+    link: "text-slate-300/80 hover:text-white hover:bg-slate-800/60 hover:translate-x-0.5",
+    active: "bg-gradient-to-r from-sky-500 to-indigo-600 text-white shadow-lg shadow-sky-500/20 border border-sky-400/25",
     activeIcon: "text-white",
     icon: "text-slate-400",
     badge: "bg-sky-600 text-white",
   },
   purple: {
-    bg: "bg-slate-900",
-    groupLabel: "text-slate-400/70",
-    link: "text-slate-300/80 hover:text-white hover:bg-slate-700/60",
-    active: "bg-purple-600 text-white shadow-lg shadow-purple-600/30",
+    bg: "bg-slate-950",
+    groupLabel: "text-slate-400/60",
+    link: "text-slate-300/80 hover:text-white hover:bg-slate-800/60 hover:translate-x-0.5",
+    active: "bg-gradient-to-r from-purple-500 to-indigo-600 text-white shadow-lg shadow-purple-500/20 border border-purple-400/25",
     activeIcon: "text-white",
     icon: "text-slate-400",
     badge: "bg-purple-600 text-white",
   },
   emerald: {
-    bg: "bg-gray-900",
-    groupLabel: "text-gray-400/70",
-    link: "text-gray-300/80 hover:text-white hover:bg-gray-700/60",
-    active: "bg-emerald-600 text-white shadow-lg shadow-emerald-600/30",
+    bg: "bg-gray-950",
+    groupLabel: "text-gray-400/60",
+    link: "text-gray-300/80 hover:text-white hover:bg-gray-800/60 hover:translate-x-0.5",
+    active: "bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/20 border border-emerald-400/25",
     activeIcon: "text-white",
     icon: "text-gray-400",
     badge: "bg-emerald-600 text-white",
@@ -67,13 +67,24 @@ function NavLink({
       href={item.href}
       title={item.label}
       className={cn(
-        "sidebar-link",
+        "sidebar-link relative overflow-hidden group transition-all duration-200",
         collapsed ? "justify-center px-2" : depth > 0 ? "pl-10 pr-3" : "",
         isActive ? t.active : t.link
       )}
     >
-      <Icon className={cn("w-4 h-4 shrink-0", isActive ? t.activeIcon : t.icon)} />
-      {!collapsed && <span className="flex-1 text-sm">{item.label}</span>}
+      {/* Left Active Glow bar */}
+      {isActive && (
+        <div className={cn(
+          "absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-md transition-all duration-300",
+          theme === "sky" && "bg-sky-400 shadow-[0_0_8px_#38bdf8]",
+          theme === "brand" && "bg-brand-400 shadow-[0_0_8px_#818cf8]",
+          theme === "purple" && "bg-purple-400 shadow-[0_0_8px_#c084fc]",
+          theme === "emerald" && "bg-emerald-400 shadow-[0_0_8px_#34d399]"
+        )} />
+      )}
+
+      <Icon className={cn("w-4 h-4 shrink-0 transition-transform duration-200 group-hover:scale-110", isActive ? t.activeIcon : t.icon)} />
+      {!collapsed && <span className="flex-1 text-sm font-medium tracking-wide">{item.label}</span>}
       {!collapsed && item.badge !== undefined && (
         <span className={cn("text-xs font-semibold px-2 py-0.5 rounded-full", isActive ? "bg-white/20 text-white" : t.badge)}>
           {item.badge}
@@ -104,37 +115,34 @@ export default function Sidebar({ groups, theme = "brand", footerContent }: Side
           "border-b border-white/5 shrink-0 flex",
           collapsed
             ? "flex-col items-center gap-2 py-2 px-1"
-            : "h-16 flex-row items-center px-5 justify-between"
+            : "h-16 flex-row items-center pl-4 pr-2 justify-between"
         )}
       >
         {collapsed ? (
-          <div className="flex items-center justify-center gap-1" title="Amazing Group · Glocal IELTS">
-            <img
-              src="/logo/logo-ag.svg"
-              alt="Amazing Group"
-              width={32}
-              height={32}
-              className="h-6 w-6 shrink-0 object-contain drop-shadow-sm"
-            />
+          <div className="flex items-center justify-center w-full" title="Amazing Group · Glocal IELTS">
             <img
               src="/logo/logo-gi.svg"
               alt="Glocal IELTS"
               width={36}
               height={36}
-              className="h-[30px] w-[30px] shrink-0 object-contain drop-shadow-sm"
+              className="h-9 w-9 shrink-0 object-contain drop-shadow-sm transition-transform duration-700 hover:rotate-[360deg] cursor-pointer"
             />
           </div>
         ) : (
-          <Logo light />
+          <Logo light size="sm" />
         )}
         <button
           type="button"
           onClick={() => setCollapsed(v => !v)}
-          className="w-8 h-8 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 flex items-center justify-center transition-colors shrink-0"
+          className="group w-8 h-8 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-slate-300 hover:text-white flex items-center justify-center transition-all duration-300 shrink-0 shadow-sm backdrop-blur-sm cursor-pointer"
           aria-label={collapsed ? "Mở sidebar" : "Thu sidebar"}
           title={collapsed ? "Mở sidebar" : "Thu sidebar"}
         >
-          {collapsed ? <PanelLeftOpen className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
+          {collapsed ? (
+            <PanelLeftOpen className="w-4 h-4 transition-transform duration-300 group-hover:scale-110 group-hover:translate-x-0.5" />
+          ) : (
+            <PanelLeftClose className="w-4 h-4 transition-transform duration-300 group-hover:scale-110 group-hover:-translate-x-0.5" />
+          )}
         </button>
       </div>
 

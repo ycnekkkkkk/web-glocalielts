@@ -370,8 +370,12 @@ export default function StudentCourseDetailPage({ params }: { params: Promise<{ 
   return (
     <PageWrapper>
       <div className="mb-4">
-        <Link href="/student/my-courses">
-          <Button variant="ghost" size="sm" icon={<ArrowLeft className="w-4 h-4" />}>Khóa học của tôi</Button>
+        <Link 
+          href="/student/my-courses" 
+          className="group inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-gray-200/80 bg-white hover:bg-gray-50 text-xs font-semibold text-gray-600 hover:text-brand-700 shadow-sm hover:shadow transition-all duration-200"
+        >
+          <ArrowLeft className="w-3.5 h-3.5 text-gray-500 group-hover:text-brand-600 transition-transform group-hover:-translate-x-0.5" />
+          <span>Khóa học của tôi</span>
         </Link>
       </div>
 

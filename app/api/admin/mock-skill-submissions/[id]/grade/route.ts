@@ -8,7 +8,7 @@ import { NextResponse } from "next/server";
 export const runtime = "nodejs";
 export const maxDuration = 120;
 
-type GradeTarget = "writing" | "speaking" | "both";
+type GradeTarget = "writing" | "speaking" | "both" | "summary";
 
 export async function POST(
   request: Request,
@@ -97,25 +97,88 @@ export async function POST(
 
   // ── Grade Speaking ────────────────────────────────────────────
   if (target === "speaking" || target === "both") {
-    const speakingDriveUrl = typeof answersRaw.speakingDriveFileId === "string"
-      ? answersRaw.speakingDriveFileId
-      : null;
+    // Try to get audios from Drive if available
+    const speakingAudios = answersRaw.speakingAudios as Array<{ key: string; name: string; driveFileId: string; driveUrl: string }> | undefined;
+    const legacyDriveFileId = typeof answersRaw.speakingDriveFileId === "string" ? answersRaw.speakingDriveFileId : null;
 
-    // Try to get audio from Drive if available
-    if (speakingDriveUrl && sub.drive_folder_id) {
+    if ((Array.isArray(speakingAudios) && speakingAudios.length > 0 || legacyDriveFileId) && sub.drive_folder_id) {
       const { getDriveFileContent } = await import("@/lib/google/drive");
+      const { scoreSpeakingMulti } = await import("@/lib/gemini/score-speaking");
+      
       try {
-        const { buffer, mimeType } = await getDriveFileContent(speakingDriveUrl);
-        const base64 = buffer.toString("base64");
-        const prompt = speakingSection?.prompt || speakingSection?.title || "IELTS Speaking";
-        const result = await scoreSpeaking(base64, mimeType || "audio/webm", prompt);
-        if (result) {
-          newScores.speaking = {
-            band: result.overall_band,
-            criteria: result.criteria,
-            transcript: result.transcript,
-            feedback: result.feedback,
-          };
+        const audiosToScore: Array<{ base64: string; mimeType: string; name: string }> = [];
+        
+        if (Array.isArray(speakingAudios) && speakingAudios.length > 0) {
+          console.log(`[grade] Fetching ${speakingAudios.length} speaking audios from Drive...`);
+          for (const audio of speakingAudios) {
+            try {
+              const { buffer, mimeType } = await getDriveFileContent(audio.driveFileId);
+              audiosToScore.push({
+                base64: buffer.toString("base64"),
+                mimeType: mimeType || "audio/webm",
+                name: audio.name
+              });
+            } catch (err) {
+              console.error(`[grade] Failed to fetch audio ${audio.name} (${audio.driveFileId}):`, err);
+            }
+          }
+        } else if (legacyDriveFileId) {
+          console.log(`[grade] Fetching legacy speaking audio (${legacyDriveFileId}) from Drive...`);
+          const { buffer, mimeType } = await getDriveFileContent(legacyDriveFileId);
+          audiosToScore.push({
+            base64: buffer.toString("base64"),
+            mimeType: mimeType || "audio/webm",
+            name: String(answersRaw.speakingFileName || "speaking.webm")
+          });
+        }
+
+        if (audiosToScore.length > 0) {
+          let speakingExamPrompt = "";
+          if (speakingSection) {
+            speakingExamPrompt += `Exam Title: ${speakingSection.title || "IELTS Speaking"}\n`;
+            if (speakingSection.prompt) {
+              speakingExamPrompt += `General Instructions: ${speakingSection.prompt}\n`;
+            }
+            const parts = (speakingSection as any).parts;
+            if (Array.isArray(parts)) {
+              speakingExamPrompt += "\nEXAM STRUCTURE & QUESTIONS:\n";
+              const partCounters: Record<string, number> = { "1": 0, "2": 0, "3": 0 };
+              parts.forEach((p, index) => {
+                const currentPart = p.part || String(index + 1);
+                speakingExamPrompt += `\nPart ${currentPart} (${p.type || "General Topic"}):\n`;
+                if (p.task) {
+                  speakingExamPrompt += `- Cue Card/Task: ${p.task}\n`;
+                  if (Array.isArray(p.cues) && p.cues.length > 0) {
+                    speakingExamPrompt += `  Cues: ${p.cues.join(" | ")}\n`;
+                  }
+                }
+                if (Array.isArray(p.questions) && p.questions.length > 0) {
+                  speakingExamPrompt += "- Questions:\n";
+                  p.questions.forEach((q: string) => {
+                    partCounters[currentPart] = (partCounters[currentPart] || 0) + 1;
+                    const qNo = partCounters[currentPart];
+                    speakingExamPrompt += `  * Q${qNo} (filename matches "speaking_part${currentPart}_q${qNo}"): ${q}\n`;
+                  });
+                }
+              });
+            }
+          }
+          if (!speakingExamPrompt) {
+            speakingExamPrompt = speakingSection?.prompt || speakingSection?.title || "IELTS Speaking";
+          }
+
+          console.log(`[grade] Calling scoreSpeakingMulti with ${audiosToScore.length} audios...`);
+          const result = await scoreSpeakingMulti(audiosToScore, speakingExamPrompt);
+          if (result) {
+            newScores.speaking = {
+              band: result.overall_band,
+              criteria: result.criteria,
+              transcript: result.transcript,
+              feedback: result.feedback,
+            };
+          }
+        } else {
+          errors.push("Speaking AI chấm thất bại — không tải được tệp tin âm thanh nào từ Drive");
         }
       } catch (e) {
         console.error("[grade] Speaking AI error:", e);
@@ -142,13 +205,14 @@ export async function POST(
     : errors.length === 0 || fullyGraded ? "graded" : (errors.length < 2 ? "graded" : "pending");
 
   // ── Generate AI Summary ───────────────────────────────────────
-  if (fullyGraded && !rateLimited) {
+  // Only run when explicitly requested via target "summary" or fully grading "both"
+  if ((target === "summary" || target === "both") && !rateLimited) {
     try {
       const { generateSkillSummary } = await import("@/lib/gemini/score-summary");
       newScores.summary = await generateSkillSummary(newScores as any);
     } catch (e) {
       console.error("[grade] Summary AI error:", e);
-      // Non-fatal
+      errors.push("Nhận xét tổng hợp: AI chấm thất bại");
     }
   }
 

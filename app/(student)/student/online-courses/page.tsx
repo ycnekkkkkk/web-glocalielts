@@ -97,7 +97,7 @@ export default function StudentOnlineCoursesPage() {
             return (
               <Card key={c.id} hover className="flex flex-col overflow-hidden p-0">
                 {/* Thumbnail */}
-                <div className="relative w-full h-44 bg-gradient-to-br from-brand-100 to-indigo-100 shrink-0 overflow-hidden">
+                <div className="relative w-full aspect-video bg-gradient-to-br from-brand-100 to-indigo-100 shrink-0 overflow-hidden">
                   {thumbnail ? (
                     <Image
                       src={thumbnail}
@@ -112,19 +112,18 @@ export default function StudentOnlineCoursesPage() {
                       <span className="text-4xl">📚</span>
                     </div>
                   )}
-                  {/* Price badge */}
-                  <span className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm text-brand-700 font-bold text-xs px-2.5 py-1 rounded-full shadow">
-                    {c.price > 0
-                      ? `${Math.round(c.price / 1_000_000).toLocaleString("vi-VN")}M VND`
-                      : "Miễn phí"}
-                  </span>
                 </div>
 
                 {/* Content */}
                 <div className="p-5 flex flex-col flex-1">
                   <h3 className="font-semibold text-gray-900 text-sm line-clamp-2">{c.title}</h3>
-                  <p className="text-xs text-gray-500 mt-2 line-clamp-2">{c.short_description || "Khóa học online."}</p>
-                  <div className="mt-4 flex items-center justify-end">
+                  <p className="text-xs text-gray-500 mt-2 line-clamp-2 flex-1">{c.short_description || "Khóa học online."}</p>
+                  
+                  {/* Footer with price and CTA */}
+                  <div className="mt-4 pt-3 flex items-center justify-between border-t border-gray-100">
+                    <span className="text-sm font-black text-brand-700">
+                      {c.price > 0 ? `${c.price.toLocaleString("vi-VN")}đ` : "Miễn phí"}
+                    </span>
                     <Link href={`/student/online-courses/${c.slug}`}>
                       <Button size="sm">Xem chi tiết</Button>
                     </Link>

@@ -8,7 +8,7 @@ import Modal from "@/components/ui/Modal";
 import { useRoleGuard } from "@/hooks/useRoleGuard";
 import { createBrowserClient } from "@/lib/supabase/client";
 import {
-  Award, BookOpen, Calendar, GraduationCap, Headphones, LayoutDashboard, Search, Settings
+  Award, BookOpen, Calendar, GraduationCap, Headphones, Home, LayoutDashboard, Search, Settings
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -18,7 +18,9 @@ import type { NavGroup } from "@/types";
 const navGroups: NavGroup[] = [
   {
     label: "Tổng quan",
-    items: [{ label: "Dashboard", href: "/student/dashboard", icon: LayoutDashboard }],
+    items: [
+      { label: "Trang chủ", href: "/student/dashboard", icon: Home }
+    ],
   },
   {
     label: "Học tập",

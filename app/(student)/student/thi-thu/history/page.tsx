@@ -4,9 +4,25 @@ import PageWrapper from "@/components/layouts/PageWrapper";
 import { createBrowserClient } from "@/lib/supabase/client";
 import { getBandDescriptor } from "@/lib/mock-skill/band-mapping";
 import { cn } from "@/utils/cn";
-import { ArrowLeft, Calendar, ChevronRight, Clock, History } from "lucide-react";
+import { ArrowLeft, Calendar, ChevronRight, Clock, History, Bot, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+
+interface AIScore {
+  band?: number;
+  criteria?: Record<string, number>;
+  feedback?: {
+    strengths?: string[];
+    weaknesses?: string[];
+    grammar_issues?: Array<{ original: string; suggestion: string; explanation: string; example?: string }>;
+    vocabulary_suggestions?: Array<{ original: string; suggestion: string; explanation: string; example?: string }>;
+    pronunciation_issues?: Array<{ word: string; correct_pronunciation: string; tip: string; example?: string }>;
+    natural_suggestions?: Array<{ original: string; improved: string; explanation?: string; example?: string }>;
+    improved_sample?: string;
+  };
+  transcript?: string;
+  word_count?: number;
+}
 
 interface Submission {
   id: string;
@@ -16,8 +32,8 @@ interface Submission {
   scores: {
     listening?: { correct: number; total: number; band?: number };
     reading?: { correct: number; total: number; band?: number };
-    writing?: { band?: number };
-    speaking?: { band?: number };
+    writing?: AIScore;
+    speaking?: AIScore;
     summary?: {
       overall_band: number;
       level: string;
@@ -72,11 +88,209 @@ function formatDate(iso: string) {
   return d.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
+function StudentAIScoreDisplay({ skill, score }: { skill: "writing" | "speaking"; score?: AIScore }) {
+  if (!score) return null;
+  const criteriaLabels: Record<string, string> = {
+    task_achievement: "Task Achievement", coherence_cohesion: "Coherence & Cohesion",
+    lexical_resource: "Lexical Resource", grammatical_range_accuracy: "Grammar",
+    fluency_coherence: "Fluency & Coherence", pronunciation: "Pronunciation",
+  };
+  return (
+    <div className="space-y-4 text-left">
+      <div className="flex items-center gap-3">
+        <span className="text-3xl font-black text-brand-700">{score.band?.toFixed(1) ?? "—"}</span>
+        <span className="text-sm font-semibold text-gray-500">Band Score</span>
+      </div>
+
+      {score.criteria && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          {Object.entries(score.criteria).map(([k, v]) => (
+            <div key={k} className="rounded-xl border border-gray-100 bg-gray-50/50 p-2.5 shadow-sm">
+              <p className="text-xs text-gray-500 font-medium truncate">{criteriaLabels[k] || k}</p>
+              <p className="text-lg font-black text-gray-800 mt-0.5">{Number(v).toFixed(1)}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {score.feedback && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {(score.feedback.strengths || []).length > 0 && (
+              <div className="rounded-xl border border-emerald-100 bg-emerald-50/20 p-4">
+                <p className="text-sm font-bold text-emerald-800 mb-2 flex items-center gap-1.5">✅ Điểm mạnh</p>
+                <ul className="space-y-1.5">
+                  {score.feedback.strengths!.map((s, i) => (
+                    <li key={i} className="text-xs text-gray-700 leading-relaxed">• {s}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {(score.feedback.weaknesses || []).length > 0 && (
+              <div className="rounded-xl border border-red-100 bg-red-50/20 p-4">
+                <p className="text-sm font-bold text-red-800 mb-2 flex items-center gap-1.5">⚠️ Cần cải thiện</p>
+                <ul className="space-y-1.5">
+                  {score.feedback.weaknesses!.map((w, i) => (
+                    <li key={i} className="text-xs text-gray-700 leading-relaxed">• {w}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+
+          {/* Detailed corrections: Grammar & Vocabulary for Writing */}
+          {skill === "writing" && (
+            <div className="space-y-4">
+              {/* Grammar Issues */}
+              {score.feedback.grammar_issues && score.feedback.grammar_issues.length > 0 && (
+                <div className="space-y-2.5">
+                  <h4 className="text-sm font-black text-gray-800 flex items-center gap-2">🔍 Chi tiết lỗi Ngữ pháp & Câu từ</h4>
+                  <div className="space-y-3">
+                    {score.feedback.grammar_issues.map((item, i) => (
+                      <div key={i} className="rounded-xl border border-rose-100 bg-white p-3.5 shadow-sm space-y-2">
+                        <div className="flex items-start gap-2">
+                          <span className="text-xs font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded shrink-0">Bản gốc</span>
+                          <p className="text-xs text-gray-600 italic font-mono leading-relaxed break-words">{item.original}</p>
+                        </div>
+                        <div className="flex items-start gap-2 border-t border-dashed border-gray-100 pt-2">
+                          <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded shrink-0">Gợi ý sửa</span>
+                          <p className="text-xs text-emerald-700 font-bold leading-relaxed break-words">{item.suggestion}</p>
+                        </div>
+                        <div className="bg-gray-50 rounded-lg p-2.5 text-xs text-gray-600 leading-relaxed">
+                          <span className="font-bold text-gray-700 block mb-0.5">📖 Giải thích lỗi:</span>
+                          {item.explanation}
+                        </div>
+                        {item.example && (
+                          <div className="bg-blue-50/50 border border-blue-100/50 rounded-lg p-2.5 text-xs text-blue-800 leading-relaxed">
+                            <span className="font-bold block mb-0.5">💡 Ví dụ thực tế:</span>
+                            {item.example}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Vocabulary Suggestions */}
+              {score.feedback.vocabulary_suggestions && score.feedback.vocabulary_suggestions.length > 0 && (
+                <div className="space-y-2.5">
+                  <h4 className="text-sm font-black text-gray-800 flex items-center gap-2">🚀 Gợi ý nâng cấp Từ vựng</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {score.feedback.vocabulary_suggestions.map((item, i) => (
+                      <div key={i} className="rounded-xl border border-indigo-100 bg-white p-3.5 shadow-sm space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded">Từ đã dùng</span>
+                          <span className="text-xs font-bold text-brand-700 bg-brand-50 px-2 py-0.5 rounded">Premium Alternatives</span>
+                        </div>
+                        <div className="flex items-center gap-2 justify-between">
+                          <p className="text-xs text-gray-500 font-mono italic">{item.original}</p>
+                          <p className="text-xs text-emerald-600 font-extrabold">{item.suggestion}</p>
+                        </div>
+                        <div className="bg-gray-50 rounded-lg p-2.5 text-xs text-gray-600 leading-relaxed">
+                          <span className="font-bold text-gray-700 block mb-0.5">💡 Giải thích & Cách dùng:</span>
+                          {item.explanation}
+                        </div>
+                        {item.example && (
+                          <div className="bg-blue-50/50 border border-blue-100/50 rounded-lg p-2.5 text-xs text-blue-800 leading-relaxed">
+                            <span className="font-bold block mb-0.5">💡 Ví dụ thực tế:</span>
+                            {item.example}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Improved Sample */}
+              {score.feedback.improved_sample && (
+                <div className="space-y-2.5 border-t border-gray-100 pt-4">
+                  <h4 className="text-sm font-black text-gray-800 flex items-center gap-2">✍️ Bài viết mẫu nâng Band hoàn chỉnh</h4>
+                  <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-xs text-gray-700 leading-relaxed font-mono whitespace-pre-wrap max-h-96 overflow-y-auto">
+                    {score.feedback.improved_sample}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Detailed corrections: Pronunciation & Natural phrasing for Speaking */}
+          {skill === "speaking" && (
+            <div className="space-y-4">
+              {/* Pronunciation Issues */}
+              {score.feedback.pronunciation_issues && score.feedback.pronunciation_issues.length > 0 && (
+                <div className="space-y-2.5">
+                  <h4 className="text-sm font-black text-gray-800 flex items-center gap-2">🗣️ Chi tiết lỗi Phát âm</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {score.feedback.pronunciation_issues.map((item, i) => (
+                      <div key={i} className="rounded-xl border border-violet-100 bg-white p-3.5 shadow-sm space-y-2">
+                        <div className="flex items-center justify-between border-b border-gray-100 pb-1.5">
+                          <p className="text-xs font-bold text-red-600">{item.word}</p>
+                          <span className="text-xs font-bold text-violet-700 bg-violet-50 px-2 py-0.5 rounded font-mono">{item.correct_pronunciation}</span>
+                        </div>
+                        <div className="bg-gray-50 rounded-lg p-2.5 text-xs text-gray-600 leading-relaxed">
+                          <span className="font-bold text-gray-700 block mb-0.5">💡 Mẹo phát âm đúng:</span>
+                          {item.tip}
+                        </div>
+                        {item.example && (
+                          <div className="bg-blue-50/50 border border-blue-100/50 rounded-lg p-2.5 text-xs text-blue-800 leading-relaxed">
+                            <span className="font-bold block mb-0.5">💡 Từ tương tự:</span>
+                            {item.example}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Natural suggestions */}
+              {score.feedback.natural_suggestions && score.feedback.natural_suggestions.length > 0 && (
+                <div className="space-y-2.5">
+                  <h4 className="text-sm font-black text-gray-800 flex items-center gap-2">💡 Đề xuất diễn đạt tự nhiên hơn</h4>
+                  <div className="space-y-3">
+                    {score.feedback.natural_suggestions.map((item, i) => (
+                      <div key={i} className="rounded-xl border border-emerald-100 bg-white p-3.5 shadow-sm space-y-2">
+                        <div className="flex items-start gap-2">
+                          <span className="text-xs font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded shrink-0">Bạn nói</span>
+                          <p className="text-xs text-gray-600 italic font-mono leading-relaxed break-words">{item.original}</p>
+                        </div>
+                        <div className="flex items-start gap-2 border-t border-dashed border-gray-100 pt-2">
+                          <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded shrink-0">Native</span>
+                          <p className="text-xs text-emerald-700 font-bold leading-relaxed break-words">{item.improved}</p>
+                        </div>
+                        {item.explanation && (
+                          <div className="bg-gray-50 rounded-lg p-2.5 text-xs text-gray-600 leading-relaxed">
+                            <span className="font-bold text-gray-700 block mb-0.5">📖 Giải thích & Mẹo từ vựng:</span>
+                            {item.explanation}
+                          </div>
+                        )}
+                        {item.example && (
+                          <div className="bg-blue-50/50 border border-blue-100/50 rounded-lg p-2.5 text-xs text-blue-800 leading-relaxed">
+                            <span className="font-bold block mb-0.5">💡 Ví dụ thực tế:</span>
+                            {item.example}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function TestHistoryPage() {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [subTabs, setSubTabs] = useState<Record<string, "writing" | "speaking" | "summary">>({});
 
   useEffect(() => {
     async function load() {
@@ -100,8 +314,12 @@ export default function TestHistoryPage() {
 
   return (
     <PageWrapper>
-      <Link href="/student/thi-thu" className="inline-flex items-center gap-1.5 text-sm font-semibold text-gray-500 hover:text-brand-700 transition-colors mb-4 bg-gray-50 px-3 py-1 rounded-full w-fit">
-        <ArrowLeft className="w-3.5 h-3.5" /> Quay lại danh sách đề
+      <Link 
+        href="/student/thi-thu" 
+        className="group inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-gray-200/80 bg-white hover:bg-gray-50 text-xs font-semibold text-gray-600 hover:text-brand-700 shadow-sm hover:shadow transition-all duration-200 mb-4"
+      >
+        <ArrowLeft className="w-3.5 h-3.5 text-gray-500 group-hover:text-brand-600 transition-transform group-hover:-translate-x-0.5" />
+        <span>Quay lại danh sách đề</span>
       </Link>
       <div className="mb-6 flex items-center gap-3">
         <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-brand-500 to-indigo-600 flex items-center justify-center">
@@ -196,53 +414,124 @@ export default function TestHistoryPage() {
 
                 {isExpanded && s.is_released && summary && (
                   <div className="border-t border-gray-100 p-4 sm:p-5 bg-gray-50/30">
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="font-bold text-gray-900 flex items-center gap-2">
-                        ✨ Nhận xét từ AI
-                      </h3>
-                      <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-xs font-bold">
-                        {summary.level || "Unknown"}
-                      </span>
+                    {/* Premium sub-tab navigation */}
+                    <div className="flex border-b border-gray-200 mb-5 bg-gray-100/60 p-1 rounded-xl max-w-md mx-auto sm:mx-0">
+                      <button
+                        type="button"
+                        onClick={() => setSubTabs(prev => ({ ...prev, [s.id]: "summary" }))}
+                        className={cn(
+                          "flex-1 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5",
+                          (subTabs[s.id] || "summary") === "summary"
+                            ? "bg-white text-brand-700 shadow-sm"
+                            : "text-gray-500 hover:text-gray-800"
+                        )}
+                      >
+                        <Sparkles className="w-3.5 h-3.5 text-brand-500" /> Đánh giá Tổng hợp
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSubTabs(prev => ({ ...prev, [s.id]: "writing" }))}
+                        className={cn(
+                          "flex-1 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5",
+                          (subTabs[s.id] || "summary") === "writing"
+                            ? "bg-white text-brand-700 shadow-sm"
+                            : "text-gray-500 hover:text-gray-800"
+                        )}
+                      >
+                        <Bot className="w-3.5 h-3.5 text-indigo-500" /> Nhận xét Writing
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSubTabs(prev => ({ ...prev, [s.id]: "speaking" }))}
+                        className={cn(
+                          "flex-1 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5",
+                          (subTabs[s.id] || "summary") === "speaking"
+                            ? "bg-white text-brand-700 shadow-sm"
+                            : "text-gray-500 hover:text-gray-800"
+                        )}
+                      >
+                        <Bot className="w-3.5 h-3.5 text-violet-500" /> Nhận xét Speaking
+                      </button>
                     </div>
-                    <p className="text-sm text-gray-700 mb-4">{summary.overview}</p>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-xs font-semibold text-emerald-700 mb-1.5">✅ Điểm mạnh</p>
-                        <ul className="space-y-1 text-sm text-gray-600">
-                          {(summary.strengths || []).map((str, i) => (
-                            <li key={i}>• {str}</li>
-                          ))}
-                        </ul>
-                      </div>
-                      <div>
-                        <p className="text-xs font-semibold text-red-700 mb-1.5">⚠️ Cần cải thiện</p>
-                        <ul className="space-y-1 text-sm text-gray-600">
-                          {(summary.weaknesses || []).map((w, i) => (
-                            <li key={i}>• {w}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
+                    {/* Summary Tab */}
+                    {(subTabs[s.id] || "summary") === "summary" && (
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <h3 className="font-black text-gray-900 flex items-center gap-2">
+                            ✨ Nhận xét Tổng hợp từ AI
+                          </h3>
+                          <span className="px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-700 text-xs font-bold">
+                            {summary.level || "Unknown"}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-700 leading-relaxed bg-brand-50/40 p-3.5 rounded-xl border border-brand-100">{summary.overview}</p>
 
-                    {(summary.recommendations?.length ?? 0) > 0 && (
-                      <div className="mt-4 border-t border-gray-100 pt-3">
-                        <p className="text-xs font-semibold text-brand-700 mb-1.5">💡 Lời khuyên ôn tập</p>
-                        <ul className="space-y-1 text-sm text-gray-600">
-                          {summary.recommendations.map((r, i) => (
-                            <li key={i}>👉 {r}</li>
-                          ))}
-                        </ul>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
+                          <div className="rounded-xl border border-emerald-100 bg-emerald-50/10 p-4">
+                            <p className="text-sm font-bold text-emerald-800 mb-2 flex items-center gap-1.5">✅ Điểm mạnh</p>
+                            <ul className="space-y-1.5 text-xs text-gray-600">
+                              {(summary.strengths || []).map((str, i) => (
+                                <li key={i}>• {str}</li>
+                              ))}
+                            </ul>
+                          </div>
+                          <div className="rounded-xl border border-red-100 bg-red-50/10 p-4">
+                            <p className="text-sm font-bold text-red-800 mb-2 flex items-center gap-1.5">⚠️ Cần cải thiện</p>
+                            <ul className="space-y-1.5 text-xs text-gray-600">
+                              {(summary.weaknesses || []).map((w, i) => (
+                                <li key={i}>• {w}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+
+                        {(summary.recommendations?.length ?? 0) > 0 && (
+                          <div className="mt-4 border-t border-gray-100 pt-3.5">
+                            <p className="text-sm font-bold text-brand-800 mb-2 flex items-center gap-1.5">💡 Lời khuyên ôn tập</p>
+                            <ul className="space-y-1.5 text-xs text-gray-600">
+                              {summary.recommendations.map((r, i) => (
+                                <li key={i}>👉 {r}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Writing Tab */}
+                    {(subTabs[s.id] || "summary") === "writing" && (
+                      <div className="space-y-4">
+                        {s.scores?.writing ? (
+                          <StudentAIScoreDisplay skill="writing" score={s.scores.writing as any} />
+                        ) : (
+                          <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50/50 p-6 text-center text-xs text-gray-400">
+                            Chưa có nhận xét Writing từ AI.
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Speaking Tab */}
+                    {(subTabs[s.id] || "summary") === "speaking" && (
+                      <div className="space-y-4">
+                        {s.scores?.speaking ? (
+                          <StudentAIScoreDisplay skill="speaking" score={s.scores.speaking as any} />
+                        ) : (
+                          <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50/50 p-6 text-center text-xs text-gray-400">
+                            Chưa có nhận xét Speaking từ AI.
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
                 )}
-                {isExpanded && s.is_released && !summary && s.status === "completed" && (
+                {isExpanded && s.is_released && !summary && (s.status === "completed" || s.status === "graded") && (
                   <div className="border-t border-gray-100 p-4 text-center text-sm text-gray-500">
                     Chưa có nhận xét tổng hợp.
                   </div>
                 )}
-                {isExpanded && (!s.is_released || s.status !== "completed") && (
+                {isExpanded && (!s.is_released || (s.status !== "completed" && s.status !== "graded")) && (
                   <div className="border-t border-gray-100 p-8 text-center space-y-3 bg-gray-50/50">
                     <div className="w-12 h-12 rounded-full bg-brand-50 flex items-center justify-center mx-auto">
                       <Clock className="w-6 h-6 text-brand-600 animate-pulse" />

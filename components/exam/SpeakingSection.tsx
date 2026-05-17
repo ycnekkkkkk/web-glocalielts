@@ -473,11 +473,11 @@ export function SpeakingSection({ data, audioBlob, onAudioBlob, audios: audiosFr
       </div>
 
       {/* Part sections */}
-      {sectionDefs.map((s) => {
+      {sectionDefs.map((s, index) => {
         if (s.type === "part2") {
           return (
             <Part2Block
-              key="p2"
+              key={`p2-${index}`}
               part={s.part}
               globalRecordingId={globalRecordingId}
               onStartRecording={(id) => setGlobalRecordingId(id)}
@@ -490,7 +490,7 @@ export function SpeakingSection({ data, audioBlob, onAudioBlob, audios: audiosFr
         }
         return (
           <PartBlock
-            key={s.part.part}
+            key={`${s.part.part}-${index}`}
             part={s.part}
             color={(s as { color?: string }).color ?? "violet"}
             label={(s as { label?: string }).label ?? `Part ${s.part.part}`}

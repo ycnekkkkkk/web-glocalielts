@@ -15,11 +15,32 @@ import { rawScoreToBand } from "@/lib/mock-skill/band-mapping";
 type Candidate = { full_name?: string; email?: string; phone?: string; birth_year?: string; hometown?: string };
 
 type SkillScore = { correct?: number; total?: number; band?: number; items?: Array<{ id: string; expected: string; actual: string; ok: boolean }> };
-type AIScore = { band?: number; criteria?: Record<string, number>; feedback?: { strengths?: string[]; weaknesses?: string[]; grammar_issues?: unknown[]; pronunciation_issues?: unknown[] }; transcript?: string; word_count?: number };
+type AIScore = {
+  band?: number;
+  criteria?: Record<string, number>;
+  feedback?: {
+    strengths?: string[];
+    weaknesses?: string[];
+    grammar_issues?: Array<{ original: string; suggestion: string; explanation: string; example?: string }>;
+    vocabulary_suggestions?: Array<{ original: string; suggestion: string; explanation: string; example?: string }>;
+    pronunciation_issues?: Array<{ word: string; correct_pronunciation: string; tip: string; example?: string }>;
+    natural_suggestions?: Array<{ original: string; improved: string; explanation?: string; example?: string }>;
+    improved_sample?: string;
+  };
+  transcript?: string;
+  word_count?: number;
+};
 type SummaryScore = { overall_band?: number; level?: string; overview?: string; strengths?: string[]; weaknesses?: string[]; recommendations?: string[]; skill_balance?: string };
 type Scores = { listening?: SkillScore; reading?: SkillScore; writing?: AIScore; speaking?: AIScore; summary?: SummaryScore };
 
-type AnswersRaw = { listening?: Record<string, unknown>; reading?: Record<string, unknown>; writingText?: string; speakingDriveFileId?: string; speakingDriveUrl?: string };
+type AnswersRaw = {
+  listening?: Record<string, unknown>;
+  reading?: Record<string, unknown>;
+  writingText?: string;
+  speakingDriveFileId?: string;
+  speakingDriveUrl?: string;
+  speakingAudios?: Array<{ key: string; name: string; driveFileId: string; driveUrl: string }>;
+};
 
 // ── Status helpers ──────────────────────────────────────────────
 const STATUS_CONFIG: Record<string, { label: string; variant: "success" | "warning" | "danger" | "gray" | "info" }> = {
@@ -97,37 +118,194 @@ function AIScoreDisplay({ skill, score }: { skill: "writing" | "speaking"; score
     fluency_coherence: "Fluency & Coherence", pronunciation: "Pronunciation",
   };
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <div className="flex items-center gap-3">
-        <span className="text-2xl font-black text-gray-900">{score.band?.toFixed(1) ?? "—"}</span>
-        <span className="text-sm text-gray-500">Band</span>
+        <span className="text-3xl font-black text-brand-700">{score.band?.toFixed(1) ?? "—"}</span>
+        <span className="text-sm font-semibold text-gray-500">Band Score</span>
       </div>
+
       {score.criteria && (
-        <div className="grid grid-cols-2 gap-1.5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
           {Object.entries(score.criteria).map(([k, v]) => (
-            <div key={k} className="rounded-lg bg-gray-50 px-2 py-1.5">
-              <p className="text-xs text-gray-500">{criteriaLabels[k] || k}</p>
-              <p className="text-sm font-bold text-gray-800">{Number(v).toFixed(1)}</p>
+            <div key={k} className="rounded-xl border border-gray-100 bg-gray-50/50 p-2.5 shadow-sm">
+              <p className="text-xs text-gray-500 font-medium truncate">{criteriaLabels[k] || k}</p>
+              <p className="text-lg font-black text-gray-800 mt-0.5">{Number(v).toFixed(1)}</p>
             </div>
           ))}
         </div>
       )}
-      {skill === "speaking" && score.transcript && (
-        <div>
-          <p className="text-xs font-semibold text-gray-600 mb-1">📝 Transcript</p>
-          <p className="text-xs text-gray-600 whitespace-pre-wrap bg-gray-50 rounded-lg p-2 max-h-32 overflow-y-auto">{score.transcript}</p>
-        </div>
-      )}
+
       {score.feedback && (
-        <div className="space-y-1.5">
-          {(score.feedback.strengths || []).length > 0 && (
-            <div><p className="text-xs font-semibold text-emerald-700 mb-0.5">✅ Điểm mạnh</p>
-              {score.feedback.strengths!.map((s, i) => <p key={i} className="text-xs text-gray-600">• {s}</p>)}
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {(score.feedback.strengths || []).length > 0 && (
+              <div className="rounded-xl border border-emerald-100 bg-emerald-50/20 p-4">
+                <p className="text-sm font-bold text-emerald-800 mb-2 flex items-center gap-1.5">✅ Điểm mạnh</p>
+                <ul className="space-y-1.5">
+                  {score.feedback.strengths!.map((s, i) => (
+                    <li key={i} className="text-xs text-gray-700 leading-relaxed">• {s}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {(score.feedback.weaknesses || []).length > 0 && (
+              <div className="rounded-xl border border-red-100 bg-red-50/20 p-4">
+                <p className="text-sm font-bold text-red-800 mb-2 flex items-center gap-1.5">⚠️ Cần cải thiện</p>
+                <ul className="space-y-1.5">
+                  {score.feedback.weaknesses!.map((w, i) => (
+                    <li key={i} className="text-xs text-gray-700 leading-relaxed">• {w}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+
+          {/* Detailed corrections: Grammar & Vocabulary for Writing */}
+          {skill === "writing" && (
+            <div className="space-y-4">
+              {/* Grammar Issues */}
+              {score.feedback.grammar_issues && score.feedback.grammar_issues.length > 0 && (
+                <div className="space-y-2.5">
+                  <h4 className="text-sm font-black text-gray-800 flex items-center gap-2">🔍 Chi tiết lỗi Ngữ pháp & Câu từ</h4>
+                  <div className="space-y-3">
+                    {(score.feedback.grammar_issues as any[]).map((item: any, i: number) => (
+                      <div key={i} className="rounded-xl border border-rose-100 bg-white p-3.5 shadow-sm space-y-2">
+                        <div className="flex items-start gap-2">
+                          <span className="text-xs font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded shrink-0">Bản gốc</span>
+                          <p className="text-xs text-gray-600 italic font-mono leading-relaxed break-words">{item.original}</p>
+                        </div>
+                        <div className="flex items-start gap-2 border-t border-dashed border-gray-100 pt-2">
+                          <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded shrink-0">Gợi ý sửa</span>
+                          <p className="text-xs text-emerald-700 font-bold leading-relaxed break-words">{item.suggestion}</p>
+                        </div>
+                        <div className="bg-gray-50 rounded-lg p-2.5 text-xs text-gray-600 leading-relaxed">
+                          <span className="font-bold text-gray-700 block mb-0.5">📖 Giải thích lỗi:</span>
+                          {item.explanation}
+                        </div>
+                        {item.example && (
+                          <div className="bg-blue-50/50 border border-blue-100/50 rounded-lg p-2.5 text-xs text-blue-800 leading-relaxed">
+                            <span className="font-bold block mb-0.5">💡 Ví dụ thực tế:</span>
+                            {item.example}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Vocabulary Suggestions */}
+              {score.feedback.vocabulary_suggestions && score.feedback.vocabulary_suggestions.length > 0 && (
+                <div className="space-y-2.5">
+                  <h4 className="text-sm font-black text-gray-800 flex items-center gap-2">🚀 Gợi ý nâng cấp Từ vựng</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {(score.feedback.vocabulary_suggestions as any[]).map((item: any, i: number) => (
+                      <div key={i} className="rounded-xl border border-indigo-100 bg-white p-3.5 shadow-sm space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded">Từ đã dùng</span>
+                          <span className="text-xs font-bold text-brand-700 bg-brand-50 px-2 py-0.5 rounded">Premium Alternatives</span>
+                        </div>
+                        <div className="flex items-center gap-2 justify-between">
+                          <p className="text-xs text-gray-500 font-mono italic">{item.original}</p>
+                          <p className="text-xs text-emerald-600 font-extrabold">{item.suggestion}</p>
+                        </div>
+                        <div className="bg-gray-50 rounded-lg p-2.5 text-xs text-gray-600 leading-relaxed">
+                          <span className="font-bold text-gray-700 block mb-0.5">💡 Giải thích & Cách dùng:</span>
+                          {item.explanation}
+                        </div>
+                        {item.example && (
+                          <div className="bg-blue-50/50 border border-blue-100/50 rounded-lg p-2.5 text-xs text-blue-800 leading-relaxed">
+                            <span className="font-bold block mb-0.5">💡 Ví dụ thực tế:</span>
+                            {item.example}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Improved Sample */}
+              {score.feedback.improved_sample && (
+                <div className="space-y-2.5 border-t border-gray-100 pt-4">
+                  <h4 className="text-sm font-black text-gray-800 flex items-center gap-2">✍️ Bài viết mẫu nâng Band hoàn chỉnh</h4>
+                  <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-xs text-gray-700 leading-relaxed font-mono whitespace-pre-wrap max-h-96 overflow-y-auto">
+                    {score.feedback.improved_sample}
+                  </div>
+                </div>
+              )}
             </div>
           )}
-          {(score.feedback.weaknesses || []).length > 0 && (
-            <div><p className="text-xs font-semibold text-red-700 mb-0.5">⚠️ Điểm yếu</p>
-              {score.feedback.weaknesses!.map((w, i) => <p key={i} className="text-xs text-gray-600">• {w}</p>)}
+
+          {/* Detailed corrections: Pronunciation & Natural phrasing for Speaking */}
+          {skill === "speaking" && (
+            <div className="space-y-4">
+              {score.transcript && (
+                <div className="border-t border-gray-100 pt-3">
+                  <p className="text-xs font-semibold text-gray-600 mb-1.5">📝 Transcript</p>
+                  <p className="text-xs text-gray-600 whitespace-pre-wrap bg-gray-50 rounded-lg p-3 max-h-48 overflow-y-auto leading-relaxed">{score.transcript}</p>
+                </div>
+              )}
+
+              {/* Pronunciation Issues */}
+              {score.feedback.pronunciation_issues && score.feedback.pronunciation_issues.length > 0 && (
+                <div className="space-y-2.5">
+                  <h4 className="text-sm font-black text-gray-800 flex items-center gap-2">🗣️ Chi tiết lỗi Phát âm</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {(score.feedback.pronunciation_issues as any[]).map((item: any, i: number) => (
+                      <div key={i} className="rounded-xl border border-violet-100 bg-white p-3.5 shadow-sm space-y-2">
+                        <div className="flex items-center justify-between border-b border-gray-100 pb-1.5">
+                          <p className="text-xs font-bold text-red-600">{item.word}</p>
+                          <span className="text-xs font-bold text-violet-700 bg-violet-50 px-2 py-0.5 rounded font-mono">{item.correct_pronunciation}</span>
+                        </div>
+                        <div className="bg-gray-50 rounded-lg p-2.5 text-xs text-gray-600 leading-relaxed">
+                          <span className="font-bold text-gray-700 block mb-0.5">💡 Mẹo phát âm đúng:</span>
+                          {item.tip}
+                        </div>
+                        {item.example && (
+                          <div className="bg-blue-50/50 border border-blue-100/50 rounded-lg p-2.5 text-xs text-blue-800 leading-relaxed">
+                            <span className="font-bold block mb-0.5">💡 Từ tương tự:</span>
+                            {item.example}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Natural suggestions */}
+              {score.feedback.natural_suggestions && score.feedback.natural_suggestions.length > 0 && (
+                <div className="space-y-2.5">
+                  <h4 className="text-sm font-black text-gray-800 flex items-center gap-2">💡 Đề xuất diễn đạt tự nhiên hơn</h4>
+                  <div className="space-y-3">
+                    {(score.feedback.natural_suggestions as any[]).map((item: any, i: number) => (
+                      <div key={i} className="rounded-xl border border-emerald-100 bg-white p-3.5 shadow-sm space-y-2">
+                        <div className="flex items-start gap-2">
+                          <span className="text-xs font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded shrink-0">Bạn nói</span>
+                          <p className="text-xs text-gray-600 italic font-mono leading-relaxed break-words">{item.original}</p>
+                        </div>
+                        <div className="flex items-start gap-2 border-t border-dashed border-gray-100 pt-2">
+                          <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded shrink-0">Native</span>
+                          <p className="text-xs text-emerald-700 font-bold leading-relaxed break-words">{item.improved}</p>
+                        </div>
+                        {item.explanation && (
+                          <div className="bg-gray-50 rounded-lg p-2.5 text-xs text-gray-600 leading-relaxed">
+                            <span className="font-bold text-gray-700 block mb-0.5">📖 Giải thích & Mẹo từ vựng:</span>
+                            {item.explanation}
+                          </div>
+                        )}
+                        {item.example && (
+                          <div className="bg-blue-50/50 border border-blue-100/50 rounded-lg p-2.5 text-xs text-blue-800 leading-relaxed">
+                            <span className="font-bold block mb-0.5">💡 Ví dụ thực tế:</span>
+                            {item.example}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -145,7 +323,7 @@ function DetailPanel({ sub, exam, onClose, onUpdate }: {
   const scores = (sub.scores || {}) as Scores;
   const answersRaw = (sub.answers_raw || {}) as AnswersRaw;
   const [tab, setTab] = useState<"listening" | "reading" | "writing" | "speaking" | "summary">("listening");
-  const [grading, setGrading] = useState<"writing" | "speaking" | "both" | null>(null);
+  const [grading, setGrading] = useState<"writing" | "speaking" | "both" | "summary" | null>(null);
   const [updatingItemId, setUpdatingItemId] = useState<string | null>(null);
 
   async function toggleAnswer(skill: "listening" | "reading", itemId: string) {
@@ -173,7 +351,7 @@ function DetailPanel({ sub, exam, onClose, onUpdate }: {
     }
   }
 
-  async function grade(target: "writing" | "speaking" | "both") {
+  async function grade(target: "writing" | "speaking" | "both" | "summary") {
     setGrading(target);
     try {
       const res = await fetch(`/api/admin/mock-skill-submissions/${sub.id}/grade`, {
@@ -237,7 +415,7 @@ function DetailPanel({ sub, exam, onClose, onUpdate }: {
     { id: "reading" as const, label: `📖 Reading (${scores.reading?.correct ?? "?"}/${scores.reading?.total ?? "?"})` },
     { id: "writing" as const, label: `✍️ Writing ${scores.writing ? "✓" : ""}` },
     { id: "speaking" as const, label: `🎤 Speaking ${scores.speaking ? "✓" : ""}` },
-    ...(scores.summary ? [{ id: "summary" as const, label: "✨ Tổng hợp AI" }] : []),
+    { id: "summary" as const, label: `✨ Tổng hợp AI ${scores.summary ? "✓" : ""}` },
   ];
 
   return (
@@ -300,7 +478,15 @@ function DetailPanel({ sub, exam, onClose, onUpdate }: {
               ) : <p className="text-gray-400 text-sm">Không có bài viết.</p>}
 
               {scores.writing ? (
-                <AIScoreDisplay skill="writing" score={scores.writing} />
+                <div className="space-y-3">
+                  <AIScoreDisplay skill="writing" score={scores.writing} />
+                  <div className="pt-2 border-t border-gray-100">
+                    <Button variant="outline" size="sm" icon={<Bot className="w-3.5 h-3.5 text-gray-500" />}
+                      loading={grading === "writing"} onClick={() => grade("writing")}>
+                      Chấm lại Writing bằng AI
+                    </Button>
+                  </div>
+                </div>
               ) : (
                 <Button variant="primary" size="sm" icon={<Bot className="w-3.5 h-3.5" />}
                   loading={grading === "writing"} onClick={() => grade("writing")}>
@@ -313,22 +499,58 @@ function DetailPanel({ sub, exam, onClose, onUpdate }: {
           {/* Speaking tab */}
           {tab === "speaking" && (
             <div className="space-y-4">
-              {answersRaw.speakingDriveUrl ? (
-                <a href={answersRaw.speakingDriveUrl} target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-brand-600 text-sm font-medium hover:underline">
-                  <FolderOpen className="w-4 h-4" /> Nghe audio trên Drive
-                </a>
-              ) : <p className="text-gray-400 text-sm">Chưa có audio Speaking.</p>}
+              <div className="flex flex-col gap-3">
+                {/* Audio Drive parent/folders link */}
+                <div className="flex flex-wrap gap-3 items-center">
+                  {answersRaw.speakingDriveUrl && (
+                    <a href={answersRaw.speakingDriveUrl} target="_blank" rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 text-brand-600 text-xs font-semibold hover:underline bg-brand-50 px-3 py-1.5 rounded-lg border border-brand-100">
+                      <FolderOpen className="w-3.5 h-3.5" /> Nghe file tổng hợp trên Drive
+                    </a>
+                  )}
+                  {sub.drive_folder_url && (
+                    <a href={sub.drive_folder_url} target="_blank" rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-brand-600 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200">
+                      <FolderOpen className="w-3.5 h-3.5" /> Mở folder Drive chứa tất cả file
+                    </a>
+                  )}
+                </div>
 
-              {sub.drive_folder_url && (
-                <a href={sub.drive_folder_url} target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-brand-600">
-                  <FolderOpen className="w-3.5 h-3.5" /> Mở folder Drive
-                </a>
-              )}
+                {/* Individual Question Audio files */}
+                {answersRaw.speakingAudios && answersRaw.speakingAudios.length > 0 ? (
+                  <div className="space-y-2 border-t border-gray-100 pt-3">
+                    <p className="text-xs font-bold text-gray-700">🎙️ Danh sách file ghi âm từng câu của học sinh:</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {answersRaw.speakingAudios.map((audio, index) => (
+                        <a key={index} href={audio.driveUrl} target="_blank" rel="noopener noreferrer"
+                          className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 bg-white hover:bg-brand-50/50 hover:border-brand-200 shadow-sm transition-all text-left">
+                          <span className="w-6 h-6 rounded-lg bg-brand-100 text-brand-700 flex items-center justify-center text-xs font-black shrink-0">
+                            {index + 1}
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-bold text-gray-800 truncate">{audio.name || `Ghi âm phần ${index + 1}`}</p>
+                            <p className="text-[10px] text-gray-400 font-medium">Click để nghe trên Drive</p>
+                          </div>
+                          <FolderOpen className="w-4 h-4 text-gray-400 shrink-0" />
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                ) : !answersRaw.speakingDriveUrl ? (
+                  <p className="text-gray-400 text-sm">Chưa có audio Speaking.</p>
+                ) : null}
+              </div>
 
               {scores.speaking ? (
-                <AIScoreDisplay skill="speaking" score={scores.speaking} />
+                <div className="space-y-3">
+                  <AIScoreDisplay skill="speaking" score={scores.speaking} />
+                  <div className="pt-2 border-t border-gray-100">
+                    <Button variant="outline" size="sm" icon={<Bot className="w-3.5 h-3.5 text-gray-500" />}
+                      loading={grading === "speaking"} onClick={() => grade("speaking")}>
+                      Chấm lại Speaking bằng AI
+                    </Button>
+                  </div>
+                </div>
               ) : (
                 <Button variant="primary" size="sm" icon={<Bot className="w-3.5 h-3.5" />}
                   loading={grading === "speaking"} onClick={() => grade("speaking")}>
@@ -339,42 +561,68 @@ function DetailPanel({ sub, exam, onClose, onUpdate }: {
           )}
 
           {/* Summary tab */}
-          {tab === "summary" && scores.summary && (
+          {tab === "summary" && (
             <div className="space-y-4">
-              <div className="flex items-center gap-4">
-                <div className="text-center">
-                  <span className="text-3xl font-black text-brand-700">{scores.summary.overall_band?.toFixed(1) || "—"}</span>
-                  <p className="text-xs text-gray-500">Overall</p>
+              {!scores.summary ? (
+                <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50/50 p-6 text-center space-y-4">
+                  <div className="mx-auto w-12 h-12 rounded-2xl bg-brand-50 flex items-center justify-center">
+                    <Bot className="w-6 h-6 text-brand-600 animate-bounce" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-gray-800">Chưa có Nhận xét Tổng hợp AI</h4>
+                    <p className="text-xs text-gray-500 max-w-sm mx-auto mt-1">Hệ thống AI sẽ tự động phân tích phổ điểm các kỹ năng và đưa ra nhận xét chung về điểm mạnh, điểm yếu & lộ trình ôn tập.</p>
+                  </div>
+                  <Button variant="primary" size="sm" icon={<Bot className="w-3.5 h-3.5" />}
+                    loading={grading === "summary"} onClick={() => grade("summary")}>
+                    Tổng hợp nhận xét bằng AI
+                  </Button>
                 </div>
-                <div className="h-10 w-px bg-gray-200"></div>
-                <div>
-                  <Badge variant="info">{scores.summary.level || "Unknown"}</Badge>
-                  <p className="text-sm font-medium text-gray-600 mt-1 capitalize">{scores.summary.skill_balance?.replace("_", " ") || "Balanced"}</p>
-                </div>
-              </div>
-              <p className="text-sm text-gray-700 bg-brand-50 p-3 rounded-xl border border-brand-100">{scores.summary.overview}</p>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4">
+                    <div className="text-center">
+                      <span className="text-3xl font-black text-brand-700">{scores.summary.overall_band?.toFixed(1) || "—"}</span>
+                      <p className="text-xs text-gray-500">Overall</p>
+                    </div>
+                    <div className="h-10 w-px bg-gray-200"></div>
+                    <div>
+                      <Badge variant="info">{scores.summary.level || "Unknown"}</Badge>
+                      <p className="text-sm font-medium text-gray-600 mt-1 capitalize">{scores.summary.skill_balance?.replace("_", " ") || "Balanced"}</p>
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-700 bg-brand-50 p-3 rounded-xl border border-brand-100">{scores.summary.overview}</p>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
-                <div>
-                  <p className="text-xs font-semibold text-emerald-700 mb-1">✅ Điểm mạnh</p>
-                  <ul className="space-y-1">
-                    {(scores.summary.strengths || []).map((s, i) => <li key={i} className="text-xs text-gray-600">• {s}</li>)}
-                  </ul>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-red-700 mb-1">⚠️ Cần cải thiện</p>
-                  <ul className="space-y-1">
-                    {(scores.summary.weaknesses || []).map((s, i) => <li key={i} className="text-xs text-gray-600">• {s}</li>)}
-                  </ul>
-                </div>
-              </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
+                    <div>
+                      <p className="text-xs font-semibold text-emerald-700 mb-1">✅ Điểm mạnh tổng hợp</p>
+                      <ul className="space-y-1">
+                        {(scores.summary.strengths || []).map((s, i) => <li key={i} className="text-xs text-gray-600">• {s}</li>)}
+                      </ul>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-red-700 mb-1">⚠️ Cần cải thiện chung</p>
+                      <ul className="space-y-1">
+                        {(scores.summary.weaknesses || []).map((s, i) => <li key={i} className="text-xs text-gray-600">• {s}</li>)}
+                      </ul>
+                    </div>
+                  </div>
 
-              {scores.summary.recommendations && scores.summary.recommendations.length > 0 && (
-                <div className="mt-4 border-t border-gray-100 pt-3">
-                  <p className="text-xs font-semibold text-blue-700 mb-1">💡 Lời khuyên ôn tập</p>
-                  <ul className="space-y-1.5">
-                    {scores.summary.recommendations.map((r, i) => <li key={i} className="text-xs text-gray-600">👉 {r}</li>)}
-                  </ul>
+                  {scores.summary.recommendations && scores.summary.recommendations.length > 0 && (
+                    <div className="mt-4 border-t border-gray-100 pt-3">
+                      <p className="text-xs font-semibold text-blue-700 mb-1">💡 Lời khuyên & Lộ trình ôn tập</p>
+                      <ul className="space-y-1.5">
+                        {scores.summary.recommendations.map((r, i) => <li key={i} className="text-xs text-gray-600">👉 {r}</li>)}
+                      </ul>
+                    </div>
+                  )}
+
+                  <div className="pt-2 border-t border-gray-100 flex items-center justify-between">
+                    <span className="text-xs text-gray-400 font-medium">Nhận xét tổng hợp tự động bằng AI</span>
+                    <Button variant="outline" size="sm" icon={<Bot className="w-3.5 h-3.5 text-gray-500" />}
+                      loading={grading === "summary"} onClick={() => grade("summary")}>
+                      Cập nhật tổng hợp nhận xét AI
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>

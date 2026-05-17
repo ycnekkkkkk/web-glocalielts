@@ -349,11 +349,10 @@ export default function AgHomeV2Landing({ courses }: { courses: PublicCourse[] }
                 key={x.id}
                 type="button"
                 onClick={() => setTab(x.id)}
-                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                  tab === x.id
+                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${tab === x.id
                     ? "bg-brand-600 text-white shadow-sm"
                     : "bg-white text-gray-700 border border-gray-200 hover:bg-brand-50/80 hover:border-brand-200"
-                }`}
+                  }`}
               >
                 {x.label}
               </button>

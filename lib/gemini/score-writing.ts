@@ -10,8 +10,8 @@ export interface WritingCriteria {
 export interface WritingFeedback {
   strengths: string[];
   weaknesses: string[];
-  grammar_issues: Array<{ original: string; suggestion: string; explanation: string }>;
-  vocabulary_suggestions: Array<{ word: string; better_alternatives: string[] }>;
+  grammar_issues: Array<{ original: string; suggestion: string; explanation: string; example?: string }>;
+  vocabulary_suggestions: Array<{ original: string; suggestion: string; explanation: string; example?: string }>;
   improved_sample: string;
 }
 
@@ -42,6 +42,10 @@ BAND SCALE REFERENCE:
 
 Calculate overall_band as weighted average: (TA + CC + LR + GRA) / 4, rounded to nearest 0.5.
 
+CRITICAL LANGUAGE REQUIREMENT:
+You MUST write all candidate-facing evaluation details (feedback, strengths, weaknesses, grammar explanations, vocabulary explanations, and advice) ENTIRELY in Vietnamese (Tiếng Việt). Do not mix English and Vietnamese in these explanation fields.
+However, "original", "suggestion" (in grammar_issues and vocabulary_suggestions), and "improved_sample" MUST ALWAYS BE WRITTEN IN ENGLISH (Tiếng Anh), because they represent the original English speech/text and the upgraded natural native English phrasing suggestions or full sample essays. DO NOT translate these specific fields to Vietnamese.
+
 You MUST respond with valid JSON only, no markdown, no explanation outside JSON.`;
 
 const WRITING_USER_PROMPT_TEMPLATE = (
@@ -58,6 +62,9 @@ ${taskPrompt}
 CANDIDATE'S ESSAY (${wordCount} words):
 ${essay}
 
+Your job is to act as an extremely rigorous, detailed, and highly encouraging expert IELTS examiner. 
+For EACH grammatical mistake, awkward structure, or word choice error in the candidate's essay, provide a line-by-line / sentence-by-sentence correction. Avoid generic or high-level observations; focus on pointing out the exact sentence, explaining the grammar rules in detail, giving the correction, and providing similar illustrative examples.
+
 Return ONLY this JSON (no markdown, no text outside JSON):
 {
   "overall_band": <number 0-9 step 0.5>,
@@ -68,15 +75,25 @@ Return ONLY this JSON (no markdown, no text outside JSON):
     "grammatical_range_accuracy": <number>
   },
   "feedback": {
-    "strengths": [<2-3 short strings>],
-    "weaknesses": [<2-3 short strings>],
+    "strengths": [<2-3 specific, encouraging points in Vietnamese>],
+    "weaknesses": [<2-3 actionable areas to improve in Vietnamese>],
     "grammar_issues": [
-      {"original": "<phrase>", "suggestion": "<fix>", "explanation": "<1 sentence>"}
+      {
+        "original": "<the exact sentence or phrase containing the error>",
+        "suggestion": "<the corrected, polished version of that sentence/phrase>",
+        "explanation": "<detailed, easy-to-understand grammatical analysis in Vietnamese explaining WHY it is incorrect and what the rule is>",
+        "example": "<a brand new English sentence illustrating the correct usage, followed by its Vietnamese translation in parentheses>"
+      }
     ],
     "vocabulary_suggestions": [
-      {"word": "<basic word>", "better_alternatives": ["<alt1>", "<alt2>"]}
+      {
+        "original": "<the basic, repetitive, or slightly misused word or phrase>",
+        "suggestion": "<the premium, high-scoring academic alternatives (e.g. collocations, advanced vocabulary)>",
+        "explanation": "<detailed Vietnamese explanation of the nuance, collocation, and why this alternative elevates the band score>",
+        "example": "<sample English sentence demonstrating this advanced term in action, followed by its Vietnamese translation in parentheses>"
+      }
     ],
-    "improved_sample": ""
+    "improved_sample": "<a beautifully rewritten, cohesive, full sample essay at Band 8.5+ level based on the candidate's ideas, with paragraph breaks using \\n\\n>"
   },
   "word_count": ${wordCount},
   "task_type": "${taskType}"

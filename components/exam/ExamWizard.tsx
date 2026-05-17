@@ -218,10 +218,38 @@ export function ExamWizard({ slug }: ExamWizardProps) {
       fd.append("writingTask2", writingValues.task2);
       fd.append("writingText", `TASK 1:\n${writingValues.task1}\n\nTASK 2:\n${writingValues.task2}`);
 
-      if (audioBlob && audioBlob.size > 0) {
-        const ext = audioBlob.type.includes("mp4") ? "m4a" : "webm";
-        fd.append("speakingAudio", new File([audioBlob], `speaking.${ext}`, { type: audioBlob.type }));
-      }
+      // Build descriptive list of audio files using unified part-specific counters
+      const audioKeys: string[] = [];
+      const partCounters: Record<string, number> = { "1": 0, "2": 0, "3": 0 };
+      let idCounter = 0;
+
+      (content.speaking.parts || []).forEach((p) => {
+        const currentPart = p.part || "1";
+        if (currentPart === "2") {
+          const audio = speakingAudios[idCounter];
+          if (audio && audio.blob && audio.blob.size > 0) {
+            const ext = audio.blob.type.includes("mp4") ? "m4a" : "webm";
+            const key = `speakingAudio_part2`;
+            fd.append(key, new File([audio.blob], `speaking_part2.${ext}`, { type: audio.blob.type }));
+            audioKeys.push(key);
+          }
+          idCounter++;
+        } else {
+          (p.questions || []).forEach((q) => {
+            partCounters[currentPart] = (partCounters[currentPart] || 0) + 1;
+            const qNo = partCounters[currentPart];
+            const audio = speakingAudios[idCounter];
+            if (audio && audio.blob && audio.blob.size > 0) {
+              const ext = audio.blob.type.includes("mp4") ? "m4a" : "webm";
+              const key = `speakingAudio_part${currentPart}_q${qNo}`;
+              fd.append(key, new File([audio.blob], `speaking_part${currentPart}_q${qNo}.${ext}`, { type: audio.blob.type }));
+              audioKeys.push(key);
+            }
+            idCounter++;
+          });
+        }
+      });
+      fd.append("speakingAudioKeys", JSON.stringify(audioKeys));
 
       const res = await fetch("/api/mock-skill/submit", { method: "POST", body: fd });
       const json = await res.json() as { ok?: boolean; error?: string; message?: string; status?: string };
@@ -394,7 +422,7 @@ export function ExamWizard({ slug }: ExamWizardProps) {
         }}
       />
 
-      <main className="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 py-6">
+      <main className={cn("flex-1 mx-auto w-full px-4 sm:px-6 py-6 transition-all duration-300", step === "reading" ? "max-w-[1440px]" : "max-w-6xl")}>
         {/* Step heading */}
         <div className="mb-6">
           <a href={thiThuRoot} className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-brand-600 mb-3 transition-colors">
@@ -407,7 +435,7 @@ export function ExamWizard({ slug }: ExamWizardProps) {
           <ListeningSection data={content.listening} answers={listeningPicks} flagged={flagged} onChange={setListeningPicks} onFlag={toggleFlag} />
         )}
         {step === "reading" && (
-          <ReadingSection data={content.reading} answers={readingPicks} flagged={flagged} onChange={setReadingPicks} onFlag={toggleFlag} />
+          <ReadingSection data={content.reading} answers={readingPicks} flagged={flagged} onChange={setReadingPicks} onFlag={toggleFlag} examSlug={slug} />
         )}
         {/* Speaking — always mounted to preserve recording state */}
           <div className={cn(step !== "speaking" && "hidden")}>

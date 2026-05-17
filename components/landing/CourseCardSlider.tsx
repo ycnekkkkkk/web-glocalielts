@@ -114,46 +114,46 @@ export default function CourseCardSlider({ courses }: { courses: PublicCourse[] 
               key={c.id}
               className="w-[min(85vw,300px)] shrink-0 snap-start sm:w-[300px]"
             >
-            <Card hover className="flex h-full flex-col p-5">
-              <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-brand-100">
-                <BookOpen className="h-5 w-5 text-brand-600" aria-hidden />
-              </div>
-              <h4 className="line-clamp-2 font-bold leading-snug text-gray-900">
-                <Link href={`/courses/${c.slug}`} className="hover:text-brand-700">
-                  {c.title}
-                </Link>
-              </h4>
-              <ul className="mt-3 flex-1 space-y-1.5 text-sm text-gray-600">
-                <li>
-                  {t.public_objective}:{" "}
-                  {c.objective_text?.trim() ||
-                    extractObjective(`${c.title ?? ""} ${c.short_description ?? ""} ${c.description ?? ""}`) ||
-                    c.level ||
-                    ""}
-                </li>
-                <li>
-                  {t.public_duration}:{" "}
-                  {c.duration_text?.trim() ||
-                    extractDuration(`${c.title ?? ""} ${c.short_description ?? ""} ${c.description ?? ""}`) ||
-                    ""}
-                </li>
-                <li className="line-clamp-2">
-                  {t.public_achievement}: {certText}
-                </li>
-              </ul>
-              <div className="mt-4 flex items-center justify-between gap-2 border-t border-gray-100 pt-4">
-                <Link href={`/courses/${c.slug}`}>
-                  <Button type="button" size="sm" variant="primary">
-                    {t.buynow}
-                  </Button>
-                </Link>
-                <div className="whitespace-nowrap text-sm font-bold text-brand-700">
-                  {c.price > 0 ? `${Math.round(Number(c.price)).toLocaleString("vi-VN")} ${c.currency}` : t.public_free}
+              <Card hover className="flex h-full flex-col p-5">
+                <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-brand-100">
+                  <BookOpen className="h-5 w-5 text-brand-600" aria-hidden />
                 </div>
-              </div>
-              {code ? <div className="mt-2 text-xs font-mono text-gray-500">{code}</div> : null}
-            </Card>
-          </article>
+                <h4 className="line-clamp-2 font-bold leading-snug text-gray-900">
+                  <Link href={`/courses/${c.slug}`} className="hover:text-brand-700">
+                    {c.title}
+                  </Link>
+                </h4>
+                <ul className="mt-3 flex-1 space-y-1.5 text-sm text-gray-600">
+                  <li>
+                    {t.public_objective}:{" "}
+                    {c.objective_text?.trim() ||
+                      extractObjective(`${c.title ?? ""} ${c.short_description ?? ""} ${c.description ?? ""}`) ||
+                      c.level ||
+                      ""}
+                  </li>
+                  <li>
+                    {t.public_duration}:{" "}
+                    {c.duration_text?.trim() ||
+                      extractDuration(`${c.title ?? ""} ${c.short_description ?? ""} ${c.description ?? ""}`) ||
+                      ""}
+                  </li>
+                  <li className="line-clamp-2">
+                    {t.public_achievement}: {certText}
+                  </li>
+                </ul>
+                <div className="mt-4 flex items-center justify-between gap-2 border-t border-gray-100 pt-4">
+                  <Link href={`/courses/${c.slug}`}>
+                    <Button type="button" size="sm" variant="primary">
+                      {t.buynow}
+                    </Button>
+                  </Link>
+                  <div className="whitespace-nowrap text-sm font-bold text-brand-700">
+                    {c.price > 0 ? `${Math.round(Number(c.price)).toLocaleString("vi-VN")} ${c.currency}` : t.public_free}
+                  </div>
+                </div>
+                {code ? <div className="mt-2 text-xs font-mono text-gray-500">{code}</div> : null}
+              </Card>
+            </article>
           );
         })}
       </div>

@@ -33,8 +33,17 @@ function toYoutubeEmbedUrl(url: string) {
   }
 }
 
-export default function StudentOnlineCourseLearnPage({ params }: { params: Promise<{ slug: string }> }) {
+export default function StudentOnlineCourseLearnPage({ 
+  params,
+  searchParams
+}: { 
+  params: Promise<{ slug: string }>;
+  searchParams?: Promise<{ from?: string }>;
+}) {
   const { slug } = use(params);
+  const resolvedSearchParams = searchParams ? use(searchParams) : {};
+  const fromParam = resolvedSearchParams.from;
+
   const [course, setCourse] = useState<PublicCourse | null>(null);
   const [loading, setLoading] = useState(true);
   const [hasAccess, setHasAccess] = useState(false);
@@ -108,10 +117,12 @@ export default function StudentOnlineCourseLearnPage({ params }: { params: Promi
   return (
     <PageWrapper>
       <div className="mb-4">
-        <Link href={`/student/online-courses/${slug}`}>
-          <Button variant="ghost" size="sm" icon={<ArrowLeft className="w-4 h-4" />}>
-            Chi tiết khóa học online
-          </Button>
+        <Link 
+          href={fromParam === "my-courses" ? "/student/my-online-courses" : `/student/online-courses/${slug}`} 
+          className="group inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-gray-200/80 bg-white hover:bg-gray-50 text-xs font-semibold text-gray-600 hover:text-brand-700 shadow-sm hover:shadow transition-all duration-200"
+        >
+          <ArrowLeft className="w-3.5 h-3.5 text-gray-500 group-hover:text-brand-600 transition-transform group-hover:-translate-x-0.5" />
+          <span>{fromParam === "my-courses" ? "Khóa học online đã mua" : "Chi tiết khóa học online"}</span>
         </Link>
       </div>
 

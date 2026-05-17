@@ -23,7 +23,7 @@ export default function Header({ user, title }: HeaderProps) {
   }
 
   return (
-    <header className="h-16 border-b border-gray-100 bg-white/80 backdrop-blur-sm sticky top-0 z-10 flex items-center px-6 justify-between shrink-0">
+    <header className="h-16 border-b border-gray-100 bg-white/80 backdrop-blur-sm sticky top-0 z-30 flex items-center px-6 justify-between shrink-0">
       <div className="flex items-center gap-3">
         {title && <h2 className="text-base font-semibold text-gray-800 hidden sm:block">{title}</h2>}
       </div>
