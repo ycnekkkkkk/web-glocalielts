@@ -624,6 +624,9 @@ export interface MonthlyStudentEvaluation {
   final_score?: number | null;       // percentage
   teacher_comment?: string | null;
   academic_comment?: string | null;
+  knowledge_learned?: string | null;
+  next_month_plan?: string | null;
+  test_result?: string | null;
   evaluated_by_teacher_id?: string | null;
   evaluated_by_manager_id?: string | null;
   evaluated_by_teacher_name?: string | null;

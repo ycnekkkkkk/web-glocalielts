@@ -12,6 +12,18 @@ import { use, useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import type { AttendanceMakeup, Session, SessionAttendance, Student } from "@/types";
 
+// ── Helpers ─────────────────────────────────────────────────────
+const VIETNAMESE_ORDINALS = ["", "Tháng thứ 1", "Tháng thứ 2", "Tháng thứ 3", "Tháng thứ 4", "Tháng thứ 5", "Tháng thứ 6", "Tháng thứ 7", "Tháng thứ 8", "Tháng thứ 9", "Tháng thứ 10"];
+
+function toVietnameseOrdinal(n: number): string {
+  if (n <= 10) return VIETNAMESE_ORDINALS[n];
+  return `Tháng thứ ${n}`;
+}
+
+function cycleLabel(i: number): string {
+  return `${toVietnameseOrdinal(i)} (Buổi ${i * 8 - 7}-${i * 8})`;
+}
+
 // ── Types ──────────────────────────────────────────────────────
 interface ClassInfo {
   id: string;
@@ -106,10 +118,10 @@ function sessionDayLabel(dateStr: string | null): string {
 }
 
 const STATUS_MAP: Record<string, { label: string; variant: "success" | "info" | "gray" | "danger" }> = {
-  active:    { label: "Đang học",       variant: "success" },
-  upcoming:  { label: "Sắp khai giảng", variant: "info"    },
-  completed: { label: "Kết thúc",       variant: "gray"    },
-  cancelled: { label: "Đã hủy",         variant: "danger"  },
+  active: { label: "Đang học", variant: "success" },
+  upcoming: { label: "Sắp khai giảng", variant: "info" },
+  completed: { label: "Kết thúc", variant: "gray" },
+  cancelled: { label: "Đã hủy", variant: "danger" },
 };
 
 // ── Page ───────────────────────────────────────────────────────
@@ -160,6 +172,7 @@ export default function TeacherCourseDetailPage({ params }: { params: Promise<{ 
   const [monthlyEvalOpen, setMonthlyEvalOpen] = useState(false);
   const [monthlyEvalLoading, setMonthlyEvalLoading] = useState(false);
   const [monthlyEvalSaving, setMonthlyEvalSaving] = useState(false);
+  const [monthlyEvalMode, setMonthlyEvalMode] = useState<"view" | "edit">("view");
   const [monthlyEvals, setMonthlyEvals] = useState<{
     student_id: string;
     student_name: string;
@@ -169,6 +182,9 @@ export default function TeacherCourseDetailPage({ params }: { params: Promise<{ 
     midterm_score: number | string;
     final_score: number | string;
     teacher_comment: string;
+    knowledge_learned?: string;
+    next_month_plan?: string;
+    test_result?: string;
   }[]>([]);
   const [monthlyEvalMonth, setMonthlyEvalMonth] = useState("");
   const [completedMonthlyMonths, setCompletedMonthlyMonths] = useState<Set<string>>(new Set());
@@ -225,7 +241,7 @@ export default function TeacherCourseDetailPage({ params }: { params: Promise<{ 
       }
 
       let sessData = (sessRes.data as Session[]) || [];
-      
+
       // Sort sessions by date correctly
       sessData.sort((a, b) => {
         if (!a.session_date && !b.session_date) return 0;
@@ -496,11 +512,11 @@ export default function TeacherCourseDetailPage({ params }: { params: Promise<{ 
           return !!target && target.status === SESSION_STATUS.DONE;
         })
         .map((a) => ({
-        student_id: a.student_id,
-        student_name: a.student_name,
-        rating: evalMap[a.student_name]?.rating ?? 5,
-        comment: evalMap[a.student_name]?.comment ?? "",
-      }))
+          student_id: a.student_id,
+          student_name: a.student_name,
+          rating: evalMap[a.student_name]?.rating ?? 5,
+          comment: evalMap[a.student_name]?.comment ?? "",
+        }))
     );
     setEvalLoading(false);
   }
@@ -549,19 +565,22 @@ export default function TeacherCourseDetailPage({ params }: { params: Promise<{ 
   }
 
   // ── Monthly Evaluation ────────────────────────────────────────
-  function openMonthlyEval() {
+  function openMonthlyEval(cycle?: string) {
     const sessionsDoneCount = sessions.filter(x => x.status === "DONE").length;
     const cyclesToComplete = Math.floor(sessionsDoneCount / 8);
-    let targetCycle = "";
-    for (let i = 1; i <= cyclesToComplete; i++) {
-      const cycleName = `Chu kỳ ${i} (Buổi ${i * 8 - 7}-${i * 8})`;
-      if (!completedMonthlyMonths.has(cycleName)) {
-        targetCycle = cycleName;
-        break;
+
+    let targetCycle = cycle || "";
+    if (!targetCycle) {
+      for (let i = 1; i <= cyclesToComplete; i++) {
+        const cycleName = cycleLabel(i);
+        if (!completedMonthlyMonths.has(cycleName)) {
+          targetCycle = cycleName;
+          break;
+        }
       }
-    }
-    if (!targetCycle && cyclesToComplete > 0) {
-      targetCycle = `Chu kỳ ${cyclesToComplete} (Buổi ${cyclesToComplete * 8 - 7}-${cyclesToComplete * 8})`;
+      if (!targetCycle && cyclesToComplete > 0) {
+        targetCycle = cycleLabel(cyclesToComplete);
+      }
     }
     if (!targetCycle) {
       toast.error("Lớp chưa học đủ 8 buổi để thực hiện đánh giá định kỳ.");
@@ -569,6 +588,8 @@ export default function TeacherCourseDetailPage({ params }: { params: Promise<{ 
     }
 
     setMonthlyEvalMonth(targetCycle);
+    const isAlreadyCompleted = completedMonthlyMonths.has(targetCycle);
+    setMonthlyEvalMode(isAlreadyCompleted ? "view" : "edit");
     const defaultMonthlyEvals = enrolled.map(st => {
       const existing = monthlyEvals.find(x => x.student_id === st.id);
       return existing ? { ...existing, student_name: st.full_name } : {
@@ -580,6 +601,9 @@ export default function TeacherCourseDetailPage({ params }: { params: Promise<{ 
         midterm_score: "",
         final_score: "",
         teacher_comment: "",
+        knowledge_learned: "",
+        next_month_plan: "",
+        test_result: "",
       };
     });
     setMonthlyEvals(defaultMonthlyEvals);
@@ -589,6 +613,7 @@ export default function TeacherCourseDetailPage({ params }: { params: Promise<{ 
 
   async function handleMonthlyEvalCycleChange(cycle: string) {
     setMonthlyEvalMonth(cycle);
+    setMonthlyEvalMode("view");
     if (!cycle) return;
     setMonthlyEvalLoading(true);
     try {
@@ -597,7 +622,7 @@ export default function TeacherCourseDetailPage({ params }: { params: Promise<{ 
         .select("*")
         .eq("class_id", classId)
         .eq("evaluation_month", cycle);
-        
+
       if (data && data.length > 0) {
         setMonthlyEvals(prev => prev.map(st => {
           const row = (data as any[]).find(r => r.student_id === st.student_id);
@@ -609,18 +634,24 @@ export default function TeacherCourseDetailPage({ params }: { params: Promise<{ 
             midterm_score: row.midterm_score ?? "",
             final_score: row.final_score ?? "",
             teacher_comment: row.teacher_comment || "",
+            knowledge_learned: row.knowledge_learned || "",
+            next_month_plan: row.next_month_plan || "",
+            test_result: row.test_result || "",
           } : st;
         }));
       } else {
-         setMonthlyEvals(prev => prev.map(st => ({
-            ...st,
-            performance: "good",
-            attendance_rate: "",
-            homework_score: "",
-            midterm_score: "",
-            final_score: "",
-            teacher_comment: "",
-         })));
+        setMonthlyEvals(prev => prev.map(st => ({
+          ...st,
+          performance: "good",
+          attendance_rate: "",
+          homework_score: "",
+          midterm_score: "",
+          final_score: "",
+          teacher_comment: "",
+          knowledge_learned: "",
+          next_month_plan: "",
+          test_result: "",
+        })));
       }
     } catch (e) {
       console.error(e);
@@ -637,7 +668,7 @@ export default function TeacherCourseDetailPage({ params }: { params: Promise<{ 
     try {
       const supabase = createBrowserClient();
       const { data: { user } } = await supabase.auth.getUser();
-      
+
       const upsertData = monthlyEvals.map(st => ({
         class_id: classId,
         student_id: st.student_id,
@@ -648,6 +679,9 @@ export default function TeacherCourseDetailPage({ params }: { params: Promise<{ 
         midterm_score: st.midterm_score === "" ? null : Number(st.midterm_score),
         final_score: st.final_score === "" ? null : Number(st.final_score),
         teacher_comment: st.teacher_comment,
+        knowledge_learned: st.knowledge_learned || null,
+        next_month_plan: st.next_month_plan || null,
+        test_result: st.test_result || null,
         evaluated_by_teacher_id: user?.id,
       }));
 
@@ -656,7 +690,7 @@ export default function TeacherCourseDetailPage({ params }: { params: Promise<{ 
       });
 
       if (error) throw error;
-      
+
       toast.success("Đã lưu đánh giá tháng!");
       setCompletedMonthlyMonths(prev => new Set([...prev, monthlyEvalMonth]));
       setMonthlyEvalOpen(false);
@@ -895,6 +929,12 @@ export default function TeacherCourseDetailPage({ params }: { params: Promise<{ 
   const statusInfo = STATUS_MAP[cls.status] || { label: cls.status, variant: "gray" as const };
   const doneSessions = sessions.filter((s) => s.status === SESSION_STATUS.DONE).length;
   const progress = cls.total_sessions > 0 ? Math.min(100, (doneSessions / cls.total_sessions) * 100) : 0;
+
+  const cyclesToComplete = Math.floor(doneSessions / 8);
+  const eligibleCycles: string[] = [];
+  for (let i = 1; i <= cyclesToComplete; i++) {
+    eligibleCycles.push(cycleLabel(i));
+  }
   const sessionByRef: Record<string, Session> = {};
   sessions.forEach((s) => {
     sessionByRef[`${s.class_name}#${s.session_no}#${s.session_date}`] = s;
@@ -977,6 +1017,20 @@ export default function TeacherCourseDetailPage({ params }: { params: Promise<{ 
     };
   });
 
+  const nextEvalCycle: string | null = (() => {
+    for (let i = 1; i <= cyclesToComplete; i++) {
+      const name = cycleLabel(i);
+      if (!completedMonthlyMonths.has(name)) return name;
+    }
+    return null;
+  })();
+  const allCyclesDone = nextEvalCycle === null;
+
+  const completedCycleEntries = Array.from(completedMonthlyMonths)
+    .sort()
+    .map(cycle => ({ cycle, sortKey: parseInt(cycle.match(/Tháng thứ (\d+)/)?.[1] || "0") }))
+    .sort((a, b) => a.sortKey - b.sortKey);
+
   return (
     <PageWrapper>
       {/* Back */}
@@ -1054,7 +1108,7 @@ export default function TeacherCourseDetailPage({ params }: { params: Promise<{ 
         <div className="flex gap-1">
           {([
             { id: "sessions", label: "Lịch học & Điểm danh", icon: <ClipboardList className="w-4 h-4" /> },
-            { id: "students", label: "Học viên",             icon: <Users className="w-4 h-4" /> },
+            { id: "students", label: "Học viên", icon: <Users className="w-4 h-4" /> },
           ] as const).map((t) => (
             <button key={t.id} onClick={() => setTab(t.id)}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${tab === t.id ? "bg-white shadow text-gray-900" : "text-gray-500 hover:text-gray-700"}`}>
@@ -1072,7 +1126,7 @@ export default function TeacherCourseDetailPage({ params }: { params: Promise<{ 
             const cyclesToComplete = Math.floor(sessionsDoneCount / 8);
             let missingCycleName = "";
             for (let i = 1; i <= cyclesToComplete; i++) {
-              const cycleName = `Chu kỳ ${i} (Buổi ${i * 8 - 7}-${i * 8})`;
+              const cycleName = cycleLabel(i);
               if (!completedMonthlyMonths.has(cycleName)) {
                 missingCycleName = cycleName;
                 break;
@@ -1087,7 +1141,7 @@ export default function TeacherCourseDetailPage({ params }: { params: Promise<{ 
                   <div>
                     <h4 className="text-sm font-bold text-amber-800">Yêu cầu Đánh giá Tháng</h4>
                     <p className="text-sm text-amber-700 mt-1">
-                      Lớp đã hoàn thành ít nhất 8 buổi học. Bạn cần thực hiện <b>Đánh giá tháng: {missingCycleName}</b> để tiếp tục điểm danh các buổi tiếp theo. 
+                      Lớp đã hoàn thành ít nhất 8 buổi học. Bạn cần thực hiện <b>Đánh giá tháng: {missingCycleName}</b> để tiếp tục điểm danh các buổi tiếp theo.
                       Vui lòng chuyển sang tab <b>Học viên</b> và nhấn nút <b>Đánh Giá Tháng</b>.
                     </p>
                   </div>
@@ -1097,232 +1151,239 @@ export default function TeacherCourseDetailPage({ params }: { params: Promise<{ 
             return null;
           })()}
           <Card className="overflow-hidden">
-          {sessions.length === 0 ? (
-            <div className="text-center py-16 text-gray-400">
-              <BookOpen className="w-10 h-10 mx-auto mb-3 opacity-40" />
-              <p className="text-sm">Chưa có buổi học nào được tạo cho lớp này</p>
-            </div>
-          ) : (
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-100 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                  <th className="text-left px-4 py-3">Buổi</th>
-                  <th className="text-left px-4 py-3">Thứ</th>
-                  <th className="text-left px-4 py-3">Ngày</th>
-                  <th className="text-left px-4 py-3">Giờ</th>
-                  <th className="text-left px-4 py-3">Link học</th>
-                  <th className="text-left px-4 py-3">Chủ đề</th>
-                  <th className="text-left px-4 py-3">Trạng thái</th>
-                  <th className="text-left px-4 py-3">Học bù</th>
-                  <th className="text-left px-4 py-3">Hành động</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {sessions.map((s) => {
-                  const isDone = s.status === SESSION_STATUS.DONE;
-                  const isCancelled = s.status === SESSION_STATUS.CANCELLED;
-                  const day = sessionDayLabel(s.session_date || null);
-                  const sessionRef = `${s.class_name}#${s.session_no}#${s.session_date}`;
-                  const hasEval = evalledRefs.has(sessionRef);
-                  const makeupStat = sessionMakeupStats[sessionRef] || { assigned: 0, completed: 0, pending: 0 };
-                  const makeupList = makeupRowsBySessionRef[sessionRef] || [];
-                  const absentCount = attendanceRows.filter(
-                    (r) => r.session_ref === sessionRef && r.attendance_status === ATTENDANCE_STATUS.ABSENT
-                  ).length;
-                  const hasAnyMakeup = makeupStat.assigned > 0;
-                  const isExpanded = !!expandedMakeupBySessionRef[sessionRef];
-                  const visibleMakeupList = isExpanded ? makeupList : makeupList.slice(0, 1);
-                  
-                  // Ràng buộc đánh giá mỗi 8 buổi (Đánh giá tháng)
-                  const sessionsDone = sessions.filter(x => x.status === "DONE").length;
-                  const cyclesToComplete = Math.floor(sessionsDone / 8);
-                  let isLockedByMonthlyEval = false;
-                  let missingCycleName = "";
-                  for (let i = 1; i <= cyclesToComplete; i++) {
-                    const cycleName = `Chu kỳ ${i} (Buổi ${i * 8 - 7}-${i * 8})`;
-                    if (!completedMonthlyMonths.has(cycleName)) {
-                      isLockedByMonthlyEval = true;
-                      missingCycleName = cycleName;
-                      break;
-                    }
-                  }
+            {sessions.length === 0 ? (
+              <div className="text-center py-16 text-gray-400">
+                <BookOpen className="w-10 h-10 mx-auto mb-3 opacity-40" />
+                <p className="text-sm">Chưa có buổi học nào được tạo cho lớp này</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto w-full">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-gray-100 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                      <th className="text-left px-4 py-3 whitespace-nowrap">Buổi</th>
+                      <th className="text-left px-4 py-3 whitespace-nowrap">Thứ</th>
+                      <th className="text-left px-4 py-3 whitespace-nowrap">Ngày</th>
+                      <th className="text-left px-4 py-3 whitespace-nowrap">Giờ</th>
+                      <th className="text-left px-4 py-3 whitespace-nowrap">Link học</th>
+                      <th className="text-left px-4 py-3">Chủ đề</th>
+                      <th className="text-left px-4 py-3 whitespace-nowrap">Trạng thái</th>
+                      <th className="text-left px-4 py-3 whitespace-nowrap">Học bù</th>
+                      <th className="text-left px-4 py-3 whitespace-nowrap">Hành động</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {sessions.map((s) => {
+                      const isDone = s.status === SESSION_STATUS.DONE;
+                      const isCancelled = s.status === SESSION_STATUS.CANCELLED;
+                      const day = sessionDayLabel(s.session_date || null);
+                      const sessionRef = `${s.class_name}#${s.session_no}#${s.session_date}`;
+                      const hasEval = evalledRefs.has(sessionRef);
+                      const makeupStat = sessionMakeupStats[sessionRef] || { assigned: 0, completed: 0, pending: 0 };
+                      const makeupList = makeupRowsBySessionRef[sessionRef] || [];
+                      const absentCount = attendanceRows.filter(
+                        (r) => r.session_ref === sessionRef && r.attendance_status === ATTENDANCE_STATUS.ABSENT
+                      ).length;
+                      const hasAnyMakeup = makeupStat.assigned > 0;
+                      const isExpanded = !!expandedMakeupBySessionRef[sessionRef];
+                      const visibleMakeupList = isExpanded ? makeupList : makeupList.slice(0, 1);
 
-                  let isLockedByEval = false;
-                  let lockedByEvalMsg = "";
-                  if (isLockedByMonthlyEval) {
-                    isLockedByEval = true;
-                    lockedByEvalMsg = `Vui lòng hoàn thành Đánh giá tháng: ${missingCycleName} (tab Học viên) trước khi điểm danh tiếp.`;
-                  }
+                      // Ràng buộc đánh giá mỗi 8 buổi (Đánh giá tháng)
+                      const sessionsDone = sessions.filter(x => x.status === "DONE").length;
+                      const cyclesToComplete = Math.floor(sessionsDone / 8);
+                      let isLockedByMonthlyEval = false;
+                      let missingCycleName = "";
+                      for (let i = 1; i <= cyclesToComplete; i++) {
+                        const cycleName = cycleLabel(i);
+                        if (!completedMonthlyMonths.has(cycleName)) {
+                          isLockedByMonthlyEval = true;
+                          missingCycleName = cycleName;
+                          break;
+                        }
+                      }
 
-                  const rows = [
-                      <tr key={s.id} className={`transition-colors ${isDone ? "bg-gray-50/50" : "hover:bg-gray-50"}`}>
-                        <td className="px-4 py-3">
-                          <div className="w-8 h-8 bg-brand-100 rounded-lg flex items-center justify-center text-xs font-bold text-brand-700">
-                            #{s.session_no}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className={`text-xs font-bold px-2 py-1 rounded-lg ${day ? "bg-emerald-100 text-emerald-700" : "text-gray-400"}`}>
-                            {day || "–"}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-sm font-medium text-gray-800">{s.session_date || "–"}</td>
-                        <td className="px-4 py-3 text-sm text-gray-600">{s.session_time || "–"}</td>
-                        <td className="px-4 py-3">
-                          {editingZoomId === s.id ? (
-                            <div className="flex items-center gap-1">
-                              <input
-                                ref={zoomInputRef}
-                                type="url"
-                                value={editingZoomValue}
-                                onChange={(e) => setEditingZoomValue(e.target.value)}
-                                onBlur={() => saveZoom(s.id as number)}
-                                onKeyDown={(e) => {
-                                  if (e.key === "Enter") { e.preventDefault(); saveZoom(s.id as number); }
-                                  if (e.key === "Escape") setEditingZoomId(null);
-                                }}
-                                className="w-40 rounded-lg border border-brand-400 bg-white px-2 py-1 text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500"
-                                placeholder="https://zoom.us/..."
-                              />
+                      let isLockedByEval = false;
+                      let lockedByEvalMsg = "";
+                      if (isLockedByMonthlyEval) {
+                        isLockedByEval = true;
+                        lockedByEvalMsg = `Vui lòng hoàn thành Đánh giá tháng: ${missingCycleName} (tab Học viên) trước khi điểm danh tiếp.`;
+                      }
+
+                      const rows = [
+                        <tr key={s.id} className={`transition-colors ${isDone ? "bg-gray-50/50" : "hover:bg-gray-50"}`}>
+                          <td className="px-4 py-3">
+                            <div className="w-8 h-8 bg-brand-100 rounded-lg flex items-center justify-center text-xs font-bold text-brand-700">
+                              #{s.session_no}
                             </div>
-                          ) : s.zoom_link ? (
-                            <div className="flex items-center gap-1.5">
-                              <a href={s.zoom_link} target="_blank" rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-sky-50 hover:bg-sky-100 text-sky-700 rounded-lg text-xs font-medium transition-colors"
-                                title={s.zoom_link}>
-                                <Video className="w-3.5 h-3.5" />
-                                <span className="truncate max-w-24">{s.zoom_link.includes("zoom") ? "Zoom" : s.zoom_link.includes("meet") ? "Meet" : "Link"}</span>
-                              </a>
-                              <button
-                                type="button"
-                                onClick={() => startEditZoom(s)}
-                                className="p-1 text-gray-400 hover:text-brand-500 transition-colors"
-                                title="Sửa link"
-                              >
-                                <Pencil className="w-3 h-3" />
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-xs text-gray-300">–</span>
-                              <button
-                                type="button"
-                                onClick={() => startEditZoom(s)}
-                                className="p-1 text-gray-300 hover:text-brand-500 transition-colors"
-                                title="Thêm link học"
-                              >
-                                <Pencil className="w-3 h-3" />
-                              </button>
-                            </div>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 max-w-52">
-                          {editingTopicId === s.id ? (
-                            <input
-                              ref={topicInputRef}
-                              type="text"
-                              value={editingTopicValue}
-                              onChange={(e) => setEditingTopicValue(e.target.value)}
-                              onBlur={() => saveTopic(s.id as number)}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") { e.preventDefault(); saveTopic(s.id as number); }
-                                if (e.key === "Escape") setEditingTopicId(null);
-                              }}
-                              className="w-full rounded-lg border border-brand-400 bg-white px-2 py-1 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500"
-                              placeholder="Nhập chủ đề..."
-                            />
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => startEditTopic(s)}
-                              className="group flex items-center gap-1.5 text-left w-full text-sm text-gray-600 hover:text-gray-900 transition-colors"
-                              title="Nhấn để chỉnh sửa chủ đề"
-                            >
-                              <span className="truncate">{s.topic || <span className="text-gray-300 italic">Chưa có chủ đề</span>}</span>
-                              <Pencil className="w-3 h-3 text-gray-300 group-hover:text-brand-500 shrink-0 transition-colors" />
-                            </button>
-                          )}
-                        </td>
-                        <td className="px-4 py-3">
-                          {isDone
-                            ? <Badge variant="success">✓ Hoàn thành</Badge>
-                            : isCancelled
-                              ? <Badge variant="danger">Đã hủy</Badge>
-                              : <Badge variant="info">Sắp tới</Badge>}
-                        </td>
-                        <td className="px-4 py-3">
-                          {makeupStat.assigned > 0 ? (
-                            <div className="text-xs">
-                              <p className="text-sky-700 font-semibold">Đã xếp: {makeupStat.assigned}</p>
-                              <p className="text-emerald-700">Hoàn thành: {makeupStat.completed}</p>
-                              <p className="text-amber-700">Chờ bù: {makeupStat.pending}</p>
-                              {makeupList.length > 1 && (
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <span className={`text-xs font-bold px-2 py-1 rounded-lg whitespace-nowrap ${day ? "bg-emerald-100 text-emerald-700" : "text-gray-400"}`}>
+                              {day || "–"}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-sm font-medium text-gray-800 whitespace-nowrap">{s.session_date || "–"}</td>
+                          <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">{s.session_time || "–"}</td>
+                          <td className="px-4 py-3">
+                            {editingZoomId === s.id ? (
+                              <div className="flex items-center gap-1">
+                                <input
+                                  ref={zoomInputRef}
+                                  type="url"
+                                  value={editingZoomValue}
+                                  onChange={(e) => setEditingZoomValue(e.target.value)}
+                                  onBlur={() => saveZoom(s.id as number)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") { e.preventDefault(); saveZoom(s.id as number); }
+                                    if (e.key === "Escape") setEditingZoomId(null);
+                                  }}
+                                  className="w-40 rounded-lg border border-brand-400 bg-white px-2 py-1 text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                                  placeholder="https://zoom.us/..."
+                                />
+                              </div>
+                            ) : s.zoom_link ? (
+                              <div className="flex items-center gap-1.5">
+                                <a href={s.zoom_link} target="_blank" rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-sky-50 hover:bg-sky-100 text-sky-700 rounded-lg text-xs font-medium transition-colors"
+                                  title={s.zoom_link}>
+                                  <Video className="w-3.5 h-3.5" />
+                                  <span className="truncate max-w-24">{s.zoom_link.includes("zoom") ? "Zoom" : s.zoom_link.includes("meet") ? "Meet" : "Link"}</span>
+                                </a>
                                 <button
                                   type="button"
-                                  className="mt-1 text-[11px] text-sky-700 underline"
-                                  onClick={() =>
-                                    setExpandedMakeupBySessionRef((prev) => ({
-                                      ...prev,
-                                      [sessionRef]: !prev[sessionRef],
-                                    }))
-                                  }
+                                  onClick={() => startEditZoom(s)}
+                                  className="p-1 text-gray-400 hover:text-brand-500 transition-colors"
+                                  title="Sửa link"
                                 >
-                                  {isExpanded ? "Thu gọn" : `Mở rộng (${makeupList.length})`}
+                                  <Pencil className="w-3 h-3" />
                                 </button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-xs text-gray-300">–</span>
+                                <button
+                                  type="button"
+                                  onClick={() => startEditZoom(s)}
+                                  className="p-1 text-gray-300 hover:text-brand-500 transition-colors"
+                                  title="Thêm link học"
+                                >
+                                  <Pencil className="w-3 h-3" />
+                                </button>
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 max-w-52">
+                            {editingTopicId === s.id ? (
+                              <input
+                                ref={topicInputRef}
+                                type="text"
+                                value={editingTopicValue}
+                                onChange={(e) => setEditingTopicValue(e.target.value)}
+                                onBlur={() => saveTopic(s.id as number)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") { e.preventDefault(); saveTopic(s.id as number); }
+                                  if (e.key === "Escape") setEditingTopicId(null);
+                                }}
+                                className="w-full rounded-lg border border-brand-400 bg-white px-2 py-1 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                                placeholder="Nhập chủ đề..."
+                              />
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => startEditTopic(s)}
+                                className="group flex items-center gap-1.5 text-left w-full text-sm text-gray-600 hover:text-gray-900 transition-colors"
+                                title="Nhấn để chỉnh sửa chủ đề"
+                              >
+                                <span className="truncate">{s.topic || <span className="text-gray-300 italic">Chưa có chủ đề</span>}</span>
+                                <Pencil className="w-3 h-3 text-gray-300 group-hover:text-brand-500 shrink-0 transition-colors" />
+                              </button>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            {isDone
+                              ? <Badge variant="success">✓ Hoàn thành</Badge>
+                              : isCancelled
+                                ? <Badge variant="danger">Đã hủy</Badge>
+                                : <Badge variant="info">Sắp tới</Badge>}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            {makeupStat.assigned > 0 ? (
+                              <div className="text-xs whitespace-nowrap">
+                                <p className="text-sky-700 font-semibold whitespace-nowrap">Đã xếp: {makeupStat.assigned}</p>
+                                <p className="text-emerald-700 whitespace-nowrap">Hoàn thành: {makeupStat.completed}</p>
+                                <p className="text-amber-700 whitespace-nowrap">Chờ bù: {makeupStat.pending}</p>
+                                {makeupList.length > 1 && (
+                                  <button
+                                    type="button"
+                                    className="mt-1 text-[11px] text-sky-700 underline"
+                                    onClick={() =>
+                                      setExpandedMakeupBySessionRef((prev) => ({
+                                        ...prev,
+                                        [sessionRef]: !prev[sessionRef],
+                                      }))
+                                    }
+                                  >
+                                    {isExpanded ? "Thu gọn" : `Mở rộng (${makeupList.length})`}
+                                  </button>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-xs text-gray-400">Không có</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-1.5">
+                              {!isDone && !isCancelled && (
+                                <Button size="sm" variant="outline"
+                                  className={isLockedByEval ? "opacity-50" : ""}
+                                  icon={<ClipboardList className="w-3.5 h-3.5" />}
+                                  onClick={() => {
+                                    if (isLockedByEval) {
+                                      toast.error(lockedByEvalMsg);
+                                      return;
+                                    }
+                                    openAttendance(s, false);
+                                  }}>
+                                  Điểm danh
+                                </Button>
+                              )}
+                              {isDone && (
+                                <>
+                                  <Button size="sm" variant="outline"
+                                    className="text-emerald-700 border-emerald-200 bg-emerald-50 hover:bg-emerald-100 whitespace-nowrap font-medium"
+                                    icon={<ClipboardList className="w-3.5 h-3.5 text-emerald-600" />}
+                                    onClick={() => openAttendance(s, true)}>
+                                    Xem ĐD
+                                  </Button>
+                                  {absentCount > 0 && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className={hasAnyMakeup
+                                        ? "text-sky-700 border-sky-200 bg-sky-50 hover:bg-sky-100 whitespace-nowrap font-medium"
+                                        : "text-sky-600 border-sky-100 bg-sky-50/50 hover:bg-sky-100 whitespace-nowrap font-medium"
+                                      }
+                                      onClick={() => openManageMakeup(s)}
+                                    >
+                                      {hasAnyMakeup ? `Đã xếp học bù (${makeupStat.assigned})` : "Xếp học bù"}
+                                    </Button>
+                                  )}
+                                  <Button size="sm" variant="outline"
+                                    className={hasEval
+                                      ? "text-amber-700 border-amber-200 bg-amber-50 hover:bg-amber-100 whitespace-nowrap font-medium"
+                                      : "text-amber-600 border-amber-100 bg-amber-50/50 hover:bg-amber-100 whitespace-nowrap font-medium"
+                                    }
+                                    icon={<Star className={`w-3.5 h-3.5 ${hasEval ? "fill-current text-amber-500" : "text-amber-400"}`} />}
+                                    onClick={() => openEval(s)}>
+                                    {hasEval ? "Xem lại ĐG" : "Đánh giá"}
+                                  </Button>
+                                </>
                               )}
                             </div>
-                          ) : (
-                            <span className="text-xs text-gray-400">Không có</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-1.5">
-                            {!isDone && !isCancelled && (
-                              <Button size="sm" variant="outline"
-                                className={isLockedByEval ? "opacity-50" : ""}
-                                icon={<ClipboardList className="w-3.5 h-3.5" />}
-                                onClick={() => {
-                                  if (isLockedByEval) {
-                                    toast.error(lockedByEvalMsg);
-                                    return;
-                                  }
-                                  openAttendance(s, false);
-                                }}>
-                                Điểm danh
-                              </Button>
-                            )}
-                            {isDone && (
-                              <>
-                                <Button size="sm" variant="outline"
-                                  icon={<ClipboardList className="w-3.5 h-3.5 text-emerald-600" />}
-                                  onClick={() => openAttendance(s, true)}>
-                                  Xem ĐD
-                                </Button>
-                                {absentCount > 0 && (
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className={hasAnyMakeup ? "text-sky-700 border-sky-200 bg-sky-50 hover:bg-sky-100" : ""}
-                                    onClick={() => openManageMakeup(s)}
-                                  >
-                                    {hasAnyMakeup ? `Đã xếp học bù (${makeupStat.assigned})` : "Xếp học bù"}
-                                  </Button>
-                                )}
-                                <Button size="sm"
-                                  variant={hasEval ? "outline" : "ghost"}
-                                  className={hasEval ? "text-amber-600 border-amber-200 bg-amber-50 hover:bg-amber-100" : ""}
-                                  icon={<Star className={`w-3.5 h-3.5 ${hasEval ? "fill-current text-amber-500" : "text-amber-400"}`} />}
-                                  onClick={() => openEval(s)}>
-                                  {hasEval ? "Xem lại ĐG" : "Đánh giá"}
-                                </Button>
-                              </>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                  ];
+                          </td>
+                        </tr>
+                      ];
 
-                  visibleMakeupList.forEach((mk, idx) => {
+                      visibleMakeupList.forEach((mk, idx) => {
                         const parsedTarget = parseSessionRef(mk.target_session_ref);
                         const targetDate = parsedTarget?.session_date || "";
                         const noteMatch = mk.note?.match(/Bù slot:\s*([0-9]{1,2}\/[0-9]{1,2}\/[0-9]{4})(?:\s+([0-9]{2}:[0-9]{2}))?/i);
@@ -1354,12 +1415,13 @@ export default function TeacherCourseDetailPage({ params }: { params: Promise<{ 
                         );
                       });
 
-                  return rows;
-                })}
-              </tbody>
-            </table>
-          )}
-        </Card>
+                      return rows;
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Card>
         </div>
       )}
 
@@ -1368,9 +1430,9 @@ export default function TeacherCourseDetailPage({ params }: { params: Promise<{ 
         <Card className="p-5">
           <div className="flex justify-between items-center mb-4">
             <h3 className="section-title mb-0">Danh sách học viên ({enrolled.length})</h3>
-            <Button size="sm" icon={<Star className="w-4 h-4" />} onClick={openMonthlyEval}>
+            {/* <Button size="sm" icon={<Star className="w-4 h-4" />} onClick={() => openMonthlyEval()}>
               Đánh Giá Tháng
-            </Button>
+            </Button> */}
           </div>
           {enrolled.length === 0 ? (
             <div className="text-center py-10 text-gray-400">
@@ -1410,6 +1472,60 @@ export default function TeacherCourseDetailPage({ params }: { params: Promise<{ 
                   )}
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* Đánh Giá Tháng */}
+          {(cyclesToComplete > 0 || completedMonthlyMonths.size > 0) && (
+            <div className="mt-6 border-t border-gray-100 pt-5">
+              <h4 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                <Star className="w-4 h-4 text-amber-500 fill-current" />
+                Đánh Giá Tháng
+              </h4>
+
+              {/* Chưa đánh giá */}
+              {!allCyclesDone && nextEvalCycle ? (
+                <div className="mb-3">
+                  <p className="text-xs font-medium text-gray-500 mb-2">Chưa đánh giá:</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-semibold text-amber-800">{nextEvalCycle}</p>
+                        <p className="text-[10px] text-amber-600 mt-0.5">Đã tới lúc đánh giá</p>
+                      </div>
+                      <Button size="sm" variant="outline" className="shrink-0 font-medium border-amber-300 bg-white hover:bg-amber-100 text-amber-700"
+                        onClick={() => openMonthlyEval(nextEvalCycle)}>
+                        Đánh giá ngay
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+
+              {/* Đã đánh giá */}
+              {completedCycleEntries.length > 0 ? (
+                <div>
+                  <p className="text-xs font-medium text-gray-500 mb-2">Đã đánh giá:</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                    {completedCycleEntries.map(({ cycle }) => (
+                      <div key={cycle} className="p-2.5 bg-gray-50 border border-gray-100 rounded-xl flex items-center justify-between gap-2">
+                        <div>
+                          <p className="text-xs font-medium text-gray-700">{cycle}</p>
+                          <p className="text-[10px] text-gray-400">Hoàn thành</p>
+                        </div>
+                        <Button size="sm" variant="ghost" className="text-xs text-gray-500 hover:text-amber-600 shrink-0"
+                          onClick={() => openMonthlyEval(cycle)}>
+                          Xem & Sửa
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                !nextEvalCycle && (
+                  <p className="text-xs italic text-gray-400">Chưa có dữ liệu đánh giá tiếp theo</p>
+                )
+              )}
             </div>
           )}
         </Card>
@@ -1465,8 +1581,8 @@ export default function TeacherCourseDetailPage({ params }: { params: Promise<{ 
                   <div className="flex items-center gap-1.5 shrink-0">
                     {([
                       { v: ATTENDANCE_STATUS.ON_TIME, l: "Đúng giờ", color: "bg-emerald-100 text-emerald-700 border-emerald-300" },
-                      { v: ATTENDANCE_STATUS.LATE,    l: "Muộn",     color: "bg-amber-100 text-amber-700 border-amber-300" },
-                      { v: ATTENDANCE_STATUS.ABSENT,  l: "Vắng",     color: "bg-red-100 text-red-700 border-red-300" },
+                      { v: ATTENDANCE_STATUS.LATE, l: "Muộn", color: "bg-amber-100 text-amber-700 border-amber-300" },
+                      { v: ATTENDANCE_STATUS.ABSENT, l: "Vắng", color: "bg-red-100 text-red-700 border-red-300" },
                     ] as const).map((opt) => (
                       <button key={opt.v} type="button"
                         className={`text-xs px-2 py-1 rounded-lg border transition-all ${st.attendance_status === opt.v ? opt.color + " border" : "border-gray-200 text-gray-400 hover:border-gray-300"}`}
@@ -1521,37 +1637,37 @@ export default function TeacherCourseDetailPage({ params }: { params: Promise<{ 
                   const isCompletedMakeup = !!existingMakeup?.is_completed
                     || (!!existingMakeup?.target_session_ref && targetSessionStatusByRef[existingMakeup.target_session_ref] === SESSION_STATUS.DONE);
                   return (
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">{row.student_name}</p>
-                    {row.note && <p className="text-xs text-gray-500 mt-0.5">{row.note}</p>}
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className={existingMakeup ? "text-sky-700 border-sky-200 bg-sky-50 hover:bg-sky-100" : ""}
-                      onClick={() => {
-                        if (!manageMakeupSession) return;
-                        if (!row.student_id) {
-                          toast.error("Thiếu student_id, không mở được xếp học bù.");
-                          return;
-                        }
-                        openMakeup(row.student_id, row.student_name, row.note || "", manageMakeupSession).catch(console.error);
-                      }}
-                    >
-                      {existingMakeup ? "Đã xếp học bù" : "Xếp học bù"}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className={isCompletedMakeup ? "text-emerald-700 border-emerald-200 bg-emerald-50 hover:bg-emerald-100" : ""}
-                      onClick={() => markMakeupCompleted(row.student_name, { session: manageMakeupSession || undefined })}
-                    >
-                      {isCompletedMakeup ? "Đã điểm danh slot bù" : "Điểm danh slot bù"}
-                    </Button>
-                  </div>
-                </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{row.student_name}</p>
+                        {row.note && <p className="text-xs text-gray-500 mt-0.5">{row.note}</p>}
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className={existingMakeup ? "text-sky-700 border-sky-200 bg-sky-50 hover:bg-sky-100" : ""}
+                          onClick={() => {
+                            if (!manageMakeupSession) return;
+                            if (!row.student_id) {
+                              toast.error("Thiếu student_id, không mở được xếp học bù.");
+                              return;
+                            }
+                            openMakeup(row.student_id, row.student_name, row.note || "", manageMakeupSession).catch(console.error);
+                          }}
+                        >
+                          {existingMakeup ? "Đã xếp học bù" : "Xếp học bù"}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className={isCompletedMakeup ? "text-emerald-700 border-emerald-200 bg-emerald-50 hover:bg-emerald-100" : ""}
+                          onClick={() => markMakeupCompleted(row.student_name, { session: manageMakeupSession || undefined })}
+                        >
+                          {isCompletedMakeup ? "Đã điểm danh slot bù" : "Điểm danh slot bù"}
+                        </Button>
+                      </div>
+                    </div>
                   );
                 })()}
               </div>
@@ -1711,13 +1827,40 @@ export default function TeacherCourseDetailPage({ params }: { params: Promise<{ 
       </Modal>
 
       {/* ── Monthly Eval Modal ── */}
-      <Modal open={monthlyEvalOpen} onClose={() => setMonthlyEvalOpen(false)} title="Đánh Giá Tháng (Định Kỳ)">
+      <Modal
+        open={monthlyEvalOpen}
+        onClose={() => setMonthlyEvalOpen(false)}
+        title={`Đánh Giá Tháng – ${monthlyEvalMonth}`}
+      >
         <div className="space-y-4">
+          {/* Dropdown chọn tháng */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Chu kỳ đánh giá</label>
-            <div className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm bg-gray-50 text-gray-700 font-semibold">
-              {monthlyEvalMonth}
-            </div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Kỳ đánh giá</label>
+            <select
+              value={monthlyEvalMonth}
+              onChange={(e) => handleMonthlyEvalCycleChange(e.target.value)}
+              className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 font-semibold text-gray-700 bg-white"
+            >
+              {eligibleCycles.map((cycle) => (
+                <option key={cycle} value={cycle}>
+                  {cycle} {completedMonthlyMonths.has(cycle) ? "(Đã đánh giá)" : "(Chưa đánh giá)"}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Nút chuyển chế độ Xem / Chỉnh sửa */}
+          <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-xl border border-gray-100">
+            <span className={`text-xs font-medium px-3 py-1 rounded-full transition-colors ${monthlyEvalMode === "view" ? "bg-indigo-100 text-indigo-700 font-semibold" : "text-gray-400"}`}>
+              Xem
+            </span>
+            <button
+              type="button"
+              onClick={() => setMonthlyEvalMode(monthlyEvalMode === "view" ? "edit" : "view")}
+              className="flex-1 text-xs text-indigo-600 hover:text-indigo-800 font-medium text-center transition-colors"
+            >
+              {monthlyEvalMode === "view" ? "→ Chỉnh sửa" : "← Quay lại xem"}
+            </button>
           </div>
 
           {monthlyEvalMonth && (
@@ -1726,36 +1869,143 @@ export default function TeacherCourseDetailPage({ params }: { params: Promise<{ 
                 <div className="w-8 h-8 border-4 border-brand-400 border-t-transparent rounded-full animate-spin" />
               </div>
             ) : (
-              <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
+              <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
                 {monthlyEvals.map((st, i) => (
                   <div key={st.student_id} className="p-4 bg-gray-50 rounded-xl space-y-3">
                     <p className="font-semibold text-gray-800 text-sm">{i + 1}. {st.student_name}</p>
-                    <div className="grid grid-cols-1 gap-3">
-                      <div>
-                        <label className="block text-xs font-medium text-gray-500 mb-1">Xếp loại</label>
-                        <select
-                          value={st.performance}
-                          onChange={(e) => setMonthlyEvals(prev => prev.map(x => x.student_id === st.student_id ? { ...x, performance: e.target.value } : x))}
-                          className="w-full rounded-lg border border-gray-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                        >
-                          <option value="excellent">Xuất sắc</option>
-                          <option value="good">Tốt</option>
-                          <option value="average">Trung bình</option>
-                          <option value="below_average">Yếu</option>
-                          <option value="poor">Kém</option>
-                        </select>
+
+                    {/* ── Chế độ XEM ── */}
+                    {monthlyEvalMode === "view" && (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-medium text-gray-500 w-20 shrink-0">Xếp loại:</span>
+                          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${st.performance === "excellent" ? "bg-emerald-100 text-emerald-700" :
+                            st.performance === "good" ? "bg-blue-100 text-blue-700" :
+                              st.performance === "average" ? "bg-amber-100 text-amber-700" :
+                                "bg-red-100 text-red-700"
+                            }`}>
+                            {st.performance === "excellent" ? "Xuất sắc" : st.performance === "good" ? "Tốt" : st.performance === "average" ? "Trung bình" : st.performance === "below_average" ? "Yếu" : "Kém"}
+                          </span>
+                        </div>
+                        {st.teacher_comment && (
+                          <div>
+                            <span className="text-xs font-medium text-gray-500">Nhận xét GV:</span>
+                            <p className="text-xs text-gray-700 mt-0.5 pl-5 whitespace-pre-line">{st.teacher_comment}</p>
+                          </div>
+                        )}
+                        {st.knowledge_learned && (
+                          <div>
+                            <span className="text-xs font-medium text-gray-500">Kiến thức đã học:</span>
+                            <p className="text-xs text-gray-700 mt-0.5 pl-5 whitespace-pre-line">{st.knowledge_learned}</p>
+                          </div>
+                        )}
+                        {st.next_month_plan && (
+                          <div>
+                            <span className="text-xs font-medium text-gray-500">Kế hoạch tháng sau:</span>
+                            <p className="text-xs text-gray-700 mt-0.5 pl-5 whitespace-pre-line">{st.next_month_plan}</p>
+                          </div>
+                        )}
+                        {st.test_result && (
+                          <div>
+                            <span className="text-xs font-medium text-gray-500">Kết quả test:</span>
+                            <p className="text-xs text-gray-700 mt-0.5 pl-5">{st.test_result}</p>
+                          </div>
+                        )}
+                        {!st.teacher_comment && !st.knowledge_learned && !st.next_month_plan && !st.test_result && (
+                          <p className="text-xs italic text-gray-400 pl-5">Chưa có nội dung đánh giá</p>
+                        )}
                       </div>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1">Nhận xét của giảng viên</label>
-                      <textarea
-                        value={st.teacher_comment}
-                        onChange={(e) => setMonthlyEvals(prev => prev.map(x => x.student_id === st.student_id ? { ...x, teacher_comment: e.target.value } : x))}
-                        className="w-full rounded-lg border border-gray-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"
-                        rows={2}
-                        placeholder="Nhận xét sự tiến bộ, thái độ..."
-                      />
-                    </div>
+                    )}
+
+                    {/* ── Chế độ CHỈNH SỬA ── */}
+                    {monthlyEvalMode === "edit" && (
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-1">Xếp loại</label>
+                          <select
+                            value={st.performance}
+                            onChange={(e) => setMonthlyEvals(prev => prev.map(x => x.student_id === st.student_id ? { ...x, performance: e.target.value } : x))}
+                            className="w-full rounded-lg border border-gray-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                          >
+                            <option value="excellent">Xuất sắc</option>
+                            <option value="good">Tốt</option>
+                            <option value="average">Trung bình</option>
+                            <option value="below_average">Yếu</option>
+                            <option value="poor">Kém</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-1">Nhận xét của giảng viên</label>
+                          <textarea
+                            value={st.teacher_comment}
+                            onChange={(e) => setMonthlyEvals(prev => prev.map(x => x.student_id === st.student_id ? { ...x, teacher_comment: e.target.value } : x))}
+                            className="w-full rounded-lg border border-gray-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"
+                            rows={2}
+                            placeholder="Nhận xét sự tiến bộ, thái độ..."
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-1">Kiến thức đã học</label>
+                          <textarea
+                            value={st.knowledge_learned || ""}
+                            onFocus={(e) => {
+                              if (!st.knowledge_learned) setMonthlyEvals(prev => prev.map(x => x.student_id === st.student_id ? { ...x, knowledge_learned: "- " } : x));
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                const ta = e.currentTarget;
+                                const start = ta.selectionStart;
+                                const end = ta.selectionEnd;
+                                const val = st.knowledge_learned || "";
+                                const newValue = val.substring(0, start) + "\n- " + val.substring(end);
+                                setMonthlyEvals(prev => prev.map(x => x.student_id === st.student_id ? { ...x, knowledge_learned: newValue } : x));
+                                setTimeout(() => { ta.selectionStart = ta.selectionEnd = start + 3; }, 0);
+                              }
+                            }}
+                            onChange={(e) => setMonthlyEvals(prev => prev.map(x => x.student_id === st.student_id ? { ...x, knowledge_learned: e.target.value } : x))}
+                            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"
+                            rows={3}
+                            placeholder="- Nhập các kiến thức chính, cấu trúc ngữ pháp học viên đã học..."
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-1">Kế hoạch tháng sau</label>
+                          <textarea
+                            value={st.next_month_plan || ""}
+                            onFocus={(e) => {
+                              if (!st.next_month_plan) setMonthlyEvals(prev => prev.map(x => x.student_id === st.student_id ? { ...x, next_month_plan: "- " } : x));
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                const ta = e.currentTarget;
+                                const start = ta.selectionStart;
+                                const end = ta.selectionEnd;
+                                const val = st.next_month_plan || "";
+                                const newValue = val.substring(0, start) + "\n- " + val.substring(end);
+                                setMonthlyEvals(prev => prev.map(x => x.student_id === st.student_id ? { ...x, next_month_plan: newValue } : x));
+                                setTimeout(() => { ta.selectionStart = ta.selectionEnd = start + 3; }, 0);
+                              }
+                            }}
+                            onChange={(e) => setMonthlyEvals(prev => prev.map(x => x.student_id === st.student_id ? { ...x, next_month_plan: e.target.value } : x))}
+                            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"
+                            rows={3}
+                            placeholder="- Nhập các kỹ năng cần cải thiện và mục tiêu tháng sau..."
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-1">Kết quả test</label>
+                          <textarea
+                            value={st.test_result || ""}
+                            onChange={(e) => setMonthlyEvals(prev => prev.map(x => x.student_id === st.student_id ? { ...x, test_result: e.target.value } : x))}
+                            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"
+                            rows={2}
+                            placeholder="Điểm số bài kiểm tra định kỳ (nếu có) và nhận định nhanh..."
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -1763,9 +2013,11 @@ export default function TeacherCourseDetailPage({ params }: { params: Promise<{ 
           )}
           <div className="flex gap-3 pt-2">
             <Button variant="secondary" className="flex-1" onClick={() => setMonthlyEvalOpen(false)}>Đóng</Button>
-            <Button className="flex-1" loading={monthlyEvalSaving} onClick={handleSaveMonthlyEval} disabled={!monthlyEvalMonth}>
-              Lưu đánh giá
-            </Button>
+            {monthlyEvalMode === "edit" && (
+              <Button className="flex-1" loading={monthlyEvalSaving} onClick={handleSaveMonthlyEval} disabled={!monthlyEvalMonth}>
+                Lưu đánh giá
+              </Button>
+            )}
           </div>
         </div>
       </Modal>

@@ -130,7 +130,7 @@ export function generateSessionDates(
 
   const targetDays = selectedDays.map(d => DAY_TO_JS[d]);
   const dates: Date[] = [];
-  const current = new Date(startDate);
+  const current = new Date(startDate + "T00:00:00"); // Explicitly use local time to avoid UTC-date-shift bug
   current.setHours(0, 0, 0, 0);
 
   // Safety cap: don't iterate more than 5 years' worth of days

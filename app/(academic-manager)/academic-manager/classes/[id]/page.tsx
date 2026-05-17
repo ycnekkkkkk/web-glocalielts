@@ -7,10 +7,10 @@ import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import { createBrowserClient } from "@/lib/supabase/client";
 import {
-  ArrowLeft, BookOpen, Calendar, CheckCircle, Download, FileText, MessageSquare, Pencil, Plus, Star, Trash2, Upload, Users, Video, WrapText, ZoomIn,
+  ArrowLeft, BookOpen, Calendar, CheckCircle, DollarSign, Download, FileText, History, MessageSquare, Pencil, Plus, Star, Trash2, Upload, Users, Video, WrapText, ZoomIn, ChevronRight,
 } from "lucide-react";
 import Link from "next/link";
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useState, Fragment } from "react";
 import toast from "react-hot-toast";
 import type { ClassEvaluationRow, MakeupStatusRow, MonthlyStudentEvaluation, PeriodicTest, PeriodicTestSubmission, Session } from "@/types";
 
@@ -30,7 +30,6 @@ interface ClassDetail {
   start_date: string | null;
   end_date: string | null;
 }
-
 interface EnrolledStudent {
   enrollment_id: string;
   student_id: string;
@@ -38,6 +37,10 @@ interface EnrolledStudent {
   full_name: string;
   email: string | null;
   phone: string | null;
+  level_in: string | null;
+  level_out: string | null;
+  tuition_fee: number;
+  paid_fee: number;
 }
 
 interface AvailableStudent {
@@ -45,6 +48,13 @@ interface AvailableStudent {
   student_code: string | null;
   full_name: string;
   email: string | null;
+}
+
+interface EnrollmentPayment {
+  id: string;
+  amount: number;
+  note: string | null;
+  paid_at: string;
 }
 
 interface AttendanceRow {
@@ -82,6 +92,10 @@ function StarDisplay({ value }: { value: number | null }) {
   );
 }
 
+function formatVND(amount: number) {
+  return new Intl.NumberFormat("vi-VN").format(amount) + " VNĐ";
+}
+
 export default function AcademicManagerClassDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: classId } = use(params);
 
@@ -100,10 +114,8 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
   // Monthly evaluations state
   const [monthlyEvals, setMonthlyEvals] = useState<MonthlyStudentEvaluation[]>([]);
   const [monthlyEvalsLoading, setMonthlyEvalsLoading] = useState(false);
-  const [selectedMonth, setSelectedMonth] = useState<string>(() => {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-  });
+  const [expandedEvalIndex, setExpandedEvalIndex] = useState<number | null>(null);
+  const [selectedMonth, setSelectedMonth] = useState<string>("");
 
   // Periodic tests state
   const [periodicTests, setPeriodicTests] = useState<PeriodicTest[]>([]);
@@ -129,6 +141,7 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
   const [sessionsLoading, setSessionsLoading] = useState(false);
   const [editingZoomId, setEditingZoomId] = useState<number | null>(null);
   const [editingZoomValue, setEditingZoomValue] = useState("");
+  const [sessionsAttendance, setSessionsAttendance] = useState<AttendanceRow[]>([]);
 
   // Enrolled students state
   const [enrolledStudents, setEnrolledStudents] = useState<EnrolledStudent[]>([]);
@@ -140,12 +153,30 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [addingId, setAddingId] = useState<string | null>(null);
   const [showAddStudentModal, setShowAddStudentModal] = useState(false);
+  const [assigningTeacher, setAssigningTeacher] = useState(false);
   const [confirmRemoveStudent, setConfirmRemoveStudent] = useState<{ enrollmentId: string; name: string } | null>(null);
+
+  // Configuration sub-modal for adding student
+  const [studentToConfigure, setStudentToConfigure] = useState<AvailableStudent | null>(null);
+  const [newStudentConfig, setNewStudentConfig] = useState({
+    level_in: "",
+    level_out: "",
+    tuition_fee: 0,
+    paid_fee: 0,
+  });
+
+  // Financial & Level Modal
+  const [financialModal, setFinancialModal] = useState<EnrolledStudent | null>(null);
+  const [financialData, setFinancialData] = useState<{ level_in: string; level_out: string; amount: number; paid_total: number; remaining: number }>({ level_in: '', level_out: '', amount: 0, paid_total: 0, remaining: 0 });
+  const [financialLoading, setFinancialLoading] = useState(false);
+  const [financialSaving, setFinancialSaving] = useState(false);
+  const [paymentHistory, setPaymentHistory] = useState<EnrollmentPayment[]>([]);
+  const [newPayment, setNewPayment] = useState({ amount: 0, note: "" });
+  const [addingPayment, setAddingPayment] = useState(false);
 
   // Teacher assignment state
   const [allTeachers, setAllTeachers] = useState<{ id: string; full_name: string; email: string | null }[]>([]);
   const [showTeacherModal, setShowTeacherModal] = useState(false);
-  const [assigningTeacher, setAssigningTeacher] = useState(false);
 
   // Load teachers for assignment
   async function loadTeachers() {
@@ -248,9 +279,55 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
     if (!classDetail) return;
     setMonthlyEvalsLoading(true);
     try {
-      const { data, error } = await createBrowserClient()
-        .rpc("get_monthly_evaluations", { p_class_id: classDetail.id });
-      if (!error) setMonthlyEvals((data as MonthlyStudentEvaluation[]) || []);
+      const { data: rawData, error } = await createBrowserClient()
+        .from("monthly_student_evaluations")
+        .select(`
+          id,
+          student_id,
+          evaluation_month,
+          rating,
+          performance,
+          attendance_rate,
+          homework_score,
+          midterm_score,
+          final_score,
+          teacher_comment,
+          academic_comment,
+          knowledge_learned,
+          next_month_plan,
+          test_result,
+          created_at,
+          updated_at,
+          students:students!inner(full_name)
+        `)
+        .eq("class_id", classDetail.id);
+
+      if (!error && rawData) {
+        const mappedData: MonthlyStudentEvaluation[] = rawData.map((mse: any) => ({
+          id: mse.id,
+          student_id: mse.student_id,
+          student_name: mse.students?.full_name || "–",
+          evaluation_month: mse.evaluation_month,
+          rating: mse.rating,
+          performance: mse.performance,
+          attendance_rate: mse.attendance_rate,
+          homework_score: mse.homework_score,
+          midterm_score: mse.midterm_score,
+          final_score: mse.final_score,
+          teacher_comment: mse.teacher_comment,
+          academic_comment: mse.academic_comment,
+          knowledge_learned: mse.knowledge_learned,
+          next_month_plan: mse.next_month_plan,
+          test_result: mse.test_result,
+          created_at: mse.created_at,
+          updated_at: mse.updated_at,
+        }));
+        setMonthlyEvals(mappedData);
+        if (mappedData.length > 0 && !selectedMonth) {
+          const months = [...new Set(mappedData.map(m => m.evaluation_month))].sort().reverse();
+          setSelectedMonth(months[0] || "");
+        }
+      }
     } catch (e) { console.error(e); }
     setMonthlyEvalsLoading(false);
   }
@@ -323,12 +400,21 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
   async function loadSessions() {
     setSessionsLoading(true);
     try {
-      const { data } = await createBrowserClient()
+      const supabase = createBrowserClient();
+      const { data } = await supabase
         .from("sessions")
         .select("*")
         .eq("class_id", classId)
         .order("session_no");
       setSessions((data as Session[]) || []);
+
+      if (classDetail) {
+        const { data: attData } = await supabase
+          .from("session_attendance")
+          .select("student_id, student_name, attendance_status, class_name, session_ref")
+          .eq("class_name", classDetail.name);
+        setSessionsAttendance((attData as AttendanceRow[]) || []);
+      }
     } catch (e) { console.error(e); }
     setSessionsLoading(false);
   }
@@ -362,7 +448,7 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
       const [enrollRes, allRes] = await Promise.all([
         supabase
           .from("enrollments")
-          .select("id, student_id, students:students!inner(id, student_code, full_name, email, phone)")
+          .select("id, student_id, level_in, level_out, tuition_fee, paid_amount, students:students!inner(id, student_code, full_name, email, phone)")
           .eq("class_id", classDetail.id)
           .eq("status", "active"),
         supabase.from("students").select("id, student_code, full_name, email").order("full_name"),
@@ -378,6 +464,10 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
         full_name: e.students?.full_name ?? "",
         email: e.students?.email ?? null,
         phone: e.students?.phone ?? null,
+        level_in: (e as any).level_in ?? null,
+        level_out: (e as any).level_out ?? null,
+        tuition_fee: (e as any).tuition_fee ?? 0,
+        paid_fee: (e as any).paid_amount ?? 0,
       }));
 
       const enrolledIds = new Set(enrolled.map(e => e.student_id));
@@ -422,25 +512,72 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
 
   async function addStudent(student: AvailableStudent) {
     if (!classDetail) return;
-    setAddingId(student.id);
-    const { error } = await createBrowserClient()
+    setStudentToConfigure(student);
+    setNewStudentConfig({
+      level_in: classDetail.level_in || "",
+      level_out: classDetail.level_out || "",
+      tuition_fee: 0,
+      paid_fee: 0,
+    });
+  }
+
+  async function confirmAddStudent() {
+    if (!classDetail || !studentToConfigure) return;
+    setAddingId(studentToConfigure.id);
+    const supabase = createBrowserClient();
+    
+    // 1. Insert into enrollments
+    const { data: enrollment, error } = await supabase
       .from("enrollments")
-      .insert({ class_id: classDetail.id, student_id: student.id, status: "active" });
+      .insert({
+        class_id: classDetail.id,
+        student_id: studentToConfigure.id,
+        status: "active",
+        level_in: newStudentConfig.level_in || null,
+        level_out: newStudentConfig.level_out || null,
+        tuition_fee: newStudentConfig.tuition_fee,
+        paid_amount: newStudentConfig.paid_fee,
+      })
+      .select("id")
+      .single();
+
     if (error) {
       toast.error(error.message.includes("duplicate") ? "Học viên đã ở trong lớp" : "Lỗi thêm học viên");
       setAddingId(null);
       return;
     }
+
+    // 2. If initial payment exists, record in enrollment_payments history
+    if (newStudentConfig.paid_fee > 0 && enrollment) {
+      const { error: payErr } = await supabase
+        .from("enrollment_payments")
+        .insert({
+          enrollment_id: enrollment.id,
+          amount: newStudentConfig.paid_fee,
+          note: "Đóng học phí ban đầu khi vào lớp",
+        });
+      if (payErr) {
+        console.error("[enrollment_payments Error]", payErr);
+      }
+    }
+
+    // 3. Update React state
     setEnrolledStudents(prev => [...prev, {
-      enrollment_id: "",
-      student_id: student.id,
-      student_code: student.student_code,
-      full_name: student.full_name,
-      email: student.email,
-      phone: null,
+      enrollment_id: enrollment?.id || "",
+      student_id: studentToConfigure.id,
+      student_code: studentToConfigure.student_code,
+      full_name: studentToConfigure.full_name,
+      email: studentToConfigure.email,
+      phone: (studentToConfigure as any).phone || null,
+      tuition_fee: newStudentConfig.tuition_fee,
+      paid_fee: newStudentConfig.paid_fee,
+      level_in: newStudentConfig.level_in || null,
+      level_out: newStudentConfig.level_out || null,
     }]);
-    setAvailableStudents(prev => prev.filter(s => s.id !== student.id));
-    toast.success(`Đã thêm ${student.full_name} vào lớp`);
+
+    setAvailableStudents(prev => prev.filter(s => s.id !== studentToConfigure.id));
+    toast.success(`Đã thêm ${studentToConfigure.full_name} vào lớp`);
+    setStudentToConfigure(null);
     setAddingId(null);
   }
 
@@ -450,6 +587,185 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
     const { data, error } = await createBrowserClient().rpc("get_makeup_status", { p_class_name: classDetail.name });
     if (!error) setMakeupRows((data as MakeupStatusRow[]) || []);
     setMakeupLoading(false);
+  }
+
+  // ── Financial Modal Logic ───────────────────────────────────
+  async function openFinancialModal(student: EnrolledStudent) {
+    setFinancialModal(student);
+    setFinancialData({ 
+      level_in: student.level_in || '', 
+      level_out: student.level_out || '', 
+      amount: student.tuition_fee || 0, 
+      paid_total: student.paid_fee || 0, 
+      remaining: (student.tuition_fee || 0) - (student.paid_fee || 0) 
+    });
+
+    const supabase = createBrowserClient();
+    try {
+      const supabase = createBrowserClient();
+      
+      // Load payment history
+      const { data: payData } = await supabase
+        .from("enrollment_payments")
+        .select("*")
+        .eq("enrollment_id", student.enrollment_id)
+        .order("paid_at", { ascending: false });
+      
+      // Auto-repair: If student has paid_fee > 0 but no history records, create the initial payment record
+      const sumPayments = (payData || []).reduce((acc: number, p: any) => acc + Number(p.amount), 0);
+      if (student.paid_fee > 0 && sumPayments === 0) {
+        const { data: newPay, error: repairErr } = await supabase
+          .from("enrollment_payments")
+          .insert({
+            enrollment_id: student.enrollment_id,
+            amount: student.paid_fee,
+            note: "Nộp phí ban đầu (lúc nhập học)"
+          })
+          .select()
+          .single();
+        
+        if (!repairErr && newPay) {
+          setPaymentHistory([newPay]);
+        } else {
+          setPaymentHistory(payData || []);
+        }
+      } else {
+        setPaymentHistory(payData || []);
+      }
+
+      const { data, error } = await supabase
+        .from("v_invoice_status")
+        .select("*")
+        .eq("enrollment_id", student.enrollment_id)
+        .maybeSingle();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error("Error fetching invoice:", error);
+      } else if (data) {
+        setFinancialData(p => ({
+          ...p,
+          invoiceId: data.id,
+          paid_total: data.paid_total || p.paid_total,
+          remaining: data.remaining || p.remaining
+        }));
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setFinancialLoading(false);
+    }
+  }
+
+  async function handleAddPayment(e: React.FormEvent) {
+    e.preventDefault();
+    if (!financialModal || newPayment.amount <= 0) return;
+    setAddingPayment(true);
+    try {
+      const supabase = createBrowserClient();
+      const { data, error } = await supabase
+        .from("enrollment_payments")
+        .insert({
+          enrollment_id: financialModal.enrollment_id,
+          amount: newPayment.amount,
+          note: newPayment.note || null
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      toast.success("Đã thêm đợt nộp phí!");
+      setPaymentHistory(prev => [data, ...prev]);
+      
+      const newTotalPaid = financialData.paid_total + newPayment.amount;
+      setFinancialData(prev => ({
+        ...prev,
+        paid_total: newTotalPaid,
+        remaining: prev.amount - newTotalPaid
+      }));
+
+      setEnrolledStudents(prev => prev.map(s => 
+        s.enrollment_id === financialModal.enrollment_id 
+          ? { ...s, paid_fee: newTotalPaid } 
+          : s
+      ));
+
+      setNewPayment({ amount: 0, note: "" });
+    } catch (err) {
+      toast.error("Lỗi thêm thanh toán");
+    } finally {
+      setAddingPayment(false);
+    }
+  }
+
+  async function removePayment(id: string) {
+    if (!confirm("Bạn có chắc muốn xóa đợt nộp này?")) return;
+    try {
+      const supabase = createBrowserClient();
+      const { error } = await supabase
+        .from("enrollment_payments")
+        .delete()
+        .eq("id", id);
+      if (error) throw error;
+
+      const removed = paymentHistory.find(p => p.id === id);
+      setPaymentHistory(prev => prev.filter(p => p.id !== id));
+      
+      if (removed && financialModal) {
+        const newTotalPaid = financialData.paid_total - removed.amount;
+        setFinancialData(prev => ({
+          ...prev,
+          paid_total: newTotalPaid,
+          remaining: prev.amount - newTotalPaid
+        }));
+        setEnrolledStudents(prev => prev.map(s => 
+          s.enrollment_id === financialModal.enrollment_id 
+            ? { ...s, paid_fee: newTotalPaid } 
+            : s
+        ));
+      }
+      toast.success("Đã xóa đợt nộp phí");
+    } catch (err) {
+      toast.error("Lỗi xóa thanh toán");
+    }
+  }
+
+  async function saveFinancialData(e: React.FormEvent) {
+    e.preventDefault();
+    if (!financialModal) return;
+    setFinancialSaving(true);
+    try {
+      const supabase = createBrowserClient();
+      const { error } = await supabase
+        .from("enrollments")
+        .update({
+          level_in: financialData.level_in || null,
+          level_out: financialData.level_out || null,
+          tuition_fee: financialData.amount,
+          paid_amount: financialData.paid_total
+        })
+        .eq("id", financialModal.enrollment_id);
+        
+      if (error) throw error;
+      toast.success("Cập nhật thành công!");
+      
+      setEnrolledStudents(prev => prev.map(s => 
+        s.enrollment_id === financialModal.enrollment_id 
+          ? { 
+              ...s, 
+              level_in: financialData.level_in || null, 
+              level_out: financialData.level_out || null,
+              tuition_fee: financialData.amount,
+              paid_fee: financialData.paid_total
+            } 
+          : s
+      ));
+      setFinancialModal(null);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Có lỗi xảy ra");
+    } finally {
+      setFinancialSaving(false);
+    }
   }
 
   async function loadAttendanceReport() {
@@ -770,7 +1086,7 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
   // Load monthly evaluations when tab is evaluations
   useEffect(() => {
     if (tab === "evaluations" && classDetail) loadMonthlyEvaluations();
-  }, [tab, classDetail, selectedMonth]);
+  }, [tab, classDetail]);
 
   // Load periodic tests when tab is tests
   useEffect(() => {
@@ -1174,32 +1490,85 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="text-xs text-gray-500 border-b border-gray-100">
-                          <th className="text-left py-2 pr-3 font-medium">Học viên</th>
-                          <th className="text-left py-2 pr-3 font-medium">Xếp loại</th>
-                          <th className="text-left py-2 pr-3 font-medium">% Điểm danh</th>
-                          <th className="text-left py-2 pr-3 font-medium">% Bài tập</th>
-                          <th className="text-left py-2 pr-3 font-medium">Giữa kỳ</th>
-                          <th className="text-left py-2 pr-3 font-medium">Cuối kỳ</th>
-                          <th className="text-left py-2 font-medium">Nhận xét</th>
+                          <th className="text-left py-2 pr-3 font-medium w-[60%]">Học viên</th>
+                          <th className="text-left py-2 pr-3 font-medium w-[30%]">Xếp loại</th>
+                          <th className="text-right py-2 font-medium w-[10%]">Chi tiết</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-50">
                         {monthlyEvals
                           .filter(e => e.evaluation_month === selectedMonth)
                           .map((e, i) => (
-                            <tr key={i} className="hover:bg-gray-50">
-                              <td className="py-2.5 pr-3 font-medium text-gray-800">{e.student_name || "–"}</td>
-                              <td className="py-2.5 pr-3">
-                                <Badge variant={e.performance === "excellent" ? "success" : e.performance === "good" ? "info" : e.performance === "average" ? "warning" : "danger"}>
-                                  {e.performance === "excellent" ? "Xuất sắc" : e.performance === "good" ? "Tốt" : e.performance === "average" ? "Trung bình" : e.performance === "below_average" ? "Yếu" : "Kém"}
-                                </Badge>
-                              </td>
-                              <td className="py-2.5 pr-3 text-gray-600">{e.attendance_rate !== null ? `${e.attendance_rate}%` : "–"}</td>
-                              <td className="py-2.5 pr-3 text-gray-600">{e.homework_score !== null ? `${e.homework_score}%` : "–"}</td>
-                              <td className="py-2.5 pr-3 text-gray-600">{e.midterm_score !== null ? `${e.midterm_score}%` : "–"}</td>
-                              <td className="py-2.5 pr-3 text-gray-600">{e.final_score !== null ? `${e.final_score}%` : "–"}</td>
-                              <td className="py-2.5 text-gray-600 max-w-xs truncate">{e.teacher_comment || e.academic_comment || "–"}</td>
-                            </tr>
+                            <Fragment key={i}>
+                              <tr className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => setExpandedEvalIndex(expandedEvalIndex === i ? null : i)}>
+                                <td className="py-2.5 pr-3 font-medium text-gray-800 select-none">
+                                  <div className="flex items-center gap-2">
+                                    <ChevronRight className={`w-4 h-4 text-gray-400 transition-transform ${expandedEvalIndex === i ? "rotate-90 text-indigo-600" : ""}`} />
+                                    <span>{e.student_name || "–"}</span>
+                                  </div>
+                                </td>
+                                <td className="py-2.5 pr-3">
+                                  <Badge variant={e.performance === "excellent" ? "success" : e.performance === "good" ? "info" : e.performance === "average" ? "warning" : "danger"}>
+                                    {e.performance === "excellent" ? "Xuất sắc" : e.performance === "good" ? "Tốt" : e.performance === "average" ? "Trung bình" : e.performance === "below_average" ? "Yếu" : "Kém"}
+                                  </Badge>
+                                </td>
+                                <td className="py-2.5 text-right text-xs text-indigo-600 font-medium select-none">
+                                  {expandedEvalIndex === i ? "Thu gọn" : "Xem chi tiết"}
+                                </td>
+                              </tr>
+                              {expandedEvalIndex === i && (
+                                <tr className="bg-indigo-50/20">
+                                  <td colSpan={3} className="px-6 py-5 border-t border-b border-indigo-100/40">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
+                                      
+                                      {/* Kiến thức đã học */}
+                                      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col gap-2">
+                                        <div className="flex items-center gap-2 font-semibold text-indigo-700">
+                                          <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full"></span>
+                                          Kiến thức đã học
+                                        </div>
+                                        <div className="text-gray-700 whitespace-pre-line text-xs pl-3 leading-relaxed">
+                                          {e.knowledge_learned || <span className="text-gray-400 italic">Chưa cập nhật</span>}
+                                        </div>
+                                      </div>
+
+                                      {/* Kế hoạch tháng sau */}
+                                      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col gap-2">
+                                        <div className="flex items-center gap-2 font-semibold text-emerald-700">
+                                          <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+                                          Kế hoạch tháng sau
+                                        </div>
+                                        <div className="text-gray-700 whitespace-pre-line text-xs pl-3 leading-relaxed">
+                                          {e.next_month_plan || <span className="text-gray-400 italic">Chưa cập nhật</span>}
+                                        </div>
+                                      </div>
+
+                                      {/* Kết quả test */}
+                                      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col gap-2">
+                                        <div className="flex items-center gap-2 font-semibold text-amber-700">
+                                          <span className="w-1.5 h-1.5 bg-amber-500 rounded-full"></span>
+                                          Kết quả test
+                                        </div>
+                                        <div className="text-gray-700 whitespace-pre-line text-xs pl-3 leading-relaxed">
+                                          {e.test_result || <span className="text-gray-400 italic">Chưa cập nhật</span>}
+                                        </div>
+                                      </div>
+
+                                    </div>
+
+                                    {/* Nhận xét chi tiết */}
+                                    {(e.teacher_comment || e.academic_comment) && (
+                                      <div className="mt-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                                        <div className="font-semibold text-gray-700 mb-1.5 text-xs">Nhận xét chi tiết:</div>
+                                        <p className="text-gray-600 text-xs leading-relaxed whitespace-pre-line">
+                                          {e.teacher_comment || e.academic_comment}
+                                        </p>
+                                      </div>
+                                    )}
+                                  </td>
+                                </tr>
+                              )}
+                            </Fragment>
                           ))}
                       </tbody>
                     </table>
@@ -1304,6 +1673,7 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
                     <th className="text-left px-4 py-3">Ngày</th>
                     <th className="text-left px-4 py-3">Giờ</th>
                     <th className="text-left px-4 py-3">Chủ đề</th>
+                    <th className="text-left px-4 py-3">Điểm danh</th>
                     <th className="text-left px-4 py-3">Link học</th>
                     <th className="text-left px-4 py-3">Trạng thái</th>
                   </tr>
@@ -1319,6 +1689,55 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
                       <td className="px-4 py-3 text-sm font-medium text-gray-800">{s.session_date || "–"}</td>
                       <td className="px-4 py-3 text-sm text-gray-600">{s.session_time || "–"}</td>
                       <td className="px-4 py-3 text-sm text-gray-600 max-w-48 truncate">{s.topic || "–"}</td>
+                      <td className="px-4 py-3">
+                        {(() => {
+                          if (s.status !== "DONE") {
+                            return (
+                              <span className="text-xs text-gray-400 italic">Chưa điểm danh</span>
+                            );
+                          }
+                          const ref1 = `${s.class_name}#${s.session_no}#${s.session_date}`;
+                          const ref2 = `${s.class_name}__${s.session_no}__${s.session_date}`;
+                          const attList = sessionsAttendance.filter(
+                            (a) => a.session_ref === ref1 || a.session_ref === ref2
+                          );
+                          const onTimeStudents = attList.filter((a) => a.attendance_status === "on_time");
+                          const lateStudents = attList.filter((a) => a.attendance_status === "late");
+                          const absentStudents = attList.filter((a) => a.attendance_status === "absent");
+
+                          return (
+                            <div className="flex flex-wrap gap-1.5 max-w-xs">
+                              {onTimeStudents.map((st, idx) => (
+                                <span
+                                  key={`ot-${idx}`}
+                                  className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-100"
+                                >
+                                  {st.student_name} (Đúng giờ)
+                                </span>
+                              ))}
+                              {lateStudents.map((st, idx) => (
+                                <span
+                                  key={`lt-${idx}`}
+                                  className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-50 text-amber-700 border border-amber-100"
+                                >
+                                  {st.student_name} (Muộn)
+                                </span>
+                              ))}
+                              {absentStudents.map((st, idx) => (
+                                <span
+                                  key={`ab-${idx}`}
+                                  className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-rose-50 text-rose-700 border border-rose-100"
+                                >
+                                  {st.student_name} (Vắng)
+                                </span>
+                              ))}
+                              {attList.length === 0 && (
+                                <span className="text-xs text-gray-400 italic">Chưa điểm danh</span>
+                              )}
+                            </div>
+                          );
+                        })()}
+                      </td>
                       <td className="px-4 py-3">
                         {editingZoomId === s.id ? (
                           <div className="flex items-center gap-2">
@@ -1428,7 +1847,8 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
                         <th className="text-left py-2 pr-3 font-medium">Mã HV</th>
                         <th className="text-left py-2 pr-3 font-medium">Họ tên</th>
                         <th className="text-left py-2 pr-3 font-medium">Email</th>
-                        <th className="text-left py-2 pr-3 font-medium">Điện thoại</th>
+                        <th className="text-left py-2 pr-3 font-medium">Trình độ</th>
+                        <th className="text-left py-2 pr-3 font-medium text-indigo-600">Học phí</th>
                         <th className="text-left py-2 font-medium">Thao tác</th>
                       </tr>
                     </thead>
@@ -1440,8 +1860,27 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
                             <td className="py-2.5 pr-3 text-gray-600">{s.student_code || "–"}</td>
                             <td className="py-2.5 pr-4 font-medium text-gray-800">{s.full_name}</td>
                             <td className="py-2.5 pr-3 text-gray-500">{s.email || "–"}</td>
-                            <td className="py-2.5 pr-3 text-gray-500">{s.phone || "–"}</td>
+                            <td className="py-2.5 pr-3">
+                              <div className="text-xs font-bold text-gray-700">
+                                {s.level_in || "–"} ➔ {s.level_out || "–"}
+                              </div>
+                            </td>
+                            <td className="py-2.5 pr-3">
+                              <div className="text-xs font-bold text-indigo-600">
+                                {formatVND(s.tuition_fee)}
+                              </div>
+                              <div className="text-[10px] text-emerald-600 font-medium">
+                                Đã đóng: {formatVND(s.paid_fee)}
+                              </div>
+                            </td>
                             <td className="py-2.5">
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  variant="subtle" size="sm" className="text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 h-auto text-[10px] font-bold rounded-lg"
+                                  onClick={() => openFinancialModal(s)}
+                                >
+                                  Tài chính & Trình độ
+                                </Button>
                               <button
                                 disabled={removingId === s.enrollment_id}
                                 onClick={() => removeStudent(s.enrollment_id)}
@@ -1452,6 +1891,7 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
                                   ? <div className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
                                   : <Trash2 className="w-4 h-4" />}
                               </button>
+                              </div>
                             </td>
                           </tr>
                         ))}
@@ -1529,6 +1969,128 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
               </Button>
             </div>
           </div>
+        </Modal>
+      )}
+
+      {/* Modal: Cấu hình tài chính & trình độ khi thêm Học viên */}
+      {studentToConfigure && (
+        <Modal
+          open={true}
+          onClose={() => setStudentToConfigure(null)}
+          title={`Cấu hình Học viên: ${studentToConfigure.full_name}`}
+          size="md"
+        >
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              confirmAddStudent();
+            }}
+            className="space-y-4"
+          >
+            <div className="bg-gray-50/70 p-4 rounded-xl space-y-4 border border-gray-100">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                    Trình độ ban đầu
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500"
+                    placeholder="VD: 5.0"
+                    value={newStudentConfig.level_in}
+                    onChange={(e) =>
+                      setNewStudentConfig((p) => ({ ...p, level_in: e.target.value }))
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                    Mục tiêu đầu ra
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500"
+                    placeholder="VD: 6.5"
+                    value={newStudentConfig.level_out}
+                    onChange={(e) =>
+                      setNewStudentConfig((p) => ({ ...p, level_out: e.target.value }))
+                    }
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                  Học phí tổng (VNĐ)
+                </label>
+                <input
+                  type="number"
+                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500 font-semibold text-indigo-600"
+                  placeholder="VD: 8000000"
+                  value={newStudentConfig.tuition_fee || ""}
+                  onChange={(e) =>
+                    setNewStudentConfig((p) => ({
+                      ...p,
+                      tuition_fee: Math.round(Number(e.target.value)) || 0,
+                    }))
+                  }
+                />
+                <p className="text-[10px] text-gray-400 mt-1">
+                  Định dạng: {formatVND(newStudentConfig.tuition_fee)}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 pt-2 border-t border-gray-100">
+                <div>
+                  <label className="block text-xs font-bold text-emerald-700 uppercase tracking-wider mb-1.5">
+                    Đã đóng (VNĐ)
+                  </label>
+                  <input
+                    type="number"
+                    className="w-full px-3 py-2 border-2 border-emerald-200 bg-emerald-50/30 rounded-lg text-sm focus:outline-none focus:border-emerald-500 font-semibold text-emerald-600"
+                    placeholder="VD: 2000000"
+                    value={newStudentConfig.paid_fee || ""}
+                    onChange={(e) =>
+                      setNewStudentConfig((p) => ({
+                        ...p,
+                        paid_fee: Math.round(Number(e.target.value)) || 0,
+                      }))
+                    }
+                  />
+                  <p className="text-[10px] text-gray-400 mt-1">
+                    Định dạng: {formatVND(newStudentConfig.paid_fee)}
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                    Còn lại (VNĐ)
+                  </label>
+                  <div className="w-full px-3 py-2 bg-gray-100 rounded-lg text-sm font-bold text-gray-700 select-none border border-gray-200">
+                    {formatVND(newStudentConfig.tuition_fee - newStudentConfig.paid_fee)}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <Button
+                type="button"
+                variant="secondary"
+                className="flex-1"
+                onClick={() => setStudentToConfigure(null)}
+              >
+                Hủy
+              </Button>
+              <Button
+                type="submit"
+                loading={addingId === studentToConfigure.id}
+                className="flex-1 font-semibold"
+              >
+                Xác nhận thêm
+              </Button>
+            </div>
+          </form>
         </Modal>
       )}
 
@@ -1867,6 +2429,172 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
               >
                 {removingId ? "Đang xóa..." : "Xóa học viên"}
               </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Financial & Level Modal */}
+      {financialModal && (
+        <Modal 
+          open={true} 
+          onClose={() => setFinancialModal(null)} 
+          title={`Quản lý Học phí & Trình độ`}
+        >
+          <div className="space-y-6 max-w-2xl mx-auto px-1">
+            {/* Student Header */}
+            <div className="flex items-center justify-between p-5 bg-brand-50 rounded-2xl border border-brand-100 shadow-sm">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 bg-brand-600 rounded-2xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-brand-200">
+                  {financialModal.full_name.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-900 text-lg leading-tight">{financialModal.full_name}</h3>
+                  <p className="text-xs text-brand-600 font-semibold tracking-wide uppercase mt-0.5">Học viên lớp {classDetail?.name}</p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="secondary" onClick={() => setFinancialModal(null)} className="rounded-xl px-5">Đóng</Button>
+                <Button onClick={saveFinancialData} loading={financialSaving} className="rounded-xl px-5 shadow-lg shadow-brand-200">Lưu thay đổi</Button>
+              </div>
+            </div>
+
+            {/* Configuration: 2x2 Grid + Paid Row */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+                <label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-widest">Trình độ đầu vào</label>
+                <input
+                  type="text"
+                  value={financialData.level_in}
+                  onChange={e => setFinancialData(p => ({ ...p, level_in: e.target.value }))}
+                  placeholder="VD: 5.5"
+                  className="w-full rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand-500 transition-all"
+                />
+              </div>
+              <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+                <label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-widest">Trình độ đầu ra</label>
+                <input
+                  type="text"
+                  value={financialData.level_out}
+                  onChange={e => setFinancialData(p => ({ ...p, level_out: e.target.value }))}
+                  placeholder="VD: 6.5"
+                  className="w-full rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand-500 transition-all"
+                />
+              </div>
+              <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+                <label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-widest">Tổng học phí (VNĐ)</label>
+                <input
+                  type="text"
+                  value={financialData.amount ? formatVND(financialData.amount) : ""}
+                  onChange={e => {
+                    const val = e.target.value.replace(/\D/g, "");
+                    const num = Number(val);
+                    setFinancialData(p => ({ ...p, amount: num, remaining: num - p.paid_total }));
+                  }}
+                  placeholder="Nhập số tiền..."
+                  className="w-full rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-right"
+                />
+              </div>
+              <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 shadow-sm">
+                <label className="block text-[10px] font-black text-emerald-600 mb-2 uppercase tracking-widest">Đã đóng tổng</label>
+                <div className="w-full bg-white/50 rounded-xl px-4 py-3 text-sm font-black text-emerald-700 border border-white/20 text-right">
+                  {formatVND(financialData.paid_total)}
+                </div>
+              </div>
+            </div>
+
+            {/* Remaining Amount (Full Width) */}
+            <div className="bg-amber-50 p-5 rounded-2xl border border-amber-100 shadow-sm flex items-center justify-between">
+              <div>
+                <label className="block text-[10px] font-black text-amber-600 uppercase tracking-widest mb-1">Số tiền còn lại</label>
+                <p className="text-2xl font-black text-red-600 tracking-tighter">
+                  {formatVND(Math.max(0, financialData.remaining))}
+                </p>
+              </div>
+              <div className="px-4 py-2 bg-white/40 rounded-xl border border-white/20">
+                <p className="text-[10px] font-bold text-amber-700 uppercase">Tình trạng</p>
+                <p className="text-xs font-black text-amber-800">{financialData.remaining > 0 ? "Chưa hoàn thành" : "Đã hoàn thành"}</p>
+              </div>
+            </div>
+
+                    {/* Bottom Sections: Vertical Stack for Space */}
+                    <div className="space-y-6">
+                       {/* Lịch sử đóng tiền */}
+                       <section>
+                          <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                            <History className="w-4 h-4 text-brand-500" /> Lịch sử nộp phí
+                          </h4>
+                          <div className="space-y-2 max-h-[180px] overflow-y-auto pr-2 custom-scrollbar">
+                            {paymentHistory.map((p) => (
+                              <div key={p.id} className="flex items-center justify-between p-3.5 bg-white border border-gray-100 rounded-2xl shadow-sm hover:border-brand-100 transition-all group">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-9 h-9 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 shadow-sm border border-emerald-100">
+                                    <DollarSign className="w-4 h-4" />
+                                  </div>
+                                  <div>
+                                    <div className="font-bold text-gray-900 text-sm">{formatVND(p.amount)}</div>
+                                    <div className="text-[10px] text-gray-400 font-medium">{new Date(p.paid_at).toLocaleDateString("vi-VN")} {p.note && `· ${p.note}`}</div>
+                                  </div>
+                                </div>
+                                <button type="button" onClick={() => removePayment(p.id)} className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl opacity-0 group-hover:opacity-100 transition-all"><Trash2 className="w-4 h-4" /></button>
+                              </div>
+                            ))}
+                            {paymentHistory.length === 0 && (
+                              <div className="flex flex-col items-center justify-center py-8 bg-gray-50/50 rounded-2xl border border-dashed border-gray-200">
+                                <p className="text-xs text-gray-400 italic">Chưa có lịch sử nộp phí</p>
+                              </div>
+                            )}
+                          </div>
+                       </section>
+
+                       {/* Nộp thêm đợt mới */}
+                       <section>
+                          <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                            <Plus className="w-4 h-4 text-brand-500" /> Nộp thêm đợt mới
+                          </h4>
+                          <div className="p-6 bg-brand-600 rounded-3xl shadow-xl shadow-brand-100 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full -mr-24 -mt-24 blur-3xl" />
+                            <div className="absolute bottom-0 left-0 w-32 h-32 bg-black/10 rounded-full -ml-16 -mb-16 blur-2xl" />
+                            
+                            <div className="space-y-4 relative z-10">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div className="space-y-1.5">
+                                  <label className="text-[10px] font-bold text-brand-100 uppercase ml-1">Số tiền đóng (VNĐ)</label>
+                                  <input 
+                                    type="text"
+                                    inputMode="numeric"
+                                    placeholder="0"
+                                    value={newPayment.amount ? formatVND(newPayment.amount).replace(" ₫", "") : ""}
+                                    onChange={e => {
+                                      const val = e.target.value.replace(/\D/g, "");
+                                      setNewPayment(p => ({ ...p, amount: Number(val) }));
+                                    }}
+                                    className="w-full rounded-2xl border-none bg-white/20 text-white placeholder:text-white/40 px-4 py-3 text-sm focus:ring-2 focus:ring-white font-black text-right"
+                                  />
+                                </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold text-brand-100 uppercase ml-1">Ghi chú</label>
+                          <input 
+                            type="text"
+                            placeholder="Đợt 2, Chuyển khoản..."
+                            value={newPayment.note}
+                            onChange={e => setNewPayment(p => ({ ...p, note: e.target.value }))}
+                            className="w-full rounded-2xl border-none bg-white/20 text-white placeholder:text-white/40 px-4 py-3 text-sm focus:ring-2 focus:ring-white font-medium"
+                          />
+                        </div>
+                      </div>
+                      <Button 
+                        type="button"
+                        loading={addingPayment}
+                        onClick={handleAddPayment}
+                        disabled={newPayment.amount <= 0}
+                        className="w-full bg-white text-brand-700 hover:bg-brand-50 font-black rounded-2xl py-4 shadow-2xl transition-transform active:scale-[0.98]"
+                      >
+                        Xác nhận nộp phí ngay
+                      </Button>
+                    </div>
+                  </div>
+               </section>
             </div>
           </div>
         </Modal>

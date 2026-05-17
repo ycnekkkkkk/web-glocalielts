@@ -45,7 +45,7 @@ export default function Button({
       type="button"
       disabled={disabled || loading}
       className={cn(
-        "inline-flex items-center justify-center font-semibold rounded-xl transition-all duration-150 cursor-pointer select-none",
+        "inline-flex items-center justify-center font-semibold rounded-xl transition-all duration-150 cursor-pointer select-none whitespace-nowrap",
         variantStyles[variant],
         sizeStyles[size],
         (disabled || loading) && "cursor-not-allowed",

@@ -46,8 +46,25 @@ export function useClasses(filters?: { teacherId?: string }) {
         }
       }
 
+      // Step 1c: fetch sessions completed counts separately to be 100% accurate
+      const classNames = rawRows.map(c => c.name).filter(Boolean);
+      let sessionsDoneMap: Record<string, number> = {};
+      if (classNames.length > 0) {
+        const { data: sessionData } = await supabase
+          .from("sessions")
+          .select("class_name")
+          .in("class_name", classNames)
+          .eq("status", "DONE");
+        if (sessionData) {
+          for (const s of sessionData as { class_name: string }[]) {
+            sessionsDoneMap[s.class_name] = (sessionsDoneMap[s.class_name] ?? 0) + 1;
+          }
+        }
+      }
+
       const rows = rawRows.map(c => ({
         ...c,
+        sessions_done: Math.max(c.sessions_done ?? 0, sessionsDoneMap[c.name] ?? 0),
         enrollments: [{ count: enrollCountMap[c.id] ?? 0 }],
       })) as (Class & { enrollments: { count: number }[] })[];
 
