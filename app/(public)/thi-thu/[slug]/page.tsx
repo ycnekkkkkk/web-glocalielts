@@ -16,5 +16,5 @@ export default function ThiThuSlugPage({ params }: { params: Promise<{ slug: str
   if (isStudent) return wizard;
 
   // Public page wraps in public shell but ExamWizard manages its own full-screen layout
-  return <PublicPageShell fullWidth>{wizard}</PublicPageShell>;
+  return <PublicPageShell>{wizard}</PublicPageShell>;
 }
