@@ -57,7 +57,7 @@ export default function RoleLoginForm({
     supabase.auth.getSession().then((res: { data: { session: Session | null } }) => {
       if (res.data.session?.user) void handlePostLogin();
     });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
       if (event === "SIGNED_IN" && session?.user) void handlePostLogin();
     });
     return () => subscription.unsubscribe();
