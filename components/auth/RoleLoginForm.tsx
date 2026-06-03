@@ -1,6 +1,6 @@
 "use client";
 import { createBrowserClient } from "@/lib/supabase/client";
-import type { AuthChangeEvent, AuthError } from "@supabase/supabase-js";
+import type { AuthChangeEvent, AuthError, Session } from "@supabase/supabase-js";
 import { getOAuthRedirectToUrl } from "@/lib/auth/oauth-redirect";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -54,7 +54,7 @@ export default function RoleLoginForm({
   useEffect(() => {
     if (!config.oauth?.provider) return;
     const supabase = createBrowserClient();
-    supabase.auth.getSession().then((res) => {
+    supabase.auth.getSession().then((res: { data: { session: Session | null } }) => {
       if (res.data.session?.user) void handlePostLogin();
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
