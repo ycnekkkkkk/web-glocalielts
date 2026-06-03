@@ -8,7 +8,7 @@ import { createBrowserClient } from "@/lib/supabase/client";
 import { SESSION_STATUS, ATTENDANCE_STATUS } from "@/lib/constants";
 import { buildSessionRef } from "@/lib/sessionRefUtils";
 import BackButton from "@/components/ui/BackButton";
-import { AlertTriangle, ArrowRightLeft, BookOpen, Calendar, CheckSquare, DollarSign, ExternalLink, History, MessageSquare, Plus, Search, Star, Trash2, Users, Video, WrapText } from "lucide-react";
+import { AlertTriangle, ArrowRightLeft, BookOpen, Calendar, CheckSquare, ChevronDown, ChevronRight, DollarSign, Download, ExternalLink, FileText, History, MessageSquare, Pencil, Plus, Search, Star, Trash2, Users, Video, WrapText, ZoomIn } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import { use, useCallback, useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";

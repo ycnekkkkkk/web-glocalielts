@@ -10,6 +10,7 @@ import {
   BookOpen,
   BookOpenCheck,
   CheckCircle,
+  CheckCircle2,
   Clock,
   Headphones,
   Laptop,
