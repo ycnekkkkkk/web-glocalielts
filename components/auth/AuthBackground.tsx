@@ -62,8 +62,7 @@ export default function AuthBackground({ symbolCount = 28 }: { symbolCount?: num
   const timeRef = useRef<number>(0);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    const canvas = canvasRef.current as HTMLCanvasElement;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
