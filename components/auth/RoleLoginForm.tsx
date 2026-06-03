@@ -8,7 +8,6 @@ import toast from "react-hot-toast";
 import Link from "next/link";
 import Button from "@/components/ui/Button";
 import AuthPage from "@/components/auth/AuthPage";
-import AuthLogo from "@/components/auth/AuthLogo";
 
 function describeLoginError(error: AuthError): { message: string; suggestResend: boolean } {
   const code = error.code ?? "";
