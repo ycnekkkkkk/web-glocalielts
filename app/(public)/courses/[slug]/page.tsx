@@ -7,6 +7,7 @@ import { createBrowserClient } from "@/lib/supabase/client";
 import type { PublicCourse, PublicCourseLesson } from "@/types";
 import { BookOpen, UserCircle2 } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import BackButton from "@/components/ui/BackButton";
 import { use, useEffect, useMemo, useState } from "react";
 import { extractObjective } from "@/lib/parse-course-metadata";
