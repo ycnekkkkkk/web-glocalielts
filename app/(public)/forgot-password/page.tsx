@@ -5,6 +5,7 @@ import Logo from "@/components/ui/Logo";
 import { createBrowserClient } from "@/lib/supabase/client";
 import BackButton from "@/components/ui/BackButton";
 import { useState } from "react";
+import { Mail } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function ForgotPasswordPage() {
