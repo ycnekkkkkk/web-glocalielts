@@ -41,7 +41,6 @@ const ROUTE_LABELS: Record<string, string> = {
   "skill-reports": "Báo cáo kỹ năng",
   "my-online-courses": "Khóa học online",
   "thi-thu": "Thi thử",
-  "online-courses": "Khóa học online",
 };
 
 function getBreadcrumb(pathname: string) {
