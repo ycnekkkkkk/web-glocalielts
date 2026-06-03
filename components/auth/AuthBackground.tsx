@@ -66,6 +66,8 @@ export default function AuthBackground({ symbolCount = 28 }: { symbolCount?: num
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const c = ctx!;
 
     let width = window.innerWidth;
     let height = window.innerHeight;
@@ -77,7 +79,7 @@ export default function AuthBackground({ symbolCount = 28 }: { symbolCount?: num
     );
 
     function draw() {
-      ctx.clearRect(0, 0, width, height);
+      c.clearRect(0, 0, width, height);
       timeRef.current += 1;
 
       symbolsRef.current.forEach((sym, i) => {
@@ -93,39 +95,39 @@ export default function AuthBackground({ symbolCount = 28 }: { symbolCount?: num
         const pulse = 0.8 + 0.2 * Math.sin(sym.pulsePhase);
         const alpha = sym.opacity * pulse;
 
-        ctx.save();
-        ctx.translate(sym.x, sym.y);
-        ctx.rotate((sym.angle * Math.PI) / 180);
+        c.save();
+        c.translate(sym.x, sym.y);
+        c.rotate((sym.angle * Math.PI) / 180);
 
         if (sym.type === "symbol") {
-          ctx.font = `${sym.size}px "Times New Roman", serif`;
-          ctx.fillStyle = COLORS[i % COLORS.length].replace(/[\d.]+\)$/, `${alpha})`);
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          ctx.fillText(sym.symbol, 0, 0);
+          c.font = `${sym.size}px "Times New Roman", serif`;
+          c.fillStyle = COLORS[i % COLORS.length].replace(/[\d.]+\)$/, `${alpha})`);
+          c.textAlign = "center";
+          c.textBaseline = "middle";
+          c.fillText(sym.symbol, 0, 0);
         } else {
-          ctx.strokeStyle = COLORS[i % COLORS.length].replace(/[\d.]+\)$/, `${alpha})`);
-          ctx.lineWidth = 1.5;
-          ctx.beginPath();
+          c.strokeStyle = COLORS[i % COLORS.length].replace(/[\d.]+\)$/, `${alpha})`);
+          c.lineWidth = 1.5;
+          c.beginPath();
           const s = sym.size;
           if (sym.shapeType === "circle") {
-            ctx.arc(0, 0, s / 2, 0, Math.PI * 2);
+            c.arc(0, 0, s / 2, 0, Math.PI * 2);
           } else if (sym.shapeType === "triangle") {
-            ctx.moveTo(0, -s / 2);
-            ctx.lineTo(s / 2, s / 2);
-            ctx.lineTo(-s / 2, s / 2);
-            ctx.closePath();
+            c.moveTo(0, -s / 2);
+            c.lineTo(s / 2, s / 2);
+            c.lineTo(-s / 2, s / 2);
+            c.closePath();
           } else {
-            ctx.moveTo(0, -s / 2);
-            ctx.lineTo(s / 2, 0);
-            ctx.lineTo(0, s / 2);
-            ctx.lineTo(-s / 2, 0);
-            ctx.closePath();
+            c.moveTo(0, -s / 2);
+            c.lineTo(s / 2, 0);
+            c.lineTo(0, s / 2);
+            c.lineTo(-s / 2, 0);
+            c.closePath();
           }
-          ctx.stroke();
+          c.stroke();
         }
 
-        ctx.restore();
+        c.restore();
       });
 
       animFrameRef.current = requestAnimationFrame(draw);
