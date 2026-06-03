@@ -5,6 +5,7 @@ import Button from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import BackButton from "@/components/ui/BackButton";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useState } from "react";
 import toast from "react-hot-toast";
 
