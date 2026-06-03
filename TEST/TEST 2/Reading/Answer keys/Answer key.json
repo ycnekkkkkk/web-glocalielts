@@ -1,0 +1,63 @@
+{
+  "test_name": "Academic Reading Practice Paper 2",
+  "marking_notes": "Each question correctly answered scores 1 mark. Correct spelling is needed in all answers.",
+  "sections": [
+    {
+      "section_number": 1,
+      "answers": {
+        "1": "viii",
+        "2": "iii",
+        "3": "vii",
+        "4": "i",
+        "5": "vi",
+        "6": "ix",
+        "7": "ii",
+        "8": "cauliflower rosettes",
+        "9": "periodic unsettling",
+        "10": "milk sugars",
+        "11": "liquefied yoghurt",
+        "12_13": {
+          "options": ["C", "E"],
+          "rule": "in either order"
+        }
+      }
+    },
+    {
+      "section_number": 2,
+      "answers": {
+        "14": "vi",
+        "15": "ix",
+        "16": "v",
+        "17": "iv",
+        "18": "x",
+        "19": "ii",
+        "20": "vii",
+        "21": "iii",
+        "22": "energy",
+        "23": "subsistence needs",
+        "24": "rural, impoverished / rural/impoverished",
+        "25": "pesticide use",
+        "26": "protein deficiency (syndrome)/kwashiorkor"
+      }
+    },
+    {
+      "section_number": 3,
+      "answers": {
+        "27": "D",
+        "28": "E",
+        "29": "A",
+        "30": "C",
+        "31": "B",
+        "32": "E",
+        "33": "B",
+        "34": "F",
+        "35": "YES",
+        "36": "YES",
+        "37": "YES",
+        "38": "NO",
+        "39": "NOT GIVEN",
+        "40": "NO"
+      }
+    }
+  ]
+}

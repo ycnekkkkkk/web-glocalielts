@@ -6,18 +6,7 @@ import Button from "@/components/ui/Button";
 import CourseChat from "@/components/course/CourseChat";
 import { createBrowserClient } from "@/lib/supabase/client";
 import type { PublicCourse } from "@/types";
-import {
-  ArrowLeft,
-  BookOpen,
-  CheckCircle2,
-  Clock,
-  LogIn,
-  MessageCircleMore,
-  Phone,
-  ShoppingCart,
-  UserCircle2,
-  XCircle,
-} from "lucide-react";
+import BackButton from "@/components/ui/BackButton";
 import Image from "next/image";
 import Link from "next/link";
 import { use, useCallback, useEffect, useMemo, useState } from "react";
@@ -216,7 +205,7 @@ export default function StudentOnlineCourseDetailPage({ params }: { params: Prom
     // No request yet — show buy button
     return (
       <div className="mb-6 space-y-3">
-        <div className="rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50 to-indigo-50/80 p-5">
+        <div className="rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50 to-sky-50 p-5">
           <div className="space-y-4">
             <div>
               <p className="text-xs font-semibold text-brand-600 uppercase tracking-wide">Học phí</p>
@@ -271,13 +260,7 @@ export default function StudentOnlineCourseDetailPage({ params }: { params: Prom
   return (
     <PageWrapper>
       <div className="mb-4">
-        <Link 
-          href="/student/online-courses" 
-          className="group inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-gray-200/80 bg-white hover:bg-gray-50 text-xs font-semibold text-gray-600 hover:text-brand-700 shadow-sm hover:shadow transition-all duration-200"
-        >
-          <ArrowLeft className="w-3.5 h-3.5 text-gray-500 group-hover:text-brand-600 transition-transform group-hover:-translate-x-0.5" />
-          <span>Khám phá khóa học online</span>
-        </Link>
+        <BackButton href="/student/online-courses" label="Khám phá khóa học online" />
       </div>
 
       {loading ? (
@@ -291,7 +274,7 @@ export default function StudentOnlineCourseDetailPage({ params }: { params: Prom
           {/* Banner Hero Card */}
           {thumbnail && (
             <Card className="overflow-hidden p-0 border-brand-100/40 shadow-sm rounded-3xl">
-              <div className="relative w-full aspect-video sm:aspect-[21/7] bg-gradient-to-br from-brand-100 to-indigo-100 overflow-hidden">
+              <div className="relative w-full aspect-video sm:aspect-[21/7] bg-gradient-to-br from-brand-100 to-sky-100 overflow-hidden">
                 <Image
                   src={thumbnail}
                   alt={course.title}

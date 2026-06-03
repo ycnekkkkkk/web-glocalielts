@@ -1,0 +1,50 @@
+{
+  "test_type": "IELTS Speaking",
+  "parts": [
+    {
+      "part": "Part 1",
+      "topics": [
+        {
+          "topic": "Work or Study",
+          "questions": [
+            "Do you work or study?",
+            "How do you spend a day at work?"
+          ]
+        },
+        {
+          "topic": "Hometown or Village",
+          "questions": [
+            "What kind of place is it?",
+            "What’s the most interesting part of your town or village?"
+          ]
+        },
+        {
+          "topic": "Accommodation",
+          "questions": [
+            "Tell me about the kind of accommodation you live in.",
+            "How long have you lived there?"
+          ]
+        }
+      ]
+    },
+    {
+      "part": "Part 2",
+      "task": {
+        "title": "Describe your ambition",
+        "prompts": [
+          "What is your long-term ambition?",
+          "Why did you have that ambition?",
+          "Explain why you chose that ambition."
+        ]
+      }
+    },
+    {
+      "part": "Part 3",
+      "questions": [
+        "What is the most common ambition of young people?",
+        "Should teamwork include ambitious people? Why?",
+        "Why should young people have ambition?"
+      ]
+    }
+  ]
+}

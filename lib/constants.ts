@@ -11,7 +11,6 @@ export type SessionStatus = keyof typeof SESSION_STATUS;
 
 export const ATTENDANCE_STATUS = {
   ON_TIME: "on_time",
-  LATE: "late",
   ABSENT: "absent",
 } as const;
 export type AttendanceStatus = (typeof ATTENDANCE_STATUS)[keyof typeof ATTENDANCE_STATUS];

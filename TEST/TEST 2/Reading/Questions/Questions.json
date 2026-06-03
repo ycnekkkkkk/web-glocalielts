@@ -1,0 +1,134 @@
+{
+  "reading_test": {
+    "passage_1": {
+      "title": "The Magic of Kefir",
+      "questions": [
+        {
+          "type": "matching_headings",
+          "instructions": "Choose the correct heading for each paragraph from the list of headings below.",
+          "paragraphs": ["A", "B", "C", "D", "E", "F", "G"],
+          "headings_list": [
+            "i. A unique sensory experience",
+            "ii. Getting back to basics",
+            "iii. The gift that keeps on giving",
+            "iv. Variations in alcohol content",
+            "v. Old methods of transportation",
+            "vi. Culinary applications",
+            "vii. Making kefir",
+            "viii. A fortunate accident",
+            "ix. Kefir gets an image makeover",
+            "x. Ways to improve taste"
+          ]
+        },
+        {
+          "type": "short_answer",
+          "instructions": "Answer the questions below using NO MORE THAN TWO WORDS from the passage.",
+          "items": [
+            {"id": 8, "question": "What do kefir grains look like?"},
+            {"id": 9, "question": "What needs to happen to kefir while it is ripening?"},
+            {"id": 10, "question": "What will the yeast cultures have consumed before kefir is ready to drink?"},
+            {"id": 11, "question": "The texture of kefir in the mouth is similar to what?"}
+          ]
+        },
+        {
+          "type": "multiple_choice_selection",
+          "instructions": "Choose TWO letters, A-E. Which TWO products are NOT mentioned as things which kefir can replace?",
+          "options": {
+            "A": "Ordinary cow's milk",
+            "B": "Buttermilk",
+            "C": "Sour cream",
+            "D": "Starter yeast",
+            "E": "Yoghurt"
+          }
+        }
+      ]
+    },
+    "passage_2": {
+      "title": "Edible Insects",
+      "questions": [
+        {
+          "type": "matching_headings",
+          "instructions": "Choose the correct heading for paragraphs A-H from the list of headings below.",
+          "headings_list": [
+            "i. A historical delicacy",
+            "ii. The poor may benefit",
+            "iii. Presentation is key to changing attitudes",
+            "iv. Environmentally friendly production",
+            "v. Tradition meets technology",
+            "vi. A cultural pioneer",
+            "vii. Western practices harm locals",
+            "viii. Good source of nutrients",
+            "ix. Growing popularity",
+            "x. A healthy choice",
+            "xi. A safety risk"
+          ]
+        },
+        {
+          "type": "note_completion",
+          "instructions": "Complete the notes below. Choose NO MORE THAN THREE WORDS from the passage.",
+          "sections": [
+            {
+              "researcher": "Van Huis",
+              "notes": [
+                "Insects are cleaner & do not release as many harmful gases",
+                "Insects use food intake economically in the production of protein as they waste less 22............"
+              ]
+            },
+            {
+              "researcher": "Durst",
+              "notes": [
+                "Traditional knowledge could be combined with modern methods for mass production instead of just covering 23............",
+                "This could help 24............ people gain access to world markets."
+              ]
+            },
+            {
+              "researcher": "Dunkel",
+              "notes": [
+                "Due to increased 25............, more children in Mali are suffering from 26............"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "passage_3": {
+      "title": "Love Stories",
+      "questions": [
+        {
+          "type": "matching_terms",
+          "instructions": "Match each statement with the correct term (Love Styles), A-F.",
+          "styles": {
+            "A": "Eros",
+            "B": "Mania",
+            "C": "Storge",
+            "D": "Agape",
+            "E": "Ludus",
+            "F": "Pragma"
+          },
+          "items": [
+            {"id": 27, "statement": "My most important concern is that my partner is happy."},
+            {"id": 28, "statement": "I enjoy having many romantic partners."},
+            {"id": 29, "statement": "I feel that my partner and I were always going to end up together."},
+            {"id": 30, "statement": "I want to be friends first and then let romance develop later."},
+            {"id": 31, "statement": "I always feel either very excited or absolutely miserable about my relationship."},
+            {"id": 32, "statement": "I prefer to keep many aspects of my love life to myself."},
+            {"id": 33, "statement": "When I am in love, that is all I can think about."},
+            {"id": 34, "statement": "I know before I meet someone what qualities I need in a partner."}
+          ]
+        },
+        {
+          "type": "yes_no_not_given",
+          "instructions": "Do the following statements agree with the claims of the writer?",
+          "items": [
+            {"id": 35, "statement": "People's notions of love affect their relationships, rather than vice versa."},
+            {"id": 36, "statement": "Some of our love stories are more important to us than others."},
+            {"id": 37, "statement": "Our love stories can change to meet the needs of particular social environments."},
+            {"id": 38, "statement": "We look for romantic partners with a love story just like our own."},
+            {"id": 39, "statement": "The most successful partners have matching love stories."},
+            {"id": 40, "statement": "No love story is more suited to a long relationship than any other."}
+          ]
+        }
+      ]
+    }
+  }
+}

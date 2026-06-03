@@ -19,12 +19,12 @@ const DAY_HEADERS = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
 
 const CLASS_COLORS = [
   "bg-sky-100 text-sky-800 border-sky-200",
-  "bg-violet-100 text-violet-800 border-violet-200",
+  "bg-sky-100 text-sky-800 border-sky-200",
   "bg-emerald-100 text-emerald-800 border-emerald-200",
   "bg-rose-100 text-rose-800 border-rose-200",
   "bg-amber-100 text-amber-800 border-amber-200",
   "bg-cyan-100 text-cyan-800 border-cyan-200",
-  "bg-indigo-100 text-indigo-800 border-indigo-200",
+  "bg-sky-100 text-sky-800 border-sky-200",
   "bg-pink-100 text-pink-800 border-pink-200",
 ];
 
@@ -357,13 +357,14 @@ export default function StudentSchedulePage() {
                           const className = classNameMap[classId] || s.class_name || classId;
                           const colorClass = classColorMap[className] || CLASS_COLORS[0];
                           const isDone = s.status === SESSION_STATUS.DONE;
+                          const isCancelled = s.status === "CANCELLED";
                           return (
                             <div key={s.id}
                               title={`${className} – Buổi #${s.session_no}${s.session_time ? " " + s.session_time : ""}`}
                               className={[
                                 "text-[10px] font-medium px-1.5 py-0.5 rounded-md border truncate",
                                 isDone ? "opacity-60 line-through" : "",
-                                colorClass,
+                                isCancelled ? "opacity-50 line-through bg-red-100/70 text-red-800 border-red-200" : colorClass,
                               ].join(" ")}
                             >
                               {s.session_time ? `${s.session_time} ` : ""}
@@ -446,10 +447,23 @@ export default function StudentSchedulePage() {
                                   <Badge variant="warning" className="text-[10px]">Buổi bù</Badge>
                                 ) : isDone ? (
                                   <Badge variant="success" className="text-[10px]">✓ Xong</Badge>
+                                ) : s.status === "CANCELLED" ? (
+                                  <Badge variant="danger" className="text-[10px]">Đã hủy</Badge>
                                 ) : (
                                   <Badge variant="info" className="text-[10px]">Sắp tới</Badge>
                                 )}
                               </div>
+                              {!isMakeup && (s as Session).makeup_original_date && (
+                                <p className="text-[10px] text-amber-600 font-bold bg-amber-50 px-2 py-0.5 rounded border border-amber-200 inline-block">
+                                  Học bù từ {(s as Session).makeup_original_date}
+                                </p>
+                              )}
+                              {!isMakeup && (s as Session).makeup_note && (
+                                <p className="text-[10px] text-amber-600 font-medium">Ghi chú: {(s as Session).makeup_note}</p>
+                              )}
+                              {!isMakeup && s.status === "CANCELLED" && (s as Session).cancelled_note && (
+                                <p className="text-[10px] text-red-600 font-medium">Lý do hủy: {(s as Session).cancelled_note}</p>
+                              )}
                               {s.topic && (
                                 <p className="text-xs text-gray-600 line-clamp-2">{s.topic}</p>
                               )}

@@ -873,7 +873,7 @@ export default function AdminOnlineCoursesPage() {
                     </div>
                   ) : null}
 
-                  <div className="p-3 rounded-xl bg-linear-to-br from-brand-50 to-indigo-50/80 border border-brand-100 flex items-center justify-between gap-2">
+                  <div className="p-3 rounded-xl bg-linear-to-br from-brand-50 to-sky-50 border border-brand-100 flex items-center justify-between gap-2">
                     <div>
                       <p className="text-[10px] text-gray-600">Đối tượng: {previewCourse.objective_text || "—"}</p>
                       <p className="text-[10px] text-gray-600">Thời lượng: {previewCourse.duration_text || "—"}</p>

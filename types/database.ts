@@ -120,6 +120,16 @@ export interface Session {
   teacher_id: string | null;        // FK → auth.users (replaces teacher_name)
   zoom_link: string | null;
   created_at: string;
+  /** Học bù: ngày gốc trước khi chuyển (dd/MM/yyyy). Nếu set → đây là buổi học bù */
+  makeup_original_date?: string | null;
+  /** Học bù: ghi chú hiển thị, e.g. "Học bù từ ngày 12/05/2026 → 14/05/2026" */
+  makeup_note?: string | null;
+  /** Hủy buổi: ghi chú lý do hủy */
+  cancelled_note?: string | null;
+  /** Hủy buổi: người hủy */
+  cancelled_by?: string | null;
+  /** Hủy buổi: thời điểm hủy */
+  cancelled_at?: string | null;
 }
 
 export interface SessionAttendance {
@@ -131,7 +141,7 @@ export interface SessionAttendance {
   session_no: number | null;
   session_date: string | null;
   student_name: string;
-  attendance_status: "on_time" | "late" | "absent";
+  attendance_status: "on_time" | "absent";
   note: string | null;
   created_at: string;
   updated_at: string;

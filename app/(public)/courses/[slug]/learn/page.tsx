@@ -5,8 +5,8 @@ import { Card } from "@/components/ui/Card";
 import PublicPageShell from "@/components/layout/PublicPageShell";
 import { createBrowserClient } from "@/lib/supabase/client";
 import type { PublicCourse, PublicCourseLesson } from "@/types";
-import { ArrowLeft, PlayCircle } from "lucide-react";
-import Link from "next/link";
+import BackButton from "@/components/ui/BackButton";
+import { PlayCircle } from "lucide-react";
 import { use, useEffect, useMemo, useState } from "react";
 
 type CourseTopic = {
@@ -105,11 +105,7 @@ export default function PublicCourseLearnPage({ params }: { params: Promise<{ sl
     <PublicPageShell>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 w-full">
         <div className="mb-4">
-          <Link href={`/courses/${slug}`}>
-            <Button variant="ghost" size="sm" icon={<ArrowLeft className="w-4 h-4" />} className="text-gray-600 hover:text-brand-700">
-              Quay lại chi tiết khóa học
-            </Button>
-          </Link>
+        <BackButton href={`/courses/${slug}`} label="Quay lại chi tiết khóa học" variant="button" className="text-gray-600 hover:text-brand-700" />
         </div>
 
         {loading ? (

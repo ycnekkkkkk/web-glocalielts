@@ -1,6 +1,8 @@
 "use client";
 import Header from "@/components/layouts/Header";
-import Sidebar from "@/components/layouts/Sidebar";
+import { SidebarInner } from "@/components/layouts/Sidebar";
+import { SidebarProvider } from "@/components/layouts/SidebarContext";
+import { PageTitleProvider } from "@/components/layouts/PageTitleContext";
 import Avatar from "@/components/ui/Avatar";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -8,9 +10,8 @@ import Modal from "@/components/ui/Modal";
 import { useRoleGuard } from "@/hooks/useRoleGuard";
 import { createBrowserClient } from "@/lib/supabase/client";
 import {
-  Award, BookOpen, Calendar, GraduationCap, Headphones, Home, LayoutDashboard, Search, Settings
+  Award, BookOpen, Calendar, GraduationCap, Headphones, Home, Search, Settings
 } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import type { NavGroup } from "@/types";
@@ -176,115 +177,119 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
   </div>;
 
   const footerContent = user && (
-    <div className="flex items-center gap-3 px-2 py-1">
+    <div className="flex items-center gap-2 px-1 py-1">
       <Avatar name={user.name} size="sm" />
       <div className="flex-1 min-w-0">
-        <p className="text-xs font-semibold text-white truncate">{user.name}</p>
-        <p className="text-[11px] text-slate-400">Học viên</p>
+        <p className="text-[12px] font-semibold text-[#1F2937] truncate">{user.name}</p>
+        <p className="text-[11px] text-[#9CA3AF]">Học viên</p>
       </div>
     </div>
   );
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <Sidebar groups={navGroups} theme="sky" footerContent={footerContent} />
-      <div className="flex-1 flex flex-col min-w-0">
-        <Header user={user} />
-        {children}
-      </div>
-      <Modal
-        open={showProfileModal}
-        onClose={() => {}}
-        title="Cập nhật thông tin cá nhân"
-        size="md"
-      >
-        <div className="space-y-4">
-          <p className="text-sm text-gray-600">
-            Vui lòng hoàn tất thông tin để tiếp tục sử dụng khu vực học viên.
-          </p>
-          <Input
-            label="Họ và tên"
-            value={profileForm.full_name}
-            onChange={(e) => setProfileForm((p) => ({ ...p, full_name: e.target.value }))}
-            disabled={!requireLocalPassword}
-          />
-          <Input label="Email" value={profileForm.email} disabled />
-          <Input
-            label="Ngày tháng năm sinh *"
-            type="date"
-            value={profileForm.date_of_birth}
-            onChange={(e) => setProfileForm((p) => ({ ...p, date_of_birth: e.target.value }))}
-            required
-          />
-          <Input
-            label="Số điện thoại *"
-            type="tel"
-            value={profileForm.phone}
-            onChange={(e) => setProfileForm((p) => ({ ...p, phone: e.target.value }))}
-            placeholder="09xxxxxxxx"
-            required
-          />
-          <Input
-            label="Nơi ở hiện tại *"
-            value={profileForm.current_address}
-            onChange={(e) => setProfileForm((p) => ({ ...p, current_address: e.target.value }))}
-            placeholder="Thành phố / Quận / Huyện"
-            required
-          />
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Hiện tại đang là *</label>
-            <select
-              className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-sky-500"
-              value={profileForm.current_status}
-              onChange={(e) => setProfileForm((p) => ({ ...p, current_status: e.target.value }))}
-              required
-            >
-              <option value="">-- Chọn trạng thái --</option>
-              <option value="Học sinh">Học sinh</option>
-              <option value="Sinh viên">Sinh viên</option>
-              <option value="Người đi làm">Người đi làm</option>
-              <option value="Khác">Khác</option>
-            </select>
+    <SidebarProvider>
+      <PageTitleProvider>
+        <div className="flex min-h-screen bg-gray-50">
+          <SidebarInner groups={navGroups} theme="purple" footerContent={footerContent} />
+          <div className="flex-1 flex flex-col min-w-0">
+            <Header user={user} />
+            {children}
           </div>
-          {requireLocalPassword && (
-            <>
-              <Input
-                label="Mật khẩu đăng nhập *"
-                type="password"
-                value={profileForm.password}
-                onChange={(e) => setProfileForm((p) => ({ ...p, password: e.target.value }))}
-                placeholder="Tối thiểu 6 ký tự"
-                required
-              />
-              <Input
-                label="Xác nhận mật khẩu *"
-                type="password"
-                value={profileForm.confirmPassword}
-                onChange={(e) => setProfileForm((p) => ({ ...p, confirmPassword: e.target.value }))}
-                placeholder="Nhập lại mật khẩu"
-                required
-              />
-            </>
-          )}
-          <Button
-            className="w-full"
-            loading={savingProfile}
-            onClick={handleSaveProfile}
-            disabled={
-              !profileForm.phone.trim() ||
-              !profileForm.date_of_birth ||
-              !profileForm.current_address.trim() ||
-              !profileForm.current_status ||
-              (requireLocalPassword &&
-                (!profileForm.password ||
-                  profileForm.password.length < 6 ||
-                  profileForm.password !== profileForm.confirmPassword))
-            }
-          >
-            {requireLocalPassword ? "Lưu thông tin & tạo mật khẩu" : "Lưu thông tin"}
-          </Button>
         </div>
-      </Modal>
-    </div>
+        <Modal
+          open={showProfileModal}
+          onClose={() => {}}
+          title="Cập nhật thông tin cá nhân"
+          size="md"
+        >
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600">
+              Vui lòng hoàn tất thông tin để tiếp tục sử dụng khu vực học viên.
+            </p>
+            <Input
+              label="Họ và tên"
+              value={profileForm.full_name}
+              onChange={(e) => setProfileForm((p) => ({ ...p, full_name: e.target.value }))}
+              disabled={!requireLocalPassword}
+            />
+            <Input label="Email" value={profileForm.email} disabled />
+            <Input
+              label="Ngày tháng năm sinh *"
+              type="date"
+              value={profileForm.date_of_birth}
+              onChange={(e) => setProfileForm((p) => ({ ...p, date_of_birth: e.target.value }))}
+              required
+            />
+            <Input
+              label="Số điện thoại *"
+              type="tel"
+              value={profileForm.phone}
+              onChange={(e) => setProfileForm((p) => ({ ...p, phone: e.target.value }))}
+              placeholder="09xxxxxxxx"
+              required
+            />
+            <Input
+              label="Nơi ở hiện tại *"
+              value={profileForm.current_address}
+              onChange={(e) => setProfileForm((p) => ({ ...p, current_address: e.target.value }))}
+              placeholder="Thành phố / Quận / Huyện"
+              required
+            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Hiện tại đang là *</label>
+              <select
+                className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                value={profileForm.current_status}
+                onChange={(e) => setProfileForm((p) => ({ ...p, current_status: e.target.value }))}
+                required
+              >
+                <option value="">-- Chọn trạng thái --</option>
+                <option value="Học sinh">Học sinh</option>
+                <option value="Sinh viên">Sinh viên</option>
+                <option value="Người đi làm">Người đi làm</option>
+                <option value="Khác">Khác</option>
+              </select>
+            </div>
+            {requireLocalPassword && (
+              <>
+                <Input
+                  label="Mật khẩu đăng nhập *"
+                  type="password"
+                  value={profileForm.password}
+                  onChange={(e) => setProfileForm((p) => ({ ...p, password: e.target.value }))}
+                  placeholder="Tối thiểu 6 ký tự"
+                  required
+                />
+                <Input
+                  label="Xác nhận mật khẩu *"
+                  type="password"
+                  value={profileForm.confirmPassword}
+                  onChange={(e) => setProfileForm((p) => ({ ...p, confirmPassword: e.target.value }))}
+                  placeholder="Nhập lại mật khẩu"
+                  required
+                />
+              </>
+            )}
+            <Button
+              className="w-full"
+              loading={savingProfile}
+              onClick={handleSaveProfile}
+              disabled={
+                !profileForm.phone.trim() ||
+                !profileForm.date_of_birth ||
+                !profileForm.current_address.trim() ||
+                !profileForm.current_status ||
+                (requireLocalPassword &&
+                  (!profileForm.password ||
+                    profileForm.password.length < 6 ||
+                    profileForm.password !== profileForm.confirmPassword))
+              }
+            >
+              {requireLocalPassword ? "Lưu thông tin & tạo mật khẩu" : "Lưu thông tin"}
+            </Button>
+          </div>
+        </Modal>
+      </PageTitleProvider>
+    </SidebarProvider>
   );
 }

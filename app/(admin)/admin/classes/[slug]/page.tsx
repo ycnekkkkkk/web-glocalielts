@@ -7,8 +7,8 @@ import { SkeletonPage } from "@/components/ui/Skeleton";
 import { createBrowserClient } from "@/lib/supabase/client";
 import { SESSION_STATUS, ATTENDANCE_STATUS } from "@/lib/constants";
 import { buildSessionRef } from "@/lib/sessionRefUtils";
-import { AlertTriangle, ArrowLeft, ArrowRightLeft, BookOpen, Calendar, CheckSquare, DollarSign, ExternalLink, History, MessageSquare, Plus, Search, Star, Trash2, Users, Video, WrapText } from "lucide-react";
-import Link from "next/link";
+import BackButton from "@/components/ui/BackButton";
+import { AlertTriangle, ArrowRightLeft, BookOpen, Calendar, CheckSquare, DollarSign, ExternalLink, History, MessageSquare, Plus, Search, Star, Trash2, Users, Video, WrapText } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import { use, useCallback, useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
@@ -59,7 +59,7 @@ function StarDisplay({ value }: { value: number | null }) {
   if (!value) return <span className="text-gray-400 text-xs">–</span>;
   return (
     <span className="flex items-center gap-0.5">
-      {[1,2,3,4,5].map(n => (
+      {[1, 2, 3, 4, 5].map(n => (
         <Star key={n} className={`w-3.5 h-3.5 ${n <= value ? "text-amber-400 fill-current" : "text-gray-200"}`} />
       ))}
       <span className="text-xs font-semibold text-amber-600 ml-1">{value}</span>
@@ -67,9 +67,9 @@ function StarDisplay({ value }: { value: number | null }) {
   );
 }
 
-export default function ClassDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
-  const className = decodeURIComponent(id);
+export default function ClassDetailPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = use(params);
+  const className = decodeURIComponent(slug);
 
   const [classRows, setClassRows] = useState<ClassCurrent[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -99,6 +99,11 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
   const [rescheduleConflicts, setRescheduleConflicts] = useState<ConflictRow[]>([]);
   const [savingReschedule, setSavingReschedule] = useState(false);
   const rescheduleConflictTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cancel session confirm modal
+  const [cancelSession, setCancelSession] = useState<Session | null>(null);
+  const [cancelNote, setCancelNote] = useState("");
+  const [savingCancel, setSavingCancel] = useState(false);
 
   // Tabs
   const [tab, setTab] = useState<TabId>("attendance");
@@ -172,11 +177,11 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
       // Step 1: Load sessions bằng class_name (luôn works — sessions đã tồn tại)
       const sessRes = await supabase
         .from("sessions")
-        .select("id, class_id, class_name, session_no, session_date, session_time, topic, status, zoom_link")
+        .select("id, class_id, class_name, session_no, session_date, session_time, topic, status, zoom_link, makeup_original_date, makeup_note, cancelled_note, cancelled_by, cancelled_at")
         .eq("class_name", className)
         .order("session_no");
       console.log("[ClassDetail] sessions by class_name:", JSON.stringify(className), "| count:", sessRes.data?.length, "| error:", sessRes.error?.message);
-      
+
       // Remove duplicates by id (keep the first occurrence)
       // Also detect duplicates by class_name+session_no+session_date to warn admin
       const idSeen = new Set<string | number>();
@@ -198,7 +203,7 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
         acc.push(session);
         return acc;
       }, [] as typeof sessRes.data) || [];
-      
+
       // Warn if duplicates were removed
       if (uniqueSessions.length < (sessRes.data?.length || 0)) {
         const dupCount = (sessRes.data?.length || 0) - uniqueSessions.length;
@@ -208,7 +213,7 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
         if (!a.session_date && !b.session_date) return 0;
         if (!a.session_date) return 1;
         if (!b.session_date) return -1;
-        
+
         const parseDateStr = (dateStr: string) => {
           const parts = dateStr.split("/");
           if (parts.length !== 3) return new Date(0);
@@ -216,7 +221,7 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
         };
         return parseDateStr(a.session_date).getTime() - parseDateStr(b.session_date).getTime();
       });
-      
+
       // Update session_no sequentially based on date order to avoid skipping
       uniqueSessions.forEach((s, i) => {
         s.session_no = i + 1;
@@ -433,7 +438,7 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
 
     setAddingId(studentToConfigure.id);
     const supabase = createBrowserClient();
-    
+
     // 1. Insert into enrollments
     const { data: enrollment, error } = await supabase
       .from("enrollments")
@@ -518,9 +523,9 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
       try {
         const supabase = createBrowserClient();
         const { data } = await supabase.rpc("check_teacher_conflict", {
-          p_teacher_id:         teacherId,
-          p_session_date:       fromInputDate(date),
-          p_session_time:       time,
+          p_teacher_id: teacherId,
+          p_session_date: fromInputDate(date),
+          p_session_time: time,
           p_exclude_session_id: session.id ?? null,
         });
         setRescheduleConflicts((data as ConflictRow[]) || []);
@@ -532,22 +537,168 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
     if (!rescheduleSession || !rescheduleDate) return;
     setSavingReschedule(true);
     try {
+      const supabase = createBrowserClient();
+      const originalDate = rescheduleSession.session_date || "";
       const newDate = fromInputDate(rescheduleDate);
       const newTime = rescheduleTime || rescheduleSession.session_time;
-      const { error } = await createBrowserClient()
-        .from("sessions")
-        .update({
-          session_date: newDate,
-          session_time: newTime || null,
-          ...(rescheduleNote.trim() ? { topic: rescheduleNote.trim() } : {}),
+      const makeupNote = `Học bù từ ngày ${originalDate} → ${newDate}`;
+
+      // ── CHAIN SHIFTING LOGIC ──
+      const HOLIDAYS = ["01/01", "30/04", "01/05", "02/09"];
+      const isHolidayLocal = (date: Date): boolean => {
+        const d = String(date.getDate()).padStart(2, "0");
+        const m = String(date.getMonth() + 1).padStart(2, "0");
+        return HOLIDAYS.includes(`${d}/${m}`);
+      };
+
+      const parseSessionDateLocal = (dateStr: string): Date | null => {
+        if (!dateStr) return null;
+        const parts = dateStr.split("/");
+        if (parts.length !== 3) return null;
+        const d = parseInt(parts[0], 10);
+        const m = parseInt(parts[1], 10) - 1;
+        const y = parseInt(parts[2], 10);
+        if (isNaN(d) || isNaN(m) || isNaN(y)) return null;
+        return new Date(y, m, d);
+      };
+
+      const formatDateFullLocal = (date: Date): string => {
+        const dd = String(date.getDate()).padStart(2, "0");
+        const mm = String(date.getMonth() + 1).padStart(2, "0");
+        return `${dd}/${mm}/${date.getFullYear()}`;
+      };
+
+      const getNextScheduleDateLocal = (afterDateStr: string, recurringDays: number[]): string => {
+        const start = parseSessionDateLocal(afterDateStr);
+        if (!start) return afterDateStr;
+        const current = new Date(start);
+        for (let i = 0; i < 365; i++) {
+          current.setDate(current.getDate() + 1);
+          if (recurringDays.includes(current.getDay()) && !isHolidayLocal(current)) {
+            return formatDateFullLocal(current);
+          }
+        }
+        const fallback = new Date(start);
+        fallback.setDate(fallback.getDate() + 7);
+        return formatDateFullLocal(fallback);
+      };
+
+      const classSessions = sessions
+        .filter(s => s.class_id === rescheduleSession.class_id || s.class_name === rescheduleSession.class_name)
+        .map(s => s.id === rescheduleSession.id ? { ...s, status: SESSION_STATUS.UPCOMING } : s)
+        .sort((a, b) => (a.session_no || 0) - (b.session_no || 0));
+
+      const daysSet = new Set<number>();
+      classSessions.forEach(s => {
+        if (s.status !== SESSION_STATUS.CANCELLED && s.session_date) {
+          const d = parseSessionDateLocal(s.session_date);
+          if (d) daysSet.add(d.getDay());
+        }
+      });
+      const recurringDays = daysSet.size > 0
+        ? Array.from(daysSet).sort((a, b) => a - b)
+        : [1, 3, 5];
+
+      const currentDates = new Map<any, string>();
+      classSessions.forEach(s => {
+        if (s.session_date) currentDates.set(s.id, s.session_date);
+      });
+
+      currentDates.set(rescheduleSession.id, newDate);
+
+      let hasCollision = true;
+      let safetyCounter = 0;
+      while (hasCollision && safetyCounter < 100) {
+        safetyCounter++;
+        hasCollision = false;
+        for (let i = 0; i < classSessions.length; i++) {
+          const s1 = classSessions[i];
+          if (s1.status === SESSION_STATUS.CANCELLED) continue;
+          const date1 = currentDates.get(s1.id);
+          if (!date1) continue;
+
+          const colliding = classSessions.find(s2 =>
+            s2.id !== s1.id &&
+            s2.status !== SESSION_STATUS.CANCELLED &&
+            currentDates.get(s2.id) === date1
+          );
+
+          if (colliding) {
+            let toShift = colliding;
+            if (s1.status === SESSION_STATUS.DONE) {
+              toShift = colliding;
+            } else if (colliding.status === SESSION_STATUS.DONE) {
+              toShift = s1;
+            } else if (s1.id === rescheduleSession.id) {
+              toShift = colliding;
+            } else if (colliding.id === rescheduleSession.id) {
+              toShift = s1;
+            } else {
+              toShift = (s1.session_no || 0) > (colliding.session_no || 0) ? s1 : colliding;
+            }
+
+            const idx = classSessions.findIndex(s => s.id === toShift.id);
+            let nextDateVal: string;
+            if (idx + 1 < classSessions.length) {
+              const nextSession = classSessions[idx + 1];
+              nextDateVal = nextSession.session_date || "";
+            } else {
+              const currentVal = currentDates.get(toShift.id) || "";
+              nextDateVal = getNextScheduleDateLocal(currentVal, recurringDays);
+            }
+            currentDates.set(toShift.id, nextDateVal);
+            hasCollision = true;
+            break;
+          }
+        }
+      }
+
+      // Update all changed sessions in parallel
+      const changedSessions = classSessions.filter(s => currentDates.get(s.id) !== s.session_date);
+      await Promise.all(
+        changedSessions.map(async (s) => {
+          const newDateVal = currentDates.get(s.id)!;
+          if (s.id === rescheduleSession.id) {
+            const { error } = await supabase.from("sessions").update({
+              session_date: newDateVal,
+              session_time: newTime || null,
+              makeup_original_date: originalDate,
+              makeup_note: makeupNote,
+              status: SESSION_STATUS.UPCOMING,
+              ...(rescheduleNote.trim() ? { topic: rescheduleNote.trim() } : {}),
+            }).eq("id", s.id);
+            if (error) throw error;
+          } else {
+            const { error } = await supabase.from("sessions").update({
+              session_date: newDateVal,
+            }).eq("id", s.id);
+            if (error) throw error;
+          }
         })
-        .eq("id", rescheduleSession.id);
-      if (error) throw new Error(error.message);
-      setSessions(prev => prev.map(s =>
-        s.id === rescheduleSession.id
-          ? { ...s, session_date: newDate, session_time: newTime || s.session_time, topic: rescheduleNote.trim() || s.topic }
-          : s
-      ));
+      );
+
+      // Update react state
+      setSessions(prev => prev.map(s => {
+        const newDateVal = currentDates.get(s.id);
+        if (!newDateVal || newDateVal === s.session_date) return s;
+        if (s.id === rescheduleSession.id) {
+          return {
+            ...s,
+            session_date: newDateVal,
+            session_time: newTime || s.session_time,
+            topic: rescheduleNote.trim() || s.topic,
+            makeup_original_date: originalDate,
+            makeup_note: makeupNote,
+            status: SESSION_STATUS.UPCOMING
+          };
+        } else {
+          return {
+            ...s,
+            session_date: newDateVal
+          };
+        }
+      }));
+
       toast.success(`Đã đổi lịch buổi #${rescheduleSession.session_no} sang ${newDate}!`);
       setRescheduleSession(null);
     } catch (err) {
@@ -557,28 +708,56 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
     }
   }
 
+  function openCancel(s: Session) { setCancelSession(s); setCancelNote(""); }
+
+  async function handleConfirmCancel() {
+    if (!cancelSession) return;
+    setSavingCancel(true);
+    try {
+      const supabase = createBrowserClient();
+      const { error } = await supabase.from("sessions").update({
+        status: SESSION_STATUS.CANCELLED,
+        cancelled_note: cancelNote.trim() || "Admin hủy buổi",
+        cancelled_by: "admin",
+        cancelled_at: new Date().toISOString(),
+      }).eq("id", cancelSession.id);
+      if (error) throw new Error(error.message);
+      setSessions(prev => prev.map(s =>
+        s.id === cancelSession!.id
+          ? { ...s, status: SESSION_STATUS.CANCELLED, cancelled_note: cancelNote || "Admin hủy buổi" }
+          : s
+      ));
+      toast.success(`Đã hủy buổi #${cancelSession.session_no}`);
+      setCancelSession(null);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Có lỗi xảy ra");
+    } finally {
+      setSavingCancel(false);
+    }
+  }
+
   // ── Functions cho Tab Tài Chính & Trình Độ ──────────────────────
   async function openFinancialModal(student: EnrolledStudent) {
     setFinancialModal(student);
     setFinancialLoading(true);
-    setFinancialData({ 
-      level_in: student.level_in || '', 
-      level_out: student.level_out || '', 
-      invoiceId: null, 
-      amount: student.tuition_fee || 0, 
-      paid_total: student.paid_fee || 0, 
-      remaining: (student.tuition_fee || 0) - (student.paid_fee || 0) 
+    setFinancialData({
+      level_in: student.level_in || '',
+      level_out: student.level_out || '',
+      invoiceId: null,
+      amount: student.tuition_fee || 0,
+      paid_total: student.paid_fee || 0,
+      remaining: (student.tuition_fee || 0) - (student.paid_fee || 0)
     });
     try {
       const supabase = createBrowserClient();
-      
+
       // Load payment history
       const { data: payData } = await supabase
         .from("enrollment_payments")
         .select("*")
         .eq("enrollment_id", student.enrollment_id)
         .order("paid_at", { ascending: false });
-      
+
       // Auto-repair: If student has paid_fee > 0 but no history records, create the initial payment record
       const sumPayments = (payData || []).reduce((acc: number, p: any) => acc + Number(p.amount), 0);
       if ((student.paid_fee || 0) > 0 && sumPayments === 0) {
@@ -591,7 +770,7 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
           })
           .select()
           .single();
-        
+
         if (!repairErr && newPay) {
           setPaymentHistory([newPay]);
         } else {
@@ -640,12 +819,12 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
         })
         .select()
         .single();
-      
+
       if (error) throw error;
-      
+
       toast.success("Đã thêm đợt nộp phí!");
       setPaymentHistory(prev => [data, ...prev]);
-      
+
       // Update local financialData
       const newTotalPaid = financialData.paid_total + newPayment.amount;
       setFinancialData(prev => ({
@@ -655,9 +834,9 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
       }));
 
       // Update student list
-      setEnrolledStudents(prev => prev.map(s => 
-        s.enrollment_id === financialModal.enrollment_id 
-          ? { ...s, paid_fee: newTotalPaid } 
+      setEnrolledStudents(prev => prev.map(s =>
+        s.enrollment_id === financialModal.enrollment_id
+          ? { ...s, paid_fee: newTotalPaid }
           : s
       ));
 
@@ -681,7 +860,7 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
 
       const removed = paymentHistory.find(p => p.id === id);
       setPaymentHistory(prev => prev.filter(p => p.id !== id));
-      
+
       if (removed && financialModal) {
         const newTotalPaid = financialData.paid_total - removed.amount;
         setFinancialData(prev => ({
@@ -689,9 +868,9 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
           paid_total: newTotalPaid,
           remaining: prev.amount - newTotalPaid
         }));
-        setEnrolledStudents(prev => prev.map(s => 
-          s.enrollment_id === financialModal.enrollment_id 
-            ? { ...s, paid_fee: newTotalPaid } 
+        setEnrolledStudents(prev => prev.map(s =>
+          s.enrollment_id === financialModal.enrollment_id
+            ? { ...s, paid_fee: newTotalPaid }
             : s
         ));
       }
@@ -707,7 +886,7 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
     setFinancialSaving(true);
     try {
       const supabase = createBrowserClient();
-      
+
       // Update levels in enrollments table
       const { error: enrErr } = await supabase
         .from("enrollments")
@@ -718,7 +897,7 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
           paid_amount: financialData.paid_total
         })
         .eq("id", financialModal.enrollment_id);
-        
+
       if (enrErr) throw enrErr;
 
       // If there's an invoice, update its amount (total tuition fee)
@@ -745,20 +924,20 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
       }
 
       toast.success("Cập nhật thành công!");
-      
+
       // Update local state for EnrolledStudent
-      setEnrolledStudents(prev => prev.map(s => 
-        s.enrollment_id === financialModal.enrollment_id 
-          ? { 
-              ...s, 
-              level_in: financialData.level_in || null, 
-              level_out: financialData.level_out || null,
-              tuition_fee: financialData.amount,
-              paid_fee: financialData.paid_total
-            } 
+      setEnrolledStudents(prev => prev.map(s =>
+        s.enrollment_id === financialModal.enrollment_id
+          ? {
+            ...s,
+            level_in: financialData.level_in || null,
+            level_out: financialData.level_out || null,
+            tuition_fee: financialData.amount,
+            paid_fee: financialData.paid_total
+          }
           : s
       ));
-      
+
       setFinancialModal(null);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Có lỗi xảy ra");
@@ -1121,7 +1300,7 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
     setActiveSession(session);
   }
 
-  async function updateAttendance(session: Session, studentName: string, status: string) {
+  async function updateAttendance(session: Session, studentName: string, status: "on_time" | "absent") {
     const ref = buildSessionRef(session.class_name, session.session_no!, session.session_date!);
     const supabase = createBrowserClient();
     const { error } = await supabase.from("session_attendance").upsert({
@@ -1132,7 +1311,7 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
     setAttendance(prev => ({
       ...prev,
       [ref]: (prev[ref] || []).map(a =>
-        a.student_name === studentName ? { ...a, attendance_status: status as "on_time" | "late" | "absent" } : a
+        a.student_name === studentName ? { ...a, attendance_status: status } : a
       ),
     }));
     toast.success("Đã cập nhật điểm danh");
@@ -1155,11 +1334,11 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
   const displayStudentCount = enrolledStudents.length > 0 ? enrolledStudents.length : legacyStudents.length;
 
   const tabItems: { id: TabId; label: string; icon: React.ReactNode }[] = [
-    { id: "attendance", label: "Điểm Danh",    icon: <CheckSquare className="w-4 h-4" /> },
-    { id: "students",   label: "Học Viên",     icon: <Users className="w-4 h-4" /> },
-    { id: "evaluation", label: "Đánh Giá",     icon: <Star className="w-4 h-4" /> },
-    { id: "makeup",     label: "Học Bù",       icon: <WrapText className="w-4 h-4" /> },
-    { id: "manager",    label: "Quản Lý HV",   icon: <BookOpen className="w-4 h-4" /> },
+    { id: "attendance", label: "Điểm Danh", icon: <CheckSquare className="w-4 h-4" /> },
+    { id: "students", label: "Học Viên", icon: <Users className="w-4 h-4" /> },
+    { id: "evaluation", label: "Đánh Giá", icon: <Star className="w-4 h-4" /> },
+    { id: "makeup", label: "Học Bù", icon: <WrapText className="w-4 h-4" /> },
+    { id: "manager", label: "Quản Lý HV", icon: <BookOpen className="w-4 h-4" /> },
   ];
 
   // Derived stats for evaluation
@@ -1172,8 +1351,8 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
     ? (teacherEvals.reduce((s, e) => s + (e.rating ?? 0), 0) / teacherEvals.length).toFixed(1)
     : null;
 
-  const makeupDone  = makeupRows.filter(r => r.has_makeup).length;
-  const makeupTodo  = makeupRows.filter(r => !r.has_makeup).length;
+  const makeupDone = makeupRows.filter(r => r.has_makeup).length;
+  const makeupTodo = makeupRows.filter(r => !r.has_makeup).length;
 
   // Tính lương giáo viên
   let hoursPerSession = 1.5; // mặc định 1.5 giờ
@@ -1190,9 +1369,7 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
   return (
     <PageWrapper>
       <div className="mb-4">
-        <Link href="/admin/classes">
-          <Button variant="ghost" size="sm" icon={<ArrowLeft className="w-4 h-4" />}>Danh sách lớp</Button>
-        </Link>
+        <BackButton href="/admin/classes" label="Danh sách lớp" variant="button" />
       </div>
 
       <div className="page-header">
@@ -1259,6 +1436,12 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900">{s.topic || "Buổi học"}</p>
                       <p className="text-xs text-gray-500">{s.session_date} · {s.session_time}</p>
+                      {s.makeup_original_date && s.makeup_note && (
+                        <p className="text-[10px] text-orange-600 font-semibold leading-tight mt-0.5">{s.makeup_note}</p>
+                      )}
+                      {s.status === SESSION_STATUS.CANCELLED && s.cancelled_note && (
+                        <p className="text-[10px] text-red-500 leading-tight mt-0.5">Lý do: {s.cancelled_note}</p>
+                      )}
                       {s.zoom_link && (
                         <a href={s.zoom_link} target="_blank" rel="noopener noreferrer"
                           className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium mt-0.5"
@@ -1270,15 +1453,18 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                         </a>
                       )}
                     </div>
-                    {s.status === SESSION_STATUS.DONE ? <Badge variant="success">✓</Badge>
-                      : s.status === SESSION_STATUS.CANCELLED ? <Badge variant="danger">Hủy</Badge>
-                        : <Badge variant="info">Sắp tới</Badge>}
+                    <div className="flex flex-col items-end gap-1">
+                      {s.status === SESSION_STATUS.DONE ? <Badge variant="success">✓</Badge>
+                        : s.status === SESSION_STATUS.CANCELLED ? <Badge variant="danger">Hủy</Badge>
+                          : s.makeup_original_date ? <Badge variant="warning">🔄 Học bù</Badge>
+                            : <Badge variant="info">Sắp tới</Badge>}
+                    </div>
                   </div>
-                    {s.status !== SESSION_STATUS.DONE && s.status !== SESSION_STATUS.CANCELLED && (
+                  {s.status !== SESSION_STATUS.DONE && s.status !== SESSION_STATUS.CANCELLED && (
                     <>
                       <button
                         onClick={(e) => { e.stopPropagation(); openReschedule(s); }}
-                        title="Đổi lịch buổi này"
+                        title="Đổi lịch buổi này (Học bù)"
                         className="shrink-0 p-1.5 rounded-lg text-sky-500 hover:bg-sky-50 hover:text-sky-700 transition-colors"
                       >
                         <ArrowRightLeft className="w-4 h-4" />
@@ -1290,13 +1476,13 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                           if (link === null) return;
                           const newLink = link.trim() || null;
                           if (newLink === s.zoom_link) return;
-                          
+
                           const supabase = createBrowserClient();
-                          
+
                           // Update using the correct identifier based on what we have
                           // If id is a number, use it. Otherwise use class_name + session_no + session_date
                           let updateError: Error | null = null;
-                          
+
                           if (typeof s.id === 'number' || !isNaN(Number(s.id))) {
                             // Use numeric id
                             const numericId = typeof s.id === 'number' ? s.id : Number(s.id);
@@ -1315,7 +1501,7 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                               .eq("session_date", s.session_date);
                             updateError = error;
                           }
-                          
+
                           if (updateError) {
                             toast.error("Lỗi cập nhật: " + updateError.message);
                           } else {
@@ -1328,6 +1514,13 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                         className="shrink-0 p-1.5 rounded-lg text-blue-500 hover:bg-blue-50 hover:text-blue-700 transition-colors"
                       >
                         <Video className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); openCancel(s); }}
+                        title="Hủy buổi học"
+                        className="shrink-0 p-1.5 rounded-lg text-red-500 hover:bg-red-50 hover:text-red-700 transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     </>
                   )}
@@ -1353,7 +1546,6 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                   const ref = buildSessionRef(activeSession.class_name, activeSession.session_no!, activeSession.session_date!);
                   const attList = attendance[ref] || [];
                   const onTime = attList.filter(a => a.attendance_status === ATTENDANCE_STATUS.ON_TIME).length;
-                  const late   = attList.filter(a => a.attendance_status === ATTENDANCE_STATUS.LATE).length;
                   const absent = attList.filter(a => a.attendance_status === ATTENDANCE_STATUS.ABSENT).length;
                   if (attList.length === 0) return null;
                   return (
@@ -1361,7 +1553,6 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                       <span className="text-gray-500">{attList.length}/{attendanceStudentNames.length} đã điểm danh</span>
                       <span className="ml-auto flex gap-3">
                         <span className="text-emerald-600 font-semibold">✓ {onTime} đúng giờ</span>
-                        <span className="text-amber-600 font-semibold">⏰ {late} muộn</span>
                         <span className="text-red-600 font-semibold">✗ {absent} vắng</span>
                       </span>
                     </div>
@@ -1385,11 +1576,10 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                         <div className="flex gap-1.5">
                           {[
                             { val: ATTENDANCE_STATUS.ON_TIME, label: "Đúng giờ", color: "bg-emerald-500" },
-                            { val: ATTENDANCE_STATUS.LATE,    label: "Muộn",     color: "bg-amber-500" },
-                            { val: ATTENDANCE_STATUS.ABSENT,  label: "Vắng",     color: "bg-red-500" },
+                            { val: ATTENDANCE_STATUS.ABSENT, label: "Vắng", color: "bg-red-500" },
                           ].map(opt => (
                             <button key={opt.val}
-                              onClick={() => updateAttendance(activeSession, student!, opt.val)}
+                              onClick={() => updateAttendance(activeSession, student!, opt.val as "on_time" | "absent")}
                               className={`text-xs px-2.5 py-1 rounded-lg font-medium transition-all ${status === opt.val ? `${opt.color} text-white` : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}>
                               {opt.label}
                             </button>
@@ -1761,31 +1951,32 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
                   {makeupRows.map((row, i) => {
                     const meta = getMakeupMeta(row);
                     return (
-                    <tr key={i} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-3 py-2.5 text-sm font-medium text-gray-800">{row.student_name}</td>
-                      <td className="px-3 py-2.5 text-sm text-gray-600">Buổi #{row.session_no}</td>
-                      <td className="px-3 py-2.5 text-sm text-gray-600">{row.session_date || "–"}</td>
-                      <td className="px-3 py-2.5 text-xs text-gray-700">{meta.makeupWhen}</td>
-                      <td className="px-3 py-2.5 text-xs text-gray-700">{meta.teacher}</td>
-                      <td className="px-3 py-2.5">
-                        <Badge variant={meta.statusVariant}>{meta.statusLabel}</Badge>
-                      </td>
-                      <td className="px-3 py-2.5 text-xs text-gray-500 max-w-60">
-                        <div className="space-y-2">
-                          <Button
-                            variant={row.has_makeup ? "ghost" : "outline"}
-                            size="sm"
-                            onClick={() => openMakeupAdmin(row)}
-                            className="w-full"
-                            disabled={makeupLoading}
-                          >
-                            {row.has_makeup ? "Chỉnh / Xếp lại" : "Xếp bù"}
-                          </Button>
-                          {row.note ? <p className="text-[11px] text-gray-500">Ghi chú: {row.note}</p> : null}
-                        </div>
-                      </td>
-                    </tr>
-                  )})}
+                      <tr key={i} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-3 py-2.5 text-sm font-medium text-gray-800">{row.student_name}</td>
+                        <td className="px-3 py-2.5 text-sm text-gray-600">Buổi #{row.session_no}</td>
+                        <td className="px-3 py-2.5 text-sm text-gray-600">{row.session_date || "–"}</td>
+                        <td className="px-3 py-2.5 text-xs text-gray-700">{meta.makeupWhen}</td>
+                        <td className="px-3 py-2.5 text-xs text-gray-700">{meta.teacher}</td>
+                        <td className="px-3 py-2.5">
+                          <Badge variant={meta.statusVariant}>{meta.statusLabel}</Badge>
+                        </td>
+                        <td className="px-3 py-2.5 text-xs text-gray-500 max-w-60">
+                          <div className="space-y-2">
+                            <Button
+                              variant={row.has_makeup ? "ghost" : "outline"}
+                              size="sm"
+                              onClick={() => openMakeupAdmin(row)}
+                              className="w-full"
+                              disabled={makeupLoading}
+                            >
+                              {row.has_makeup ? "Chỉnh / Xếp lại" : "Xếp bù"}
+                            </Button>
+                            {row.note ? <p className="text-[11px] text-gray-500">Ghi chú: {row.note}</p> : null}
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
@@ -1927,42 +2118,42 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
               </p>
             </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Chọn ngày bù *</label>
-                  <input
-                    type="date"
-                    className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                    value={makeupAdminDate}
-                    onChange={(e) => {
-                      const nextDate = e.target.value;
-                      setMakeupAdminDate(nextDate);
-                      setMakeupAdminTargetRef("");
-                      const parts = makeupAdminModal.absentSessionRef.split("#");
-                      const absentBuoiNo = Number(parts?.[1] ?? "");
-                      setMakeupAdminNote(buildAdminOtherSessionNote(nextDate, makeupAdminTime, absentBuoiNo));
-                    }}
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Giờ bù *</label>
-                  <input
-                    type="time"
-                    className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                    value={makeupAdminTime}
-                    onChange={(e) => {
-                      const nextTime = e.target.value;
-                      setMakeupAdminTime(nextTime);
-                      setMakeupAdminTargetRef("");
-                      const parts = makeupAdminModal.absentSessionRef.split("#");
-                      const absentBuoiNo = Number(parts?.[1] ?? "");
-                      setMakeupAdminNote(buildAdminOtherSessionNote(makeupAdminDate, nextTime, absentBuoiNo));
-                    }}
-                    required
-                  />
-                </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Chọn ngày bù *</label>
+                <input
+                  type="date"
+                  className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  value={makeupAdminDate}
+                  onChange={(e) => {
+                    const nextDate = e.target.value;
+                    setMakeupAdminDate(nextDate);
+                    setMakeupAdminTargetRef("");
+                    const parts = makeupAdminModal.absentSessionRef.split("#");
+                    const absentBuoiNo = Number(parts?.[1] ?? "");
+                    setMakeupAdminNote(buildAdminOtherSessionNote(nextDate, makeupAdminTime, absentBuoiNo));
+                  }}
+                  required
+                />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Giờ bù *</label>
+                <input
+                  type="time"
+                  className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  value={makeupAdminTime}
+                  onChange={(e) => {
+                    const nextTime = e.target.value;
+                    setMakeupAdminTime(nextTime);
+                    setMakeupAdminTargetRef("");
+                    const parts = makeupAdminModal.absentSessionRef.split("#");
+                    const absentBuoiNo = Number(parts?.[1] ?? "");
+                    setMakeupAdminNote(buildAdminOtherSessionNote(makeupAdminDate, nextTime, absentBuoiNo));
+                  }}
+                  required
+                />
+              </div>
+            </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Ghi chú *</label>
@@ -2093,10 +2284,54 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
           </div>
         )}
       </Modal>
+
+      {/* Cancel Session Confirm Modal */}
+      <Modal
+        open={!!cancelSession}
+        onClose={() => setCancelSession(null)}
+        title={`Hủy buổi học – Buổi #${cancelSession?.session_no}`}>
+        {cancelSession && (
+          <div className="space-y-4">
+            <div className="rounded-xl bg-red-50 border border-red-200 p-3 flex gap-2">
+              <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+              <p className="text-xs text-red-800 font-medium">
+                Bạn có chắc chắn muốn hủy buổi #{cancelSession.session_no} ngày {cancelSession.session_date}? Hành động này sẽ đánh dấu buổi học là Đã hủy và không thể hoàn tác.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Lý do hủy buổi
+                <span className="text-xs text-gray-400 font-normal ml-1">(bắt buộc)</span>
+              </label>
+              <input
+                type="text"
+                value={cancelNote}
+                onChange={e => setCancelNote(e.target.value)}
+                placeholder="VD: Nghỉ lễ, GV có việc bận..."
+                className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                required
+              />
+            </div>
+
+            <div className="flex gap-3 pt-1">
+              <Button variant="secondary" className="flex-1" onClick={() => setCancelSession(null)}>Quay lại</Button>
+              <Button
+                variant="danger"
+                className="flex-1"
+                loading={savingCancel}
+                onClick={handleConfirmCancel}
+                disabled={!cancelNote.trim()}>
+                Xác nhận hủy
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
       {/* Financial & Level Modal */}
-      <Modal 
-        open={!!financialModal} 
-        onClose={() => setFinancialModal(null)} 
+      <Modal
+        open={!!financialModal}
+        onClose={() => setFinancialModal(null)}
         title={`Quản lý Học phí & Trình độ`}
       >
         {financialLoading ? (
@@ -2180,84 +2415,84 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
               </div>
             </div>
 
-                    {/* Bottom Sections: Vertical Stack for Space */}
-                    <div className="space-y-6">
-                       {/* Lịch sử đóng tiền */}
-                       <section>
-                          <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                            <History className="w-4 h-4 text-brand-500" /> Lịch sử nộp phí
-                          </h4>
-                          <div className="space-y-2 max-h-[180px] overflow-y-auto pr-2 custom-scrollbar">
-                            {paymentHistory.map((p) => (
-                              <div key={p.id} className="flex items-center justify-between p-3.5 bg-white border border-gray-100 rounded-2xl shadow-sm hover:border-brand-100 transition-all group">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-9 h-9 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 shadow-sm border border-emerald-100">
-                                    <DollarSign className="w-4 h-4" />
-                                  </div>
-                                  <div>
-                                    <div className="font-bold text-gray-900 text-sm">{new Intl.NumberFormat("vi-VN").format(p.amount)} VNĐ</div>
-                                    <div className="text-[10px] text-gray-400 font-medium">{new Date(p.paid_at).toLocaleDateString("vi-VN")} {p.note && `· ${p.note}`}</div>
-                                  </div>
-                                </div>
-                                <button type="button" onClick={() => removePayment(p.id)} className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl opacity-0 group-hover:opacity-100 transition-all"><Trash2 className="w-4 h-4" /></button>
-                              </div>
-                            ))}
-                            {paymentHistory.length === 0 && (
-                              <div className="flex flex-col items-center justify-center py-8 bg-gray-50/50 rounded-2xl border border-dashed border-gray-200">
-                                <p className="text-xs text-gray-400 italic">Chưa có lịch sử nộp phí</p>
-                              </div>
-                            )}
-                          </div>
-                       </section>
-
-                       {/* Nộp thêm đợt mới */}
-                       <section>
-                          <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                            <Plus className="w-4 h-4 text-brand-500" /> Nộp thêm đợt mới
-                          </h4>
-                          <div className="p-6 bg-brand-600 rounded-3xl shadow-xl shadow-brand-100 relative overflow-hidden">
-                            <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full -mr-24 -mt-24 blur-3xl" />
-                            <div className="absolute bottom-0 left-0 w-32 h-32 bg-black/10 rounded-full -ml-16 -mb-16 blur-2xl" />
-                            
-                            <div className="space-y-4 relative z-10">
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div className="space-y-1.5">
-                                  <label className="text-[10px] font-bold text-brand-100 uppercase ml-1">Số tiền đóng (VNĐ)</label>
-                                  <input 
-                                    type="text"
-                                    inputMode="numeric"
-                                    placeholder="0"
-                                    value={newPayment.amount ? new Intl.NumberFormat("vi-VN").format(newPayment.amount) : ""}
-                                    onChange={e => {
-                                      const val = e.target.value.replace(/\D/g, "");
-                                      setNewPayment(p => ({ ...p, amount: Number(val) }));
-                                    }}
-                                    className="w-full rounded-2xl border-none bg-white/20 text-white placeholder:text-white/40 px-4 py-3 text-sm focus:ring-2 focus:ring-white font-black text-right"
-                                  />
-                                </div>
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold text-brand-100 uppercase ml-1">Ghi chú</label>
-                          <input 
-                            type="text"
-                            placeholder="Đợt 2, Chuyển khoản..."
-                            value={newPayment.note}
-                            onChange={e => setNewPayment(p => ({ ...p, note: e.target.value }))}
-                            className="w-full rounded-2xl border-none bg-white/20 text-white placeholder:text-white/40 px-4 py-3 text-sm focus:ring-2 focus:ring-white font-medium"
-                          />
+            {/* Bottom Sections: Vertical Stack for Space */}
+            <div className="space-y-6">
+              {/* Lịch sử đóng tiền */}
+              <section>
+                <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                  <History className="w-4 h-4 text-brand-500" /> Lịch sử nộp phí
+                </h4>
+                <div className="space-y-2 max-h-[180px] overflow-y-auto pr-2 custom-scrollbar">
+                  {paymentHistory.map((p) => (
+                    <div key={p.id} className="flex items-center justify-between p-3.5 bg-white border border-gray-100 rounded-2xl shadow-sm hover:border-brand-100 transition-all group">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 shadow-sm border border-emerald-100">
+                          <DollarSign className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <div className="font-bold text-gray-900 text-sm">{new Intl.NumberFormat("vi-VN").format(p.amount)} VNĐ</div>
+                          <div className="text-[10px] text-gray-400 font-medium">{new Date(p.paid_at).toLocaleDateString("vi-VN")} {p.note && `· ${p.note}`}</div>
                         </div>
                       </div>
-                      <Button 
-                        type="button"
-                        loading={addingPayment}
-                        onClick={handleAddPayment}
-                        disabled={newPayment.amount <= 0}
-                        className="w-full bg-white text-brand-700 hover:bg-brand-50 font-black rounded-2xl py-4 shadow-2xl transition-transform active:scale-[0.98]"
-                      >
-                        Xác nhận nộp phí ngay
-                      </Button>
+                      <button type="button" onClick={() => removePayment(p.id)} className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl opacity-0 group-hover:opacity-100 transition-all"><Trash2 className="w-4 h-4" /></button>
                     </div>
+                  ))}
+                  {paymentHistory.length === 0 && (
+                    <div className="flex flex-col items-center justify-center py-8 bg-gray-50/50 rounded-2xl border border-dashed border-gray-200">
+                      <p className="text-xs text-gray-400 italic">Chưa có lịch sử nộp phí</p>
+                    </div>
+                  )}
+                </div>
+              </section>
+
+              {/* Nộp thêm đợt mới */}
+              <section>
+                <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                  <Plus className="w-4 h-4 text-brand-500" /> Nộp thêm đợt mới
+                </h4>
+                <div className="p-6 bg-brand-600 rounded-3xl shadow-xl shadow-brand-100 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full -mr-24 -mt-24 blur-3xl" />
+                  <div className="absolute bottom-0 left-0 w-32 h-32 bg-black/10 rounded-full -ml-16 -mb-16 blur-2xl" />
+
+                  <div className="space-y-4 relative z-10">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-brand-100 uppercase ml-1">Số tiền đóng (VNĐ)</label>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="0"
+                          value={newPayment.amount ? new Intl.NumberFormat("vi-VN").format(newPayment.amount) : ""}
+                          onChange={e => {
+                            const val = e.target.value.replace(/\D/g, "");
+                            setNewPayment(p => ({ ...p, amount: Number(val) }));
+                          }}
+                          className="w-full rounded-2xl border-none bg-white/20 text-white placeholder:text-white/40 px-4 py-3 text-sm focus:ring-2 focus:ring-white font-black text-right"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-brand-100 uppercase ml-1">Ghi chú</label>
+                        <input
+                          type="text"
+                          placeholder="Đợt 2, Chuyển khoản..."
+                          value={newPayment.note}
+                          onChange={e => setNewPayment(p => ({ ...p, note: e.target.value }))}
+                          className="w-full rounded-2xl border-none bg-white/20 text-white placeholder:text-white/40 px-4 py-3 text-sm focus:ring-2 focus:ring-white font-medium"
+                        />
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      loading={addingPayment}
+                      onClick={handleAddPayment}
+                      disabled={newPayment.amount <= 0}
+                      className="w-full bg-white text-brand-700 hover:bg-brand-50 font-black rounded-2xl py-4 shadow-2xl transition-transform active:scale-[0.98]"
+                    >
+                      Xác nhận nộp phí ngay
+                    </Button>
                   </div>
-               </section>
+                </div>
+              </section>
             </div>
           </div>
         )}

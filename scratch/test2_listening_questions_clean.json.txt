@@ -1,0 +1,169 @@
+{
+"test": "Test 2",
+"sections": [
+{
+"section": "Section 1",
+"type": "table_completion",
+"title": "Notes on A Part-time Society",
+"instructions": "Write ONE WORD AND/OR A NUMBER for each answer.",
+"questions": [
+{ "number": 1, "prompt": "Location", "answer": "" },
+{ "number": 2, "prompt": "Want", "answer": "" },
+{ "number": 3, "prompt": "Transportation requirement", "answer": "" },
+{ "number": 4, "prompt": "Meeting frequency", "answer": "" },
+{ "number": 5, "prompt": "Close time", "answer": "" },
+{ "number": 6, "prompt": "Membership fee includes", "answer": "" },
+{ "number": 7, "prompt": "Minimum joining age", "answer": "" },
+{ "number": 8, "prompt": "Minimum joining age detail", "answer": "" },
+{ "number": 9, "prompt": "Type of members", "answer": "" },
+{ "number": 10, "prompt": "Charity beneficiary", "answer": "" }
+]
+},
+{
+"section": "Section 2",
+"type": "multiple_choice",
+"questions": [
+{
+"number": 11,
+"question": "What kind of changes is the station making?",
+"options": {
+"A": "relocation",
+"B": "reconstruction",
+"C": "expansion"
+}
+},
+{
+"number": 12,
+"question": "The original buildings on the site were",
+"options": {
+"A": "houses",
+"B": "industrial buildings",
+"C": "shops"
+}
+},
+{
+"number": 13,
+"question": "Firstly the station intended to use the site as",
+"options": {
+"A": "a leisure centre",
+"B": "a car park",
+"C": "a lounge"
+}
+},
+{
+"number": 14,
+"question": "The new buildings will be situated to the right side of",
+"options": {
+"A": "the shopping district",
+"B": "the apartment blocks",
+"C": "the new formal gardens"
+}
+}
+]
+},
+{
+"section": "Section 2 - Map Labeling",
+"type": "map_labeling",
+"instructions": "Write the correct letter, A-F, next to questions 15-20.",
+"items": [
+{ "number": 15, "label": "Cafe" },
+{ "number": 16, "label": "Taxi Rank" },
+{ "number": 17, "label": "Car Park" },
+{ "number": 18, "label": "Passenger Waiting Area" },
+{ "number": 19, "label": "Waiting Area for Wheelchair Users" },
+{ "number": 20, "label": "Tourist Office" }
+]
+},
+{
+"section": "Section 3",
+"type": "multiple_choice",
+"questions": [
+{
+"number": 21,
+"question": "What has Irene recently done?",
+"options": {
+"A": "She has almost finished planning the experiment",
+"B": "She is not applying herself enough to her work",
+"C": "She spends a lot of time in the laboratory"
+}
+},
+{
+"number": 22,
+"question": "What is Bill’s attitude toward Kim?",
+"options": {
+"A": "He is grateful for Kim's contribution",
+"B": "He is not fond of Kim's tastes in clothes",
+"C": "He thinks Kim is not good at laboratory work"
+}
+},
+{
+"number": 23,
+"question": "What does Jen think of the other people in the group?",
+"options": {
+"A": "The boys are good at maths which is very helpful",
+"B": "They would fail the experiment without Irene’s contribution",
+"C": "Irene has completed the data analysis so the experiment is nearly done"
+}
+},
+{
+"number": 24,
+"question": "How did Jen and Bill feel about Linda?",
+"options": {
+"A": "She always submitted her work late",
+"B": "She was difficult to get in touch with",
+"C": "She thought it was easy to get a high score"
+}
+},
+{
+"number": 25,
+"question": "Why was Jen invited to the professor’s individual project?",
+"options": {
+"A": "She was quite popular among students",
+"B": "She always finished reading all assignments",
+"C": "She was close to the professor"
+}
+}
+]
+},
+{
+"section": "Section 3 - Matching",
+"type": "matching",
+"instructions": "Choose FIVE answers from the box (A-G).",
+"options": {
+"A": "Abstract",
+"B": "Acknowledgement",
+"C": "Methodology",
+"D": "Bibliography",
+"E": "Literature review",
+"F": "Results",
+"G": "Discussion"
+},
+"questions": [
+{ "number": 26, "person": "Irene" },
+{ "number": 27, "person": "Kim" },
+{ "number": 28, "person": "Jen" },
+{ "number": 29, "person": "Bill" },
+{ "number": 30, "person": "Linda" }
+]
+},
+{
+"section": "Section 4",
+"type": "note_completion",
+"title": "Nanotechnology",
+"instructions": "Write ONE WORD ONLY for each answer.",
+"questions": [
+{ "number": 31, "prompt": "New type of", "answer": "" },
+{ "number": 32, "prompt": "Aids in getting from diet", "answer": "" },
+{ "number": 33, "prompt": "Reduces cost of", "answer": "" },
+{ "number": 34, "prompt": "Improves the of food", "answer": "" },
+{ "number": 35, "prompt": "Efficiency of in soil", "answer": "" },
+{ "number": 36, "prompt": "Kills food’s", "answer": "" },
+{ "number": 37, "prompt": "Allows to enter veins", "answer": "" },
+{ "number": 38, "prompt": "Has greatest antibacterial qualities", "answer": "" },
+{ "number": 39, "prompt": "Help loss programmes", "answer": "" },
+{ "number": 40, "prompt": "Preventing from entering body", "answer": "" }
+]
+}
+]
+}
+00000000000000000000000000000000000000000000000000000000000000000000000A9

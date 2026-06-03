@@ -1,21 +1,16 @@
 "use client";
 
-import Button from "@/components/ui/Button";
-import Logo from "@/components/ui/Logo";
-import { cn } from "@/utils/cn";
 import { Menu, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useState, type MouseEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useState, type MouseEvent } from "react";
 
 function useRouteHash() {
   const pathname = usePathname();
   const [hash, setHash] = useState("");
-
   const syncHash = useCallback(() => {
     setHash(typeof window !== "undefined" ? window.location.hash || "" : "");
   }, []);
-
   useEffect(() => {
     const tick = requestAnimationFrame(() => syncHash());
     window.addEventListener("hashchange", syncHash);
@@ -26,148 +21,145 @@ function useRouteHash() {
       window.removeEventListener("popstate", syncHash);
     };
   }, [pathname, syncHash]);
-
   return { pathname, hash, syncHash };
 }
 
-/** Khi đã ở / nhưng URL còn #anchor, Next Link href="/" không xóa hash — cần replaceState + sync. */
 function useClearHomeHash(syncHash: () => void) {
-  return useCallback(
-    (e: MouseEvent<HTMLAnchorElement>) => {
-      if (typeof window === "undefined") return;
-      if (window.location.pathname === "/" && window.location.hash) {
-        e.preventDefault();
-        window.history.replaceState(null, "", "/");
-        syncHash();
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      }
-    },
-    [syncHash]
-  );
-}
-
-const navLinkBase =
-  "rounded-lg px-2.5 py-2 -my-1 text-[0.9375rem] font-medium transition-colors duration-150";
-
-function NavPill({
-  href,
-  active,
-  onClick,
-  children,
-}: {
-  href: string;
-  active: boolean;
-  onClick?: (e: MouseEvent<HTMLAnchorElement>) => void;
-  children: ReactNode;
-}) {
-  return (
-    <Link
-      href={href}
-      onClick={onClick}
-      aria-current={active ? "page" : undefined}
-      className={cn(
-        navLinkBase,
-        active
-          ? "bg-brand-600 text-white shadow-md shadow-brand-600/25 ring-1 ring-brand-400/80 hover:bg-brand-700 hover:text-white"
-          : "text-gray-700 hover:text-brand-700 hover:bg-brand-50/90"
-      )}
-    >
-      {children}
-    </Link>
-  );
+  return useCallback((e: MouseEvent<HTMLAnchorElement>) => {
+    if (typeof window === "undefined") return;
+    if (window.location.pathname === "/" && window.location.hash) {
+      e.preventDefault();
+      window.history.replaceState(null, "", "/");
+      syncHash();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [syncHash]);
 }
 
 export default function PublicSiteHeader() {
   const { pathname, syncHash } = useRouteHash();
   const onHomeClick = useClearHomeHash(syncHash);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const closeMobileMenu = useCallback(() => setMobileOpen(false), []);
-  const onHomeMobileClick = useCallback(
-    (e: MouseEvent<HTMLAnchorElement>) => {
-      onHomeClick(e);
-      closeMobileMenu();
-    },
-    [closeMobileMenu, onHomeClick]
-  );
+
+  useEffect(() => {
+    const handler = () => setScrolled(window.scrollY > 10);
+    window.addEventListener("scroll", handler, { passive: true });
+    return () => window.removeEventListener("scroll", handler);
+  }, []);
 
   const onHome = pathname === "/";
   const consultActive = pathname === "/consult";
-  const homeActive = onHome;
   const coursesActive = pathname === "/courses" || pathname.startsWith("/courses/");
   const thiThuActive = pathname === "/thi-thu" || pathname.startsWith("/thi-thu/");
 
+  const navItems = [
+    { href: "/", label: "Home", active: onHome },
+    { href: "/courses", label: "Courses", active: coursesActive },
+    { href: "/thi-thu", label: "Mock Tests", active: thiThuActive },
+    { href: "/consult", label: "Consult", active: consultActive },
+  ];
+
+  const onHomeMobileClick = useCallback((e: MouseEvent<HTMLAnchorElement>) => {
+    onHomeClick(e);
+    closeMobileMenu();
+  }, [onHomeClick, closeMobileMenu]);
+
   return (
-    <header className="sticky top-0 z-50 border-b border-gray-200/90 bg-white/90 backdrop-blur-md shadow-sm">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 min-h-16 py-2.5 flex items-center justify-between gap-3 lg:gap-6">
-        <Link
-          href="/"
-          onClick={onHomeClick}
-          className="flex items-center gap-2 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/80 shrink-0"
-        >
-          <Logo size="md" className="shrink-0" />
+    <header
+      className="sticky top-0 z-50 transition-all duration-300"
+      style={{
+        background: scrolled
+          ? "rgba(237,232,255,0.8)"
+          : "rgba(237,232,255,0.45)",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
+        borderBottom: scrolled ? "1px solid rgba(199,183,255,0.3)" : "1px solid transparent",
+        boxShadow: scrolled ? "0 1px 24px rgba(91,91,214,0.06)" : "none",
+      }}
+    >
+      <div className="max-w-6xl mx-auto px-5 lg:px-8 min-h-[68px] flex items-center justify-between gap-4">
+
+        {/* Logo */}
+        <Link href="/" onClick={onHomeClick} className="flex items-center gap-2.5 shrink-0">
+          <img src="/logo/logo-ag.svg" alt="AG" className="w-9 h-9 object-contain" />
+          <img src="/logo/logo-gi.svg" alt="Glocal IELTS" className="w-9 h-9 object-contain" />
+          <span className="text-[15px] font-bold text-gray-900 tracking-tight hidden sm:block">Glocal IELTS</span>
         </Link>
-        <nav className="hidden lg:flex items-center gap-4 xl:gap-7">
-          <NavPill href="/" active={homeActive} onClick={onHomeClick}>
-            Trang chủ
-          </NavPill>
-          <NavPill href="/courses" active={coursesActive}>
-            Khóa học
-          </NavPill>
-          <NavPill href="/thi-thu" active={thiThuActive}>
-            Thi thử
-          </NavPill>
-          <NavPill href="/consult" active={consultActive}>
-            Tư vấn
-          </NavPill>
+
+        {/* Desktop Nav */}
+        <nav className="hidden lg:flex items-center gap-1">
+          {navItems.map(item => (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={item.href === "/" ? onHomeClick : undefined}
+              className="relative px-4 py-2 text-[0.9rem] font-medium rounded-xl transition-all duration-200"
+              style={{
+                color: item.active ? "#5B5BD6" : "#6B7280",
+                background: item.active ? "rgba(91,91,214,0.08)" : "transparent",
+              }}
+            >
+              {item.label}
+              {item.active && (
+                <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-5 h-0.5 rounded-full" style={{ background: "#5B5BD6" }} />
+              )}
+            </Link>
+          ))}
         </nav>
-        <div className="hidden lg:flex items-center gap-2.5 sm:gap-3 shrink-0">
-          <Link href="/login">
-            <Button variant="outline" size="md" className="min-h-10 px-5 sm:px-6">
-              Đăng nhập
-            </Button>
+
+        {/* Desktop CTAs */}
+        <div className="hidden lg:flex items-center gap-2.5 shrink-0">
+          <Link href="/login" className="px-5 py-2.5 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors rounded-xl hover:bg-gray-100/70">
+            Sign in
           </Link>
-          <Link href="/register">
-            <Button size="md" variant="primary" className="min-h-10 px-5 sm:px-6">
-              Đăng ký
-            </Button>
+          <Link
+            href="/register"
+            className="px-5 py-2.5 text-sm font-semibold text-white rounded-xl transition-all duration-200 hover:opacity-90 hover:shadow-lg hover:shadow-brand-500/20"
+            style={{ background: "linear-gradient(135deg, #5B5BD6 0%, #7C6CFF 100%)" }}
+          >
+            Get Started
           </Link>
         </div>
+
+        {/* Mobile menu toggle */}
         <button
           type="button"
-          onClick={() => setMobileOpen((v) => !v)}
-          aria-label={mobileOpen ? "Đóng menu" : "Mở menu"}
-          aria-expanded={mobileOpen}
-          className="lg:hidden inline-flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-700"
+          onClick={() => setMobileOpen(v => !v)}
+          className="lg:hidden flex items-center justify-center w-10 h-10 rounded-xl border border-gray-200 bg-white/80 text-gray-700"
         >
-          {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>
       </div>
+
+      {/* Mobile Menu */}
       {mobileOpen && (
-        <div className="lg:hidden border-t border-gray-200/90 bg-white px-4 pb-4 pt-3">
-          <div className="grid gap-2">
-            <NavPill href="/" active={homeActive} onClick={onHomeMobileClick}>
-              Trang chủ
-            </NavPill>
-            <NavPill href="/courses" active={coursesActive} onClick={closeMobileMenu}>
-              Khóa học
-            </NavPill>
-            <NavPill href="/thi-thu" active={thiThuActive} onClick={closeMobileMenu}>
-              Thi thử
-            </NavPill>
-            <NavPill href="/consult" active={consultActive} onClick={closeMobileMenu}>
-              Tư vấn
-            </NavPill>
+        <div className="lg:hidden border-t border-gray-100 bg-white/95 backdrop-blur-xl px-4 pb-5 pt-3">
+          <div className="space-y-1">
+            {navItems.map(item => (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={item.href === "/" ? onHomeMobileClick : closeMobileMenu}
+                className="flex items-center px-4 py-3 rounded-xl text-sm font-medium transition-colors"
+                style={{ color: item.active ? "#5B5BD6" : "#374151", background: item.active ? "rgba(91,91,214,0.06)" : "transparent" }}
+              >
+                {item.label}
+              </Link>
+            ))}
           </div>
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            <Link href="/login" onClick={closeMobileMenu}>
-              <Button variant="outline" size="md" className="w-full min-h-10 px-3">
-                Đăng nhập
-              </Button>
+          <div className="mt-4 flex gap-2">
+            <Link href="/login" onClick={closeMobileMenu} className="flex-1 text-center px-4 py-2.5 text-sm font-medium text-gray-700 border border-gray-200 rounded-xl hover:bg-gray-50">
+              Sign in
             </Link>
-            <Link href="/register" onClick={closeMobileMenu}>
-              <Button size="md" variant="primary" className="w-full min-h-10 px-3">
-                Đăng ký
-              </Button>
+            <Link
+              href="/register"
+              onClick={closeMobileMenu}
+              className="flex-1 text-center px-4 py-2.5 text-sm font-semibold text-white rounded-xl"
+              style={{ background: "linear-gradient(135deg, #5B5BD6 0%, #7C6CFF 100%)" }}
+            >
+              Get Started
             </Link>
           </div>
         </div>

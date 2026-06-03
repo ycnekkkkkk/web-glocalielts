@@ -767,7 +767,7 @@ export default function AdminTeachersPage() {
 
                       {/* Dynamic monthly totals card */}
                       {detailTeacher.classes.length > 0 && (
-                        <div className="p-4 bg-gradient-to-br from-brand-600 to-indigo-600 rounded-2xl text-white shadow-md shadow-brand-100 flex justify-between items-center">
+                        <div className="p-4 bg-gradient-to-br from-brand-600 to-sky-600 rounded-2xl text-white shadow-md shadow-brand-100 flex justify-between items-center">
                           <div>
                             <p className="text-[10px] text-brand-100 font-black uppercase tracking-wider">Tổng thu nhập {activeMonth}</p>
                             <p className="text-xs text-brand-50/80 mt-0.5">Tất cả các lớp cộng dồn (Tháng được chọn)</p>

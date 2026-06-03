@@ -109,7 +109,7 @@ export default function InstructorCoursesPage() {
           const doneSessions = cls.actual_done_sessions ?? cls.sessions_done ?? 0;
           const progress = cls.total_sessions > 0 ? Math.min(100, (doneSessions / cls.total_sessions) * 100) : 0;
           return (
-            <Link key={cls.id} href={`/teacher/courses/${cls.id}`} className="block">
+            <Link key={cls.id} href={`/teacher/courses/${encodeURIComponent(cls.name)}`} className="block">
               <Card hover className="p-5 cursor-pointer group">
                 <div className="flex items-start justify-between mb-4">
                   <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center">

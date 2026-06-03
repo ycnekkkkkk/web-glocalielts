@@ -85,7 +85,7 @@ export default function StudentMyOnlineCoursesPage() {
             return (
               <Card key={c.id} hover className="flex flex-col overflow-hidden p-0">
                 {/* Thumbnail */}
-                <div className="relative w-full aspect-video bg-gradient-to-br from-brand-100 to-indigo-100 shrink-0 overflow-hidden">
+                <div className="relative w-full aspect-video bg-gradient-to-br from-brand-100 to-sky-100 shrink-0 overflow-hidden">
                   {thumbnail ? (
                     <Image
                       src={thumbnail}

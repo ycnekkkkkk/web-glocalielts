@@ -794,7 +794,7 @@ export default function AdminClassesPage() {
   return (
     <PageWrapper>
       {/* Premium Hero Header - Mobile optimized */}
-      <div className="relative mb-6 md:mb-8 p-5 md:p-8 rounded-[2rem] md:rounded-3xl bg-gradient-to-br from-brand-600 via-brand-700 to-indigo-800 overflow-hidden shadow-2xl shadow-brand-200/50">
+      <div className="relative mb-6 md:mb-8 p-5 md:p-8 rounded-[2rem] md:rounded-3xl bg-gradient-to-br from-brand-600 via-brand-700 to-sky-800 overflow-hidden shadow-2xl shadow-brand-200/50">
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl opacity-50" />
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-brand-400/20 rounded-full -ml-24 -mb-24 blur-2xl opacity-50" />
         
@@ -827,7 +827,7 @@ export default function AdminClassesPage() {
           { label: "Tổng lớp học", val: classes.length, icon: Layers, color: "brand" },
           { label: "Đang hoạt động", val: classes.filter(c => c.status === 'active').length, icon: CheckCircle2, color: "emerald" },
           { label: "Sắp khai giảng", val: classes.filter(c => c.status === 'upcoming').length, icon: Clock, color: "sky" },
-          { label: "Tổng học viên", val: classes.reduce((acc, c) => acc + (c.enrollments?.[0]?.count ?? 0), 0), icon: Users, color: "indigo" },
+          { label: "Tổng học viên", val: classes.reduce((acc, c) => acc + (c.enrollments?.[0]?.count ?? 0), 0), icon: Users, color: "sky" },
         ].map((stat, idx) => (
           <div key={idx} className="bg-white p-4 md:p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg transition-all group overflow-hidden relative">
             <div className={`absolute top-0 right-0 w-16 h-16 bg-${stat.color}-500/5 rounded-full -mr-8 -mt-8 group-hover:scale-150 transition-transform duration-500`} />
@@ -888,7 +888,7 @@ export default function AdminClassesPage() {
                     className="group relative bg-white rounded-[2rem] border border-gray-100 p-5 md:p-7 shadow-sm hover:shadow-2xl hover:shadow-brand-100/40 hover:-translate-y-2 transition-all duration-500 ease-out"
                   >
                     <div className="flex items-start gap-4 mb-6 md:mb-8">
-                      <div className="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-br from-brand-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-brand-100 shrink-0 group-hover:rotate-6 transition-transform">
+                      <div className="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-br from-brand-500 to-sky-600 rounded-2xl flex items-center justify-center shadow-lg shadow-brand-100 shrink-0 group-hover:rotate-6 transition-transform">
                         <BookOpen className="w-6 h-6 md:w-8 md:h-8 text-white" />
                       </div>
                       <div className="min-w-0 flex-1">
@@ -1273,7 +1273,7 @@ export default function AdminClassesPage() {
           {/* ── Section 4: Học viên ── */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
-              <div className="w-1 h-4 rounded-full bg-indigo-500" />
+              <div className="w-1 h-4 rounded-full bg-sky-500" />
               <h3 className="text-sm font-bold text-gray-800">Học viên</h3>
             </div>
             

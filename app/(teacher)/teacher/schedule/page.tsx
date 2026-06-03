@@ -6,17 +6,30 @@ import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import { createBrowserClient } from "@/lib/supabase/client";
 import { SESSION_STATUS, ATTENDANCE_STATUS } from "@/lib/constants";
-import { parseSessionDate } from "@/lib/scheduleUtils";
 import {
-  ChevronLeft, ChevronRight, ClipboardList, Star, WrapText, Calendar,
-  Video, ExternalLink,
+  AlertTriangle, Ban, CalendarCheck2, ChevronLeft, ChevronRight,
+  ClipboardList, Star, Calendar, Video, ExternalLink, WrapText,
 } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import toast from "react-hot-toast";
-import type { AttendanceMakeup, MakeupStatusRow, Session, Student } from "@/types";
+import type { Session, Student } from "@/types";
 
+function parseSessionDate(dateStr: string): Date | null {
+  if (!dateStr) return null;
+  if (dateStr.includes("/")) {
+    const parts = dateStr.split("/");
+    if (parts.length !== 3) return null;
+    const [dd, mm, yyyy] = parts;
+    const d = new Date(+yyyy, +mm - 1, +dd);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  const d = new Date(dateStr);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+// ── Interfaces ────────────────────────────────────────────────
 interface StudentAttendance extends Student {
-  attendance_status: "on_time" | "late" | "absent";
+  attendance_status: "on_time" | "absent";
   note: string;
 }
 
@@ -25,14 +38,6 @@ interface StudentEval {
   student_name: string;
   rating: number;
   comment: string;
-}
-
-interface MakeupForm {
-  studentName: string;
-  sessionRef: string;
-  makeupType: "other_session";
-  targetSessionRef: string;
-  note: string;
 }
 
 function StarRating({ value, onChange }: { value: number; onChange: (v: number) => void }) {
@@ -54,7 +59,6 @@ const MONTH_NAMES = [
 ];
 const DAY_HEADERS = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
 
-// Returns the Monday of the week containing `date`
 function getMondayOf(d: Date): Date {
   const clone = new Date(d);
   const day = clone.getDay();
@@ -63,26 +67,22 @@ function getMondayOf(d: Date): Date {
   return clone;
 }
 
-// Build the 6-week grid (42 cells) for a given month
 function buildCalendarGrid(year: number, month: number): Date[] {
   const firstDay = new Date(year, month, 1);
   const lastDay  = new Date(year, month + 1, 0);
   const gridStart = getMondayOf(firstDay);
   const gridEnd   = new Date(gridStart);
   gridEnd.setDate(gridEnd.getDate() + 42);
-
   const cells: Date[] = [];
   const cursor = new Date(gridStart);
   while (cursor < gridEnd) {
     cells.push(new Date(cursor));
     cursor.setDate(cursor.getDate() + 1);
   }
-  // Trim last empty row if last day of month is before it
   if (lastDay < cells[34]) return cells.slice(0, 35);
   return cells;
 }
 
-// Map session date string to YYYY-MM-DD key
 function sessionKey(s: Session): string | null {
   const d = parseSessionDate(s.session_date || "");
   if (!d) return null;
@@ -93,52 +93,41 @@ function dateKey(d: Date): string {
   return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
 }
 
-function makeSessionRefFromSession(s: Session): string | null {
-  if (!s.class_name || s.session_no == null || !s.session_date) return null;
-  return `${s.class_name}#${s.session_no}#${s.session_date}`;
+function formatDDMMYYYY(dateStr: string | null | undefined): string {
+  if (!dateStr) return "";
+  if (dateStr.includes("/")) return dateStr;
+  // yyyy-MM-dd → dd/MM/yyyy
+  const parts = dateStr.split("-");
+  if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  return dateStr;
 }
 
-function parseSessionRef(sessionRef: string | null | undefined): {
-  class_name: string;
-  session_no: number | null;
-  session_date: string;
-} | null {
-  if (!sessionRef) return null;
-  const parts = sessionRef.split("#");
-  if (parts.length < 3) return null;
-  const session_date = parts.at(-1) || "";
-  const session_no_raw = parts.at(-2) || "";
-  const class_name = parts.slice(0, -2).join("#");
-  const session_no = session_no_raw ? Number(session_no_raw) : null;
-  if (!class_name || !session_date || session_no == null) return null;
-  return { class_name, session_no, session_date };
+function dateInputToDisplay(ymd: string): string {
+  // yyyy-MM-dd → dd/MM/yyyy
+  if (!ymd) return "";
+  const parts = ymd.split("-");
+  if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  return ymd;
 }
 
-function parseOtherSessionMakeupNote(note: string | null | undefined): { dateText: string; time: string | null } | null {
-  if (!note) return null;
-  // Expected: "Bù slot: dd/MM/yyyy HH:mm, Buổi #X"
-  const m = note.match(/Bù slot:\s*([0-9]{1,2}\/[0-9]{1,2}\/[0-9]{4})(?:\s+([0-9]{2}:[0-9]{2}))?/i);
-  if (!m) return null;
-  const dateText = m[1];
-  const time = m[2] ? m[2] : null;
-  return { dateText, time };
+function sessionDateToInputValue(dbDate: string | null | undefined): string {
+  if (!dbDate) return "";
+  if (dbDate.includes("/")) {
+    const [dd, mm, yyyy] = dbDate.split("/");
+    return `${yyyy}-${mm.padStart(2,"0")}-${dd.padStart(2,"0")}`;
+  }
+  return dbDate;
 }
-
-type MakeupEvent = Session & {
-  kind: "makeup";
-  student_name: string;
-  note: string | null;
-};
 
 const CLASS_COLORS = [
   "bg-emerald-100 text-emerald-800 border-emerald-200",
   "bg-blue-100 text-blue-800 border-blue-200",
-  "bg-violet-100 text-violet-800 border-violet-200",
+  "bg-sky-100 text-sky-800 border-sky-200",
   "bg-rose-100 text-rose-800 border-rose-200",
   "bg-amber-100 text-amber-800 border-amber-200",
   "bg-cyan-100 text-cyan-800 border-cyan-200",
   "bg-pink-100 text-pink-800 border-pink-200",
-  "bg-indigo-100 text-indigo-800 border-indigo-200",
+  "bg-sky-100 text-sky-800 border-sky-200",
 ];
 
 export default function InstructorSchedulePage() {
@@ -147,40 +136,37 @@ export default function InstructorSchedulePage() {
   const [curMonth, setCurMonth] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
   const [loading, setLoading] = useState(true);
   const [myName, setMyName] = useState("");
-  const [makeupEvents, setMakeupEvents] = useState<MakeupEvent[]>([]);
 
-  // Selected-day popover state
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
-  // Attendance modal
+  // ── Attendance modal ─────────────────────────────────────────
   const [attendSession, setAttendSession] = useState<Session | null>(null);
   const [attendStudents, setAttendStudents] = useState<StudentAttendance[]>([]);
-  const [attendMakeupByStudent, setAttendMakeupByStudent] = useState<Record<string, AttendanceMakeup>>({});
   const [attendLoading, setAttendLoading] = useState(false);
   const [savingAttend, setSavingAttend] = useState(false);
   const [attendViewOnly, setAttendViewOnly] = useState(false);
 
-  // Evaluation modal
+  // ── Evaluation modal ─────────────────────────────────────────
   const [evalSession, setEvalSession] = useState<Session | null>(null);
   const [evalClassRating, setEvalClassRating] = useState(5);
   const [evalClassComment, setEvalClassComment] = useState("");
   const [evalStudents, setEvalStudents] = useState<StudentEval[]>([]);
   const [evalLoading, setEvalLoading] = useState(false);
   const [savingEval, setSavingEval] = useState(false);
-  // Set of session_refs that already have a class evaluation
   const [evalledRefs, setEvalledRefs] = useState<Set<string>>(new Set());
 
-  // Makeup modal
-  const [makeup, setMakeup] = useState<MakeupForm | null>(null);
-  const [upcomingSessions, setUpcomingSessions] = useState<Session[]>([]);
-  const [makeupAbsentReason, setMakeupAbsentReason] = useState<string>("");
-  const [candidateMakeupSessions, setCandidateMakeupSessions] = useState<Session[]>([]);
-  const [candidateMakeupDate, setCandidateMakeupDate] = useState<string>(""); // legacy (dropdown) - will be replaced by calendar
-  const [makeupSelectedDateKey, setMakeupSelectedDateKey] = useState<string>("");
-  const [makeupCurMonth, setMakeupCurMonth] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
-  const [makeupOtherTime, setMakeupOtherTime] = useState<string>(""); // HH:mm
+  // ── Học bù modal (reschedule session) ────────────────────────
+  const [makeupSession, setMakeupSession] = useState<Session | null>(null);
+  const [makeupNewDate, setMakeupNewDate] = useState("");   // yyyy-MM-dd
+  const [makeupNewTime, setMakeupNewTime] = useState("");   // HH:mm
   const [savingMakeup, setSavingMakeup] = useState(false);
 
+  // ── Hủy buổi confirm modal ───────────────────────────────────
+  const [cancelSession, setCancelSession] = useState<Session | null>(null);
+  const [cancelNote, setCancelNote] = useState("");
+  const [savingCancel, setSavingCancel] = useState(false);
+
+  // ── Load ─────────────────────────────────────────────────────
   useEffect(() => {
     async function load() {
       const supabase = createBrowserClient();
@@ -192,7 +178,6 @@ export default function InstructorSchedulePage() {
 
       const { data: classData } = await supabase.from("classes").select("id").eq("teacher_id", authSession.user.id);
       const classIds = (classData || []).map((c: { id: string }) => c.id);
-
       if (classIds.length === 0) { setLoading(false); return; }
 
       const { data } = await supabase
@@ -201,63 +186,10 @@ export default function InstructorSchedulePage() {
         .in("class_id", classIds)
         .order("session_date");
 
+      setSessions((data as Session[]) || []);
+
+      // Load evaluations
       const sessData = (data as Session[]) || [];
-      setSessions(sessData);
-
-      // Merge "other_session" makeups into the calendar (they don't exist as rows in `sessions`)
-      try {
-        const classNames = Array.from(new Set(sessData.map(s => s.class_name).filter(Boolean))) as string[];
-        if (classNames.length > 0) {
-          const rpcResults = await Promise.all(
-            classNames.map((cn) => supabase.rpc("get_makeup_status", { p_class_name: cn }))
-          );
-          const allMakeups = (rpcResults.flatMap((r: any) => (r.data as MakeupStatusRow[]) || [])) as MakeupStatusRow[];
-
-          const otherMakeups = allMakeups.filter(r =>
-            r.has_makeup &&
-            r.makeup_type === "other_session" &&
-            !!r.note
-          );
-
-          const events: MakeupEvent[] = otherMakeups.map((row, idx) => {
-            const parsedNote = parseOtherSessionMakeupNote(row.note);
-            if (!parsedNote) return null;
-
-            const parsedAbsentRef = parseSessionRef(row.session_ref);
-            if (!parsedAbsentRef) return null;
-
-            const missedSession = sessData.find(s => makeSessionRefFromSession(s) === row.session_ref);
-            const class_id = missedSession?.class_id ?? null;
-            const class_name = missedSession?.class_name ?? parsedAbsentRef.class_name;
-
-            return {
-              id: -1_000_000 - idx,
-              kind: "makeup",
-              student_name: row.student_name,
-              note: row.note,
-              class_id,
-              class_name,
-              session_no: parsedAbsentRef.session_no,
-              session_date: parsedNote.dateText,
-              session_time: parsedNote.time,
-              topic: null,
-              homework: null,
-              status: SESSION_STATUS.UPCOMING,
-              teacher_id: null,
-              created_at: new Date().toISOString(),
-            };
-          }).filter(Boolean) as MakeupEvent[];
-
-          setMakeupEvents(events);
-        } else {
-          setMakeupEvents([]);
-        }
-      } catch (err) {
-        console.error("Failed to load makeup events", err);
-        setMakeupEvents([]);
-      }
-
-      // Load which sessions already have evaluations
       if (sessData.length > 0 && profile?.full_name) {
         const { data: evalData } = await supabase
           .from("session_class_evaluation")
@@ -267,13 +199,12 @@ export default function InstructorSchedulePage() {
           setEvalledRefs(new Set((evalData as { session_ref: string }[]).map(e => e.session_ref)));
         }
       }
-
       setLoading(false);
     }
     load().catch(console.error);
   }, []);
 
-  // Assign a stable color to each class name
+  // ── Memos ────────────────────────────────────────────────────
   const classColorMap = useMemo(() => {
     const map: Record<string, string> = {};
     let idx = 0;
@@ -287,7 +218,6 @@ export default function InstructorSchedulePage() {
     return map;
   }, [sessions]);
 
-  // Build session map keyed by date string
   const sessionMap = useMemo(() => {
     const map: Record<string, Session[]> = {};
     for (const s of sessions) {
@@ -299,18 +229,6 @@ export default function InstructorSchedulePage() {
     return map;
   }, [sessions]);
 
-  const makeupMap = useMemo(() => {
-    const map: Record<string, MakeupEvent[]> = {};
-    for (const ev of makeupEvents) {
-      const key = sessionKey(ev);
-      if (!key) continue;
-      if (!map[key]) map[key] = [];
-      map[key].push(ev);
-    }
-    return map;
-  }, [makeupEvents]);
-
-  // Calendar grid cells
   const cells = useMemo(
     () => buildCalendarGrid(curMonth.getFullYear(), curMonth.getMonth()),
     [curMonth]
@@ -320,50 +238,13 @@ export default function InstructorSchedulePage() {
   const nextMonth = () => setCurMonth(d => new Date(d.getFullYear(), d.getMonth() + 1, 1));
   const goToday   = () => { setCurMonth(new Date(today.getFullYear(), today.getMonth(), 1)); setSelectedDate(today); };
 
-  // Makeup calendar navigation
-  const prevMakeupMonth = () => setMakeupCurMonth(d => new Date(d.getFullYear(), d.getMonth() - 1, 1));
-  const nextMakeupMonth = () => setMakeupCurMonth(d => new Date(d.getFullYear(), d.getMonth() + 1, 1));
-  const goMakeupToday = () => {
-    setMakeupCurMonth(new Date(today.getFullYear(), today.getMonth(), 1));
-    setMakeupSelectedDateKey(dateKey(today));
-  };
-
-  // Sessions on selected date
   const selectedDaySessions = useMemo(() => {
     if (!selectedDate) return [];
     const key = dateKey(selectedDate);
-    return [...(sessionMap[key] || []), ...(makeupMap[key] || [])];
-  }, [selectedDate, sessionMap, makeupMap]);
+    return sessionMap[key] || [];
+  }, [selectedDate, sessionMap]);
 
-  const makeupCells = useMemo(
-    () => buildCalendarGrid(makeupCurMonth.getFullYear(), makeupCurMonth.getMonth()),
-    [makeupCurMonth]
-  );
-
-  const makeupSessionMap = useMemo(() => {
-    const map: Record<string, Session[]> = {};
-    for (const s of candidateMakeupSessions) {
-      const key = sessionDateKeyFromSession(s);
-      if (!key) continue;
-      if (!map[key]) map[key] = [];
-      map[key].push(s);
-    }
-    for (const k of Object.keys(map)) {
-      map[k].sort((a, b) => {
-        const an = a.session_no ?? 0;
-        const bn = b.session_no ?? 0;
-        return an - bn;
-      });
-    }
-    return map;
-  }, [candidateMakeupSessions]);
-
-  const makeupSelectedSessions = useMemo(() => {
-    if (!makeupSelectedDateKey) return [];
-    return makeupSessionMap[makeupSelectedDateKey] || [];
-  }, [makeupSelectedDateKey, makeupSessionMap]);
-
-  // ── Attendance ──────────────────────────────────────────────────
+  // ── Attendance ───────────────────────────────────────────────
   async function openAttendance(s: Session, viewOnly = false) {
     setAttendViewOnly(viewOnly);
     setAttendSession(s);
@@ -384,40 +265,17 @@ export default function InstructorSchedulePage() {
       .select("student_id,student_name,attendance_status,note")
       .eq("session_id", s.id);
 
-    const sessionRef = `${s.class_name}#${s.session_no}#${s.session_date}`;
-    const { data: makeupRows } = await supabase
-      .from("attendance_makeup")
-      .select("*")
-      .eq("session_ref", sessionRef);
-
-    const makeupByStudent: Record<string, AttendanceMakeup> = {};
-    ((makeupRows || []) as AttendanceMakeup[]).forEach((m) => {
-      makeupByStudent[m.student_name] = m;
-    });
-    setAttendMakeupByStudent(makeupByStudent);
-
     const existingByStudentId: Record<string, { attendance_status: string; note: string }> = {};
     const existingByStudentName: Record<string, { attendance_status: string; note: string }> = {};
-    (existing || []).forEach((a: { student_id: string | null; student_name: string | null; attendance_status: string; note: string }) => {
+    (existing || []).forEach((a: any) => {
       if (a.student_id) existingByStudentId[a.student_id] = a;
       if (a.student_name) existingByStudentName[a.student_name] = a;
     });
 
     const list: StudentAttendance[] = ((enrollData || []) as unknown as { student: Student }[]).map(row => ({
       ...row.student,
-      attendance_status: ((existingByStudentId[row.student.id] || existingByStudentName[row.student.full_name])?.attendance_status as StudentAttendance["attendance_status"]) || "on_time",
-      note: (() => {
-        const base = (existingByStudentId[row.student.id] || existingByStudentName[row.student.full_name])?.note || "";
-        const mk = makeupByStudent[row.student.full_name];
-        if (!mk) return base;
-        const target = mk.target_session_ref ? sessions.find(ss => makeSessionRefFromSession(ss) === mk.target_session_ref) : null;
-        const statusText = mk.is_completed
-          ? "Đã bù xong"
-          : target
-            ? (target.status === SESSION_STATUS.DONE ? "Đã bù xong" : "Đã xếp bù - chưa xong")
-            : "Đã xếp học bù";
-        return [base, `Học bù: ${mk.note || statusText} (${statusText})`].filter(Boolean).join(" | ");
-      })(),
+      attendance_status: (((existingByStudentId[row.student.id] || existingByStudentName[row.student.full_name])?.attendance_status as "on_time" | "absent") || "on_time"),
+      note: (existingByStudentId[row.student.id] || existingByStudentName[row.student.full_name])?.note || "",
     }));
 
     setAttendStudents(list);
@@ -447,11 +305,10 @@ export default function InstructorSchedulePage() {
         .upsert(records, { onConflict: "session_ref,student_name" });
       if (error) throw new Error(error.message);
 
-      toast.success("Đã lưu điểm danh!");
-
       await supabase.from("sessions").update({ status: SESSION_STATUS.DONE }).eq("id", attendSession.id);
       setSessions(prev => prev.map(x => x.id === attendSession!.id ? { ...x, status: SESSION_STATUS.DONE } : x));
 
+      toast.success("Đã lưu điểm danh!");
       const completed = attendSession;
       setAttendSession(null);
       toast.success(
@@ -470,7 +327,7 @@ export default function InstructorSchedulePage() {
     }
   }
 
-  // ── Evaluation ──────────────────────────────────────────────────
+  // ── Evaluation ───────────────────────────────────────────────
   async function openEval(s: Session) {
     setEvalSession(s);
     setEvalClassRating(5);
@@ -485,11 +342,6 @@ export default function InstructorSchedulePage() {
       .from("session_attendance")
       .select("student_name,student_id,attendance_status")
       .eq("session_id", s.id);
-
-    const { data: makeupRows } = await supabase
-      .from("attendance_makeup")
-      .select("student_name,target_session_ref,is_completed")
-      .eq("session_ref", sessionRef);
 
     const { data: classEval } = await supabase
       .from("session_class_evaluation")
@@ -508,23 +360,10 @@ export default function InstructorSchedulePage() {
       .eq("session_ref", sessionRef);
 
     const evalMap: Record<string, { rating: number; comment: string }> = {};
-    (studentEvals || []).forEach((e: { student_name: string; rating: number; comment: string }) => {
-      evalMap[e.student_name] = e;
-    });
-
-    const makeupByStudent = new Map<string, { target_session_ref: string | null; is_completed?: boolean | null }>();
-    ((makeupRows || []) as { student_name: string; target_session_ref: string | null; is_completed?: boolean | null }[]).forEach((m) => {
-      makeupByStudent.set(m.student_name, { target_session_ref: m.target_session_ref, is_completed: m.is_completed });
-    });
+    (studentEvals || []).forEach((e: any) => { evalMap[e.student_name] = e; });
 
     const studs: StudentEval[] = ((attData || []) as { student_name: string; student_id: string; attendance_status: string }[])
-      .filter((a) => {
-        if (a.attendance_status !== ATTENDANCE_STATUS.ABSENT) return true;
-        const mk = makeupByStudent.get(a.student_name);
-        if (mk?.is_completed) return true;
-        const target = mk?.target_session_ref ? sessions.find(ss => makeSessionRefFromSession(ss) === mk.target_session_ref) : null;
-        return !!target && target.status === SESSION_STATUS.DONE;
-      })
+      .filter(a => a.attendance_status === ATTENDANCE_STATUS.ON_TIME)
       .map(a => ({
         student_id: a.student_id,
         student_name: a.student_name,
@@ -554,17 +393,19 @@ export default function InstructorSchedulePage() {
       }, { onConflict: "session_ref" });
 
       if (evalStudents.length > 0) {
-        const rows = evalStudents.map(st => ({
-          session_ref: sessionRef,
-          class_name: evalSession.class_name,
-          session_no: evalSession.session_no,
-          session_date: evalSession.session_date,
-          student_name: st.student_name,
-          rating: st.rating,
-          comment: st.comment || null,
-          evaluated_by: myName,
-        }));
-        await supabase.from("session_student_evaluation").upsert(rows, { onConflict: "session_ref,student_name" });
+        await supabase.from("session_student_evaluation").upsert(
+          evalStudents.map(st => ({
+            session_ref: sessionRef,
+            class_name: evalSession.class_name,
+            session_no: evalSession.session_no,
+            session_date: evalSession.session_date,
+            student_name: st.student_name,
+            rating: st.rating,
+            comment: st.comment || null,
+            evaluated_by: myName,
+          })),
+          { onConflict: "session_ref,student_name" }
+        );
       }
 
       toast.success("Đã lưu đánh giá buổi học!");
@@ -577,197 +418,191 @@ export default function InstructorSchedulePage() {
     }
   }
 
-  // ── Makeup ──────────────────────────────────────────────────────
-  function makeSessionRef(s: Pick<Session, "class_name" | "session_no" | "session_date">): string {
-    return `${s.class_name}#${s.session_no}#${s.session_date}`;
-  }
-
-  function makeMakeupNote(target: Session): string {
-    return `Bù slot: ${target.session_date}${target.session_time ? ` ${target.session_time}` : ""}, Buổi #${target.session_no}`;
-  }
-
-  function formatDateKeyToDDMMYYYY(key: string): string {
-    // key format: YYYY-M-D
-    const parts = key.split("-");
-    if (parts.length !== 3) return key;
-    const y = Number(parts[0]);
-    const m = Number(parts[1]);
-    const d = Number(parts[2]);
-    if (!y || !m && m !== 0 || !d) return key;
-    const dd = String(d).padStart(2, "0");
-    const mm = String(m + 1).padStart(2, "0");
-    return `${dd}/${mm}/${y}`;
-  }
-
-  function buildOtherSessionNote(dateKeyStr: string, timeStr: string): string {
-    if (!dateKeyStr) return "";
-    if (!timeStr) return "";
-    const absentBuoiNo = attendSession?.session_no ?? "";
-    const dateText = formatDateKeyToDDMMYYYY(dateKeyStr);
-    return `Bù slot: ${dateText} ${timeStr}, Buổi #${absentBuoiNo}`;
-  }
-
-  function parseMakeupNoteToDateKey(note: string | null | undefined): { dateKey: string; time: string } | null {
-    if (!note) return null;
-    const m = note.match(/Bù slot:\s*([0-9]{1,2})\/([0-9]{1,2})\/([0-9]{4})(?:\s+([0-9]{2}:[0-9]{2}))?/i);
-    if (!m) return null;
-    const dd = Number(m[1]);
-    const mm = Number(m[2]);
-    const yyyy = Number(m[3]);
-    const time = m[4] || "";
-    const d = new Date(yyyy, mm - 1, dd);
-    if (isNaN(d.getTime())) return null;
-    return { dateKey: dateKey(d), time };
-  }
-
-  function sessionDateKeyFromSession(s: Session): string | null {
-    if (!s.session_date) return null;
-    // DB date might be dd/MM/yyyy (parseSessionDate) or yyyy-MM-dd (fallback)
-    const parsed = parseSessionDate(s.session_date);
-    const d = parsed ?? (() => {
-      if (!s.session_date) return null;
-      const dd = new Date(s.session_date);
-      return isNaN(dd.getTime()) ? null : dd;
-    })();
-    if (!d) return null;
-    return dateKey(d);
-  }
-
-  async function openMakeup(studentId: string, studentName: string, absentReason: string, session: Session) {
-    const absentSessionRef = makeSessionRef(session);
-
-    // Note: "other_session" now only needs an arbitrary date + time.
-    const defaultDateKey = sessionDateKeyFromSession(session) || dateKey(today);
-    const defaultTime = session.session_time || "";
-
-    setMakeup({
-      studentName,
-      sessionRef: absentSessionRef,
-      makeupType: "other_session",
-      targetSessionRef: "",
-      note: defaultTime ? buildOtherSessionNote(defaultDateKey, defaultTime) : "",
-    });
-    setMakeupAbsentReason(absentReason || "");
-    setCandidateMakeupSessions([]);
-    setCandidateMakeupDate("");
-    setMakeupSelectedDateKey(defaultDateKey);
-    setMakeupOtherTime(defaultTime);
-
-    const supabase = createBrowserClient();
-
-    // similar_group: buổi bù trong lớp hiện tại (vẫn dùng danh sách upcoming trong lớp)
-    const { data: upcomingInClass } = await supabase
-      .from("sessions")
-      .select("*")
-      .eq("class_name", session.class_name)
-      .eq("status", SESSION_STATUS.UPCOMING)
-      .order("session_no");
-    setUpcomingSessions((upcomingInClass as Session[]) || []);
-
-    // other_session: nạp lịch UP-COMING của học viên (để hiển thị chip lịch),
-    // nhưng việc chọn ngày bù sẽ là "bất kỳ ngày" + chọn giờ bù.
-    const { data: enrollRows } = await supabase
-      .from("enrollments")
-      .select("class_id")
-      .eq("student_id", studentId)
-      .eq("status", "active");
-
-    const classIds = (enrollRows || [])
-      .map((r: { class_id: string }) => r.class_id)
-      .filter(Boolean);
-
-    if (classIds.length > 0) {
-      const { data: studentSessions } = await supabase
-        .from("sessions")
-        .select("*")
-        .in("class_id", classIds)
-        .eq("status", SESSION_STATUS.UPCOMING)
-        .order("session_date", { ascending: true });
-
-      const sess = ((studentSessions as Session[]) || []).filter(s => !!s.session_date);
-      setCandidateMakeupSessions(sess);
-    }
-
-    // Prefill from existing saved makeup row if present
-    const { data: existingMakeup } = await supabase
-      .from("attendance_makeup")
-      .select("*")
-      .eq("session_ref", absentSessionRef)
-      .eq("student_name", studentName)
-      .maybeSingle();
-    const existing = existingMakeup as AttendanceMakeup | null;
-    const parsed = parseMakeupNoteToDateKey(existing?.note);
-    const nextDateKey = parsed?.dateKey || defaultDateKey;
-    const nextTime = parsed?.time || defaultTime;
-    setMakeupSelectedDateKey(nextDateKey);
-    setMakeupOtherTime(nextTime);
-    setMakeup((prev) => prev ? {
-      ...prev,
-      makeupType: "other_session",
-      targetSessionRef: existing?.target_session_ref || "",
-      note: existing?.note || (nextTime ? buildOtherSessionNote(nextDateKey, nextTime) : ""),
-    } : prev);
+  // ── Học Bù (Reschedule Session) ──────────────────────────────
+  function openMakeup(s: Session) {
+    setMakeupSession(s);
+    // Default new date = original date
+    setMakeupNewDate(sessionDateToInputValue(s.session_date));
+    setMakeupNewTime(s.session_time || "");
   }
 
   async function handleSaveMakeup() {
-    if (!makeup) return;
-    if (makeup.makeupType === "other_session") {
-      if (!makeup.note.trim()) {
-        toast.error("Vui lòng nhập ghi chú cho buổi học bù");
-        return;
-      }
+    if (!makeupSession) return;
+    if (!makeupNewDate) {
+      toast.error("Vui lòng chọn ngày học bù");
+      return;
     }
+
+    const originalDate = makeupSession.session_date || "";
+    const newDateDisplay = dateInputToDisplay(makeupNewDate);
+
+    // Don't allow same date unless time is different
+    if (newDateDisplay === formatDDMMYYYY(originalDate) && makeupNewTime === (makeupSession.session_time || "")) {
+      toast.error("Ngày và giờ học bù phải khác ngày gốc");
+      return;
+    }
+
     setSavingMakeup(true);
     try {
       const supabase = createBrowserClient();
-      const { error } = await supabase.from("attendance_makeup").upsert({
-        session_ref: makeup.sessionRef,
-        student_name: makeup.studentName,
-        makeup_type: makeup.makeupType,
-        target_session_ref: makeup.targetSessionRef || null,
-        note: makeup.note || null,
-        approved_by: myName || null,
-      }, { onConflict: "session_ref,student_name" });
-      if (error) throw new Error(error.message);
-      toast.success(`Đã xếp học bù cho ${makeup.studentName}`);
-      setMakeup(null);
+      const makeupNote = `Học bù từ ngày ${formatDDMMYYYY(originalDate)} → ${newDateDisplay}`;
 
-      // Refresh makeup events in schedule immediately
-      const classNames = Array.from(new Set(sessions.map(s => s.class_name).filter(Boolean))) as string[];
-      if (classNames.length > 0) {
-        const rpcResults = await Promise.all(
-          classNames.map((cn) => supabase.rpc("get_makeup_status", { p_class_name: cn }))
-        );
-        const allMakeups = (rpcResults.flatMap((r: any) => (r.data || [])) as MakeupStatusRow[]);
-        const otherMakeups = allMakeups.filter(r => r.has_makeup && r.makeup_type === "other_session" && !!r.note);
-        const events: MakeupEvent[] = otherMakeups.map((row, idx) => {
-          const parsedNote = parseOtherSessionMakeupNote(row.note);
-          if (!parsedNote) return null;
-          const parsedAbsentRef = parseSessionRef(row.session_ref);
-          if (!parsedAbsentRef) return null;
-          const missedSession = sessions.find(s => makeSessionRefFromSession(s) === row.session_ref);
-          return {
-            id: -1_000_000 - idx,
-            kind: "makeup",
-            student_name: row.student_name,
-            note: row.note,
-            class_id: missedSession?.class_id ?? null,
-            class_name: missedSession?.class_name ?? parsedAbsentRef.class_name,
-            session_no: parsedAbsentRef.session_no,
-            session_date: parsedNote.dateText,
-            session_time: parsedNote.time,
-            topic: null,
-            homework: null,
-            status: SESSION_STATUS.UPCOMING,
-            teacher_id: null,
-            created_at: new Date().toISOString(),
+      // ── CHAIN SHIFTING LOGIC ──
+      const HOLIDAYS = ["01/01", "30/04", "01/05", "02/09"];
+      const isHolidayLocal = (date: Date): boolean => {
+        const d = String(date.getDate()).padStart(2, "0");
+        const m = String(date.getMonth() + 1).padStart(2, "0");
+        return HOLIDAYS.includes(`${d}/${m}`);
+      };
+
+      const parseSessionDateLocal = (dateStr: string): Date | null => {
+        if (!dateStr) return null;
+        const parts = dateStr.split("/");
+        if (parts.length !== 3) return null;
+        const d = parseInt(parts[0], 10);
+        const m = parseInt(parts[1], 10) - 1;
+        const y = parseInt(parts[2], 10);
+        if (isNaN(d) || isNaN(m) || isNaN(y)) return null;
+        return new Date(y, m, d);
+      };
+
+      const formatDateFullLocal = (date: Date): string => {
+        const dd = String(date.getDate()).padStart(2, "0");
+        const mm = String(date.getMonth() + 1).padStart(2, "0");
+        return `${dd}/${mm}/${date.getFullYear()}`;
+      };
+
+      const getNextScheduleDateLocal = (afterDateStr: string, recurringDays: number[]): string => {
+        const start = parseSessionDateLocal(afterDateStr);
+        if (!start) return afterDateStr;
+        const current = new Date(start);
+        for (let i = 0; i < 365; i++) {
+          current.setDate(current.getDate() + 1);
+          if (recurringDays.includes(current.getDay()) && !isHolidayLocal(current)) {
+            return formatDateFullLocal(current);
+          }
+        }
+        const fallback = new Date(start);
+        fallback.setDate(fallback.getDate() + 7);
+        return formatDateFullLocal(fallback);
+      };
+
+      const classSessions = sessions
+        .filter(s => s.class_id === makeupSession.class_id)
+        .map(s => s.id === makeupSession.id ? { ...s, status: SESSION_STATUS.UPCOMING } : s)
+        .sort((a, b) => (a.session_no || 0) - (b.session_no || 0));
+
+      const daysSet = new Set<number>();
+      classSessions.forEach(s => {
+        if (s.status !== SESSION_STATUS.CANCELLED && s.session_date) {
+          const d = parseSessionDateLocal(s.session_date);
+          if (d) daysSet.add(d.getDay());
+        }
+      });
+      const recurringDays = daysSet.size > 0 
+        ? Array.from(daysSet).sort((a, b) => a - b) 
+        : [1, 3, 5];
+
+      const currentDates = new Map<any, string>();
+      classSessions.forEach(s => {
+        if (s.session_date) currentDates.set(s.id, s.session_date);
+      });
+
+      currentDates.set(makeupSession.id, newDateDisplay);
+
+      let hasCollision = true;
+      let safetyCounter = 0;
+      while (hasCollision && safetyCounter < 100) {
+        safetyCounter++;
+        hasCollision = false;
+        for (let i = 0; i < classSessions.length; i++) {
+          const s1 = classSessions[i];
+          if (s1.status === SESSION_STATUS.CANCELLED) continue;
+          const date1 = currentDates.get(s1.id);
+          if (!date1) continue;
+
+          const colliding = classSessions.find(s2 => 
+            s2.id !== s1.id && 
+            s2.status !== SESSION_STATUS.CANCELLED && 
+            currentDates.get(s2.id) === date1
+          );
+
+          if (colliding) {
+            let toShift = colliding;
+            if (s1.status === SESSION_STATUS.DONE) {
+              toShift = colliding;
+            } else if (colliding.status === SESSION_STATUS.DONE) {
+              toShift = s1;
+            } else if (s1.id === makeupSession.id) {
+              toShift = colliding;
+            } else if (colliding.id === makeupSession.id) {
+              toShift = s1;
+            } else {
+              toShift = (s1.session_no || 0) > (colliding.session_no || 0) ? s1 : colliding;
+            }
+
+            const idx = classSessions.findIndex(s => s.id === toShift.id);
+            let nextDateVal: string;
+            if (idx + 1 < classSessions.length) {
+              const nextSession = classSessions[idx + 1];
+              nextDateVal = nextSession.session_date || "";
+            } else {
+              const currentVal = currentDates.get(toShift.id) || "";
+              nextDateVal = getNextScheduleDateLocal(currentVal, recurringDays);
+            }
+            currentDates.set(toShift.id, nextDateVal);
+            hasCollision = true;
+            break;
+          }
+        }
+      }
+
+      // Update all changed sessions in parallel
+      const changedSessions = classSessions.filter(s => currentDates.get(s.id) !== s.session_date);
+      await Promise.all(
+        changedSessions.map(async (s) => {
+          const newDate = currentDates.get(s.id)!;
+          if (s.id === makeupSession.id) {
+            const { error } = await supabase.from("sessions").update({
+              session_date: newDate,
+              session_time: makeupNewTime || s.session_time || null,
+              makeup_original_date: originalDate,
+              makeup_note: makeupNote,
+              status: SESSION_STATUS.UPCOMING,
+            }).eq("id", s.id);
+            if (error) throw error;
+          } else {
+            const { error } = await supabase.from("sessions").update({
+              session_date: newDate,
+            }).eq("id", s.id);
+            if (error) throw error;
+          }
+        })
+      );
+
+      // Update react state
+      setSessions(prev => prev.map(s => {
+        const newDate = currentDates.get(s.id);
+        if (!newDate || newDate === s.session_date) return s;
+        if (s.id === makeupSession.id) {
+          return { 
+            ...s, 
+            session_date: newDate, 
+            session_time: makeupNewTime || s.session_time, 
+            makeup_original_date: originalDate, 
+            makeup_note: makeupNote, 
+            status: SESSION_STATUS.UPCOMING 
           };
-        }).filter(Boolean) as MakeupEvent[];
-        setMakeupEvents(events);
-      }
-      if (attendSession) {
-        await openAttendance(attendSession, attendViewOnly);
-      }
+        } else {
+          return { 
+            ...s, 
+            session_date: newDate 
+          };
+        }
+      }));
+
+      toast.success(`Đã chuyển lịch buổi học học bù thành công!`);
+      setMakeupSession(null);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Có lỗi xảy ra");
     } finally {
@@ -775,31 +610,49 @@ export default function InstructorSchedulePage() {
     }
   }
 
-  async function markMakeupCompleted(studentName: string) {
-    if (!attendSession) return;
-    const sessionRef = `${attendSession.class_name}#${attendSession.session_no}#${attendSession.session_date}`;
-    const supabase = createBrowserClient();
-    const { error } = await supabase
-      .from("attendance_makeup")
-      .update({
-        is_completed: true,
-        completed_at: new Date().toISOString(),
-        completed_by: myName || null,
-      })
-      .eq("session_ref", sessionRef)
-      .eq("student_name", studentName);
-    if (error) {
-      toast.error(error.message || "Không thể cập nhật trạng thái học bù");
-      return;
-    }
-    toast.success("Đã đánh dấu hoàn thành học bù");
-    await openAttendance(attendSession, attendViewOnly);
+  // ── Hủy buổi ────────────────────────────────────────────────
+  function openCancel(s: Session) {
+    setCancelSession(s);
+    setCancelNote("");
   }
 
-  // ── Render ──────────────────────────────────────────────────────
+  async function handleConfirmCancel() {
+    if (!cancelSession) return;
+    setSavingCancel(true);
+    try {
+      const supabase = createBrowserClient();
+      const { error } = await supabase
+        .from("sessions")
+        .update({
+          status: SESSION_STATUS.CANCELLED,
+          cancelled_note: cancelNote.trim() || "Giáo viên hủy buổi",
+          cancelled_by: myName || "teacher",
+          cancelled_at: new Date().toISOString(),
+        })
+        .eq("id", cancelSession.id);
+
+      if (error) throw new Error(error.message);
+
+      setSessions(prev => prev.map(s =>
+        s.id === cancelSession!.id
+          ? { ...s, status: SESSION_STATUS.CANCELLED, cancelled_note: cancelNote || "Giáo viên hủy buổi", cancelled_by: myName }
+          : s
+      ));
+
+      toast.success(`Đã hủy buổi #${cancelSession.session_no}`);
+      setCancelSession(null);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Có lỗi xảy ra");
+    } finally {
+      setSavingCancel(false);
+    }
+  }
+
+  // ── Render ───────────────────────────────────────────────────
   const monthLabel = `${MONTH_NAMES[curMonth.getMonth()]} ${curMonth.getFullYear()}`;
-  const totalThisMonth = cells.filter(d => d.getMonth() === curMonth.getMonth())
-    .reduce((acc, d) => acc + (sessionMap[dateKey(d)]?.length ?? 0) + (makeupMap[dateKey(d)]?.length ?? 0), 0);
+  const totalThisMonth = cells
+    .filter(d => d.getMonth() === curMonth.getMonth())
+    .reduce((acc, d) => acc + (sessionMap[dateKey(d)]?.length ?? 0), 0);
 
   return (
     <PageWrapper>
@@ -829,27 +682,21 @@ export default function InstructorSchedulePage() {
           {/* ── Calendar Grid ── */}
           <div className="flex-1 min-w-0">
             <Card className="overflow-hidden p-0">
-              {/* Day-of-week header */}
               <div className="grid grid-cols-7 border-b border-gray-100">
                 {DAY_HEADERS.map(h => (
-                  <div key={h}
-                    className={`py-3 text-center text-xs font-semibold ${h === "CN" ? "text-rose-500" : "text-gray-500"}`}>
+                  <div key={h} className={`py-3 text-center text-xs font-semibold ${h === "CN" ? "text-rose-500" : "text-gray-500"}`}>
                     {h}
                   </div>
                 ))}
               </div>
 
-              {/* Calendar cells */}
               <div className="grid grid-cols-7">
                 {cells.map((cell, idx) => {
                   const isCurrentMonth = cell.getMonth() === curMonth.getMonth();
                   const isToday = dateKey(cell) === dateKey(today);
                   const isSelected = selectedDate && dateKey(cell) === dateKey(selectedDate);
                   const dayKey = dateKey(cell);
-                  const daySessions = [
-                    ...(sessionMap[dayKey] || []),
-                    ...(makeupMap[dayKey] || []),
-                  ];
+                  const daySessions = sessionMap[dayKey] || [];
                   const isSunday = cell.getDay() === 0;
                   const isLastRow = idx >= cells.length - 7;
 
@@ -864,7 +711,6 @@ export default function InstructorSchedulePage() {
                         isSelected ? "bg-emerald-50" : isToday ? "bg-amber-50/50" : isCurrentMonth ? "bg-white hover:bg-gray-50" : "bg-gray-50/50",
                       ].join(" ")}
                     >
-                      {/* Date number */}
                       <div className="flex justify-end mb-1">
                         <span className={[
                           "text-xs font-semibold w-6 h-6 flex items-center justify-center rounded-full",
@@ -876,26 +722,31 @@ export default function InstructorSchedulePage() {
                         </span>
                       </div>
 
-                      {/* Session chips (show max 2, then +N more) */}
                       <div className="space-y-0.5">
                         {daySessions.slice(0, 2).map(s => {
                           const colorClass = classColorMap[s.class_name || s.class_id || ""] || CLASS_COLORS[0];
                           const isDone = s.status === SESSION_STATUS.DONE;
+                          const isCancelled = s.status === SESSION_STATUS.CANCELLED;
+                          const isMakeup = !!s.makeup_original_date;
                           return (
                             <div
                               key={s.id}
                               onClick={e => {
                                 e.stopPropagation();
-                                if ((s as any).kind === "makeup") return;
-                                isDone ? openEval(s) : openAttendance(s, false);
+                                if (isDone) openEval(s);
+                                else if (!isCancelled) openAttendance(s, false);
                               }}
-                              title={`${s.class_name} – Buổi #${s.session_no}${s.session_time ? " " + s.session_time : ""}`}
+                              title={`${s.class_name} – Buổi #${s.session_no}${s.session_time ? " " + s.session_time : ""}${isMakeup ? " [Bù]" : ""}${isCancelled ? " [Hủy]" : ""}`}
                               className={[
                                 "text-[10px] font-medium px-1.5 py-0.5 rounded-md border truncate cursor-pointer transition-opacity hover:opacity-80",
                                 isDone ? "opacity-60 line-through" : "",
+                                isCancelled ? "opacity-40 line-through" : "",
+                                isMakeup ? "ring-1 ring-orange-400" : "",
                                 colorClass,
                               ].join(" ")}
                             >
+                              {isMakeup && "🔄 "}
+                              {isCancelled && "❌ "}
                               {s.session_time ? `${s.session_time} ` : ""}
                               {(s.class_name || "").split(" ")[0]}
                             </div>
@@ -913,7 +764,6 @@ export default function InstructorSchedulePage() {
               </div>
             </Card>
 
-            {/* Legend */}
             {Object.keys(classColorMap).length > 0 && (
               <div className="mt-3 flex flex-wrap gap-2">
                 {Object.entries(classColorMap).map(([name, color]) => (
@@ -926,7 +776,7 @@ export default function InstructorSchedulePage() {
           </div>
 
           {/* ── Day Detail Sidebar ── */}
-          <div className="w-72 shrink-0">
+          <div className="w-80 shrink-0">
             <Card className="p-4 sticky top-4">
               {selectedDate ? (
                 <>
@@ -947,71 +797,110 @@ export default function InstructorSchedulePage() {
                   ) : (
                     <div className="space-y-3">
                       {selectedDaySessions.map(s => {
-                        const isMakeup = (s as any).kind === "makeup";
-                        const isDone = !isMakeup && s.status === SESSION_STATUS.DONE;
+                        const isDone = s.status === SESSION_STATUS.DONE;
+                        const isCancelled = s.status === SESSION_STATUS.CANCELLED;
+                        const isUpcoming = s.status === SESSION_STATUS.UPCOMING;
+                        const isMakeup = !!s.makeup_original_date;
                         const colorClass = classColorMap[s.class_name || s.class_id || ""] || CLASS_COLORS[0];
-                        const sRef = isMakeup ? "" : `${s.class_name}#${s.session_no}#${s.session_date}`;
-                        const hasEval = isMakeup ? false : evalledRefs.has(sRef);
+                        const sRef = `${s.class_name}#${s.session_no}#${s.session_date}`;
+                        const hasEval = evalledRefs.has(sRef);
+
                         return (
                           <div key={s.id} className="rounded-xl border border-gray-100 overflow-hidden">
+                            {/* Header */}
                             <div className={`px-3 py-2 ${colorClass}`}>
                               <p className="text-xs font-bold truncate">{s.class_name}</p>
                               {s.session_time && (
                                 <p className="text-[10px] opacity-70">{s.session_time}</p>
                               )}
                             </div>
+
+                            {/* Body */}
                             <div className="px-3 py-2 bg-white space-y-2">
                               <div className="flex items-center justify-between">
-                                <span className="text-xs text-gray-500">
-                                  {isMakeup ? `Buổi bù (cho buổi #${s.session_no})` : `Buổi #${s.session_no}`}
-                                </span>
-                                {isMakeup ? (
-                                  <Badge variant="warning" className="text-[10px]">Buổi bù</Badge>
+                                <span className="text-xs text-gray-500">Buổi #{s.session_no}</span>
+                                {isCancelled ? (
+                                  <Badge variant="danger" className="text-[10px]">Đã hủy</Badge>
                                 ) : isDone ? (
                                   <Badge variant="success" className="text-[10px]">✓ Xong</Badge>
+                                ) : isMakeup ? (
+                                  <Badge variant="warning" className="text-[10px]">🔄 Học bù</Badge>
                                 ) : (
                                   <Badge variant="warning" className="text-[10px]">Sắp tới</Badge>
                                 )}
                               </div>
+
+                              {/* Makeup info */}
+                              {isMakeup && s.makeup_note && (
+                                <p className="text-[10px] text-orange-600 bg-orange-50 px-2 py-1 rounded-lg">
+                                  {s.makeup_note}
+                                </p>
+                              )}
+
+                              {/* Cancel info */}
+                              {isCancelled && s.cancelled_note && (
+                                <p className="text-[10px] text-red-600 bg-red-50 px-2 py-1 rounded-lg">
+                                  Lý do: {s.cancelled_note}
+                                </p>
+                              )}
+
                               {s.topic && (
                                 <p className="text-xs text-gray-600 line-clamp-2">{s.topic}</p>
                               )}
 
-                              {isMakeup && (s as any).student_name && (
-                                <p className="text-xs text-gray-600 line-clamp-2">
-                                  Học viên: {(s as any).student_name}
-                                </p>
-                              )}
-
-                              {isMakeup && (s as any).note && (
-                                <p className="text-[10px] text-gray-400 line-clamp-2">
-                                  {(s as any).note}
-                                </p>
-                              )}
-
-                              <div className="flex gap-1.5 pt-1 flex-wrap">
-                                {isMakeup ? null : isDone ? (
-                                  <>
-                                    <Button size="sm" variant="outline" className="flex-1 text-xs h-7"
-                                      icon={<ClipboardList className="w-3 h-3 text-emerald-600" />}
-                                      onClick={() => openAttendance(s, true)}>
-                                      Xem ĐD
-                                    </Button>
-                                    <Button size="sm"
-                                      variant="outline"
-                                      className={`flex-1 text-xs h-7 ${hasEval ? "text-amber-600 border-amber-200 bg-amber-50 hover:bg-amber-100" : ""}`}
-                                      icon={<Star className={`w-3 h-3 ${hasEval ? "fill-current text-amber-500" : "text-amber-400"}`} />}
-                                      onClick={() => openEval(s)}>
-                                      {hasEval ? "Xem lại ĐG" : "Đánh giá"}
-                                    </Button>
-                                  </>
-                                ) : s.class_id ? (
-                                  <Button size="sm" className="flex-1 text-xs h-7"
+                              {/* Action buttons — 3 independent buttons */}
+                              <div className="space-y-1.5 pt-1">
+                                {/* Button: Điểm danh */}
+                                {!isCancelled && (
+                                  <Button
+                                    size="sm"
+                                    variant={isDone ? "outline" : "primary"}
+                                    className="w-full text-xs h-7"
                                     icon={<ClipboardList className="w-3 h-3" />}
-                                    onClick={() => openAttendance(s, false)}>
-                                    Điểm danh
+                                    onClick={() => openAttendance(s, isDone)}
+                                  >
+                                    {isDone ? "Xem điểm danh" : "Điểm danh"}
                                   </Button>
-                                ) : null}
+                                )}
+
+                                {/* Button: Đánh giá (only shown after done) */}
+                                {isDone && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className={`w-full text-xs h-7 ${hasEval ? "text-amber-600 border-amber-200 bg-amber-50 hover:bg-amber-100" : ""}`}
+                                    icon={<Star className={`w-3 h-3 ${hasEval ? "fill-current text-amber-500" : "text-amber-400"}`} />}
+                                    onClick={() => openEval(s)}
+                                  >
+                                    {hasEval ? "Xem lại đánh giá" : "Đánh giá"}
+                                  </Button>
+                                )}
+
+                                {/* Button: Học bù — chuyển buổi sang ngày khác */}
+                                {!isDone && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="w-full text-xs h-7 text-orange-600 border-orange-200 hover:bg-orange-50"
+                                    icon={<WrapText className="w-3 h-3" />}
+                                    onClick={() => openMakeup(s)}
+                                  >
+                                    {isMakeup ? "Đổi lịch bù" : "Học bù"}
+                                  </Button>
+                                )}
+
+                                {/* Button: Hủy — chỉ cho UPCOMING chưa có điểm danh */}
+                                {isUpcoming && s.class_id && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="w-full text-xs h-7 text-red-500 border-red-200 hover:bg-red-50"
+                                    icon={<Ban className="w-3 h-3" />}
+                                    onClick={() => openCancel(s)}
+                                  >
+                                    Hủy buổi
+                                  </Button>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -1044,11 +933,10 @@ export default function InstructorSchedulePage() {
         ) : attendStudents.length === 0 ? (
           <div className="text-center py-8 text-gray-400">
             <ClipboardList className="w-10 h-10 mx-auto mb-2 opacity-30" />
-            <p className="text-sm">Chưa có dữ liệu điểm danh cho buổi này.</p>
+            <p className="text-sm">Chưa có học viên trong lớp hoặc chưa có dữ liệu điểm danh.</p>
           </div>
         ) : (
           <div className="space-y-3">
-            {/* Session info: date/time + zoom link */}
             {attendSession?.zoom_link && (
               <a href={attendSession.zoom_link} target="_blank" rel="noopener noreferrer"
                 className="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-xl text-sm text-blue-700 hover:bg-blue-100 transition-colors">
@@ -1065,9 +953,6 @@ export default function InstructorSchedulePage() {
               <span className="ml-auto flex gap-3">
                 <span className="text-emerald-600 font-semibold">
                   ✓ {attendStudents.filter(s => s.attendance_status === ATTENDANCE_STATUS.ON_TIME).length} đúng giờ
-                </span>
-                <span className="text-amber-600 font-semibold">
-                  ⏰ {attendStudents.filter(s => s.attendance_status === ATTENDANCE_STATUS.LATE).length} muộn
                 </span>
                 <span className="text-red-600 font-semibold">
                   ✗ {attendStudents.filter(s => s.attendance_status === ATTENDANCE_STATUS.ABSENT).length} vắng
@@ -1110,7 +995,7 @@ export default function InstructorSchedulePage() {
             </div>
 
             {attendStudents.map(st => (
-              <div key={st.id} className="p-3 bg-gray-50 rounded-xl space-y-2">
+              <div key={st.id} className="p-3 bg-gray-50 rounded-xl">
                 <div className="flex items-center gap-3">
                   <div className="w-7 h-7 rounded-full bg-brand-100 flex items-center justify-center text-xs font-bold text-brand-600 shrink-0">
                     {st.full_name.charAt(0).toUpperCase()}
@@ -1121,7 +1006,6 @@ export default function InstructorSchedulePage() {
                   <div className="flex items-center gap-1.5 shrink-0">
                     {([
                       { v: ATTENDANCE_STATUS.ON_TIME, l: "Đúng giờ", color: "bg-emerald-100 text-emerald-700 border-emerald-300" },
-                      { v: ATTENDANCE_STATUS.LATE,    l: "Muộn",     color: "bg-amber-100 text-amber-700 border-amber-300" },
                       { v: ATTENDANCE_STATUS.ABSENT,  l: "Vắng",     color: "bg-red-100 text-red-700 border-red-300" },
                     ] as const).map(opt => (
                       <button key={opt.v} type="button"
@@ -1134,27 +1018,9 @@ export default function InstructorSchedulePage() {
                     ))}
                   </div>
                 </div>
-                {st.attendance_status === ATTENDANCE_STATUS.ABSENT && attendSession && (
-                  <div className="pl-9">
-                    <Button variant="ghost" size="sm" className="text-xs text-sky-600 h-auto py-1"
-                      icon={<WrapText className="w-3 h-3" />}
-                      onClick={() => openMakeup(st.id, st.full_name, st.note, attendSession)}>
-                      Xếp học bù
-                    </Button>
-                    {attendMakeupByStudent[st.full_name] && !attendMakeupByStudent[st.full_name].is_completed && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-xs text-emerald-600 h-auto py-1"
-                        onClick={() => markMakeupCompleted(st.full_name)}
-                      >
-                        Đánh dấu đã bù xong
-                      </Button>
-                    )}
-                  </div>
-                )}
               </div>
             ))}
+
             <div className="flex gap-3 pt-2">
               <Button variant="secondary" className="flex-1" onClick={() => setAttendSession(null)}>Đóng</Button>
               <Button className="flex-1" loading={savingAttend} onClick={handleSaveAttendance}>
@@ -1188,7 +1054,7 @@ export default function InstructorSchedulePage() {
                 <textarea
                   className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"
                   rows={2}
-                  placeholder="Buổi học diễn ra tốt, học viên tập trung..."
+                  placeholder="Buổi học diễn ra tốt..."
                   value={evalClassComment}
                   onChange={e => setEvalClassComment(e.target.value)}
                 />
@@ -1232,175 +1098,108 @@ export default function InstructorSchedulePage() {
         )}
       </Modal>
 
-      {/* ── Makeup Modal ── */}
-      <Modal open={!!makeup} onClose={() => setMakeup(null)}
-        title={`Xếp Học Bù – ${makeup?.studentName}`}>
-        {makeup && (
+      {/* ── Học Bù Modal (Reschedule) ── */}
+      <Modal open={!!makeupSession} onClose={() => setMakeupSession(null)}
+        title={`Học Bù – ${makeupSession?.class_name} – Buổi #${makeupSession?.session_no}`}>
+        {makeupSession && (
           <div className="space-y-4">
-            <p className="text-xs text-gray-500">Buổi vắng: <span className="font-mono text-gray-700">{makeup.sessionRef}</span></p>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Loại học bù</label>
-              <div className="rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-medium text-sky-700">
-                Xếp buổi khác / ghi chú
+            <div className="p-3 bg-orange-50 border border-orange-100 rounded-xl">
+              <p className="text-xs text-orange-700 font-semibold mb-1">Buổi gốc</p>
+              <p className="text-sm font-medium text-orange-900">
+                {formatDDMMYYYY(makeupSession.session_date)} {makeupSession.session_time && `lúc ${makeupSession.session_time}`}
+              </p>
+              {makeupSession.makeup_original_date && (
+                <p className="text-xs text-orange-600 mt-1">
+                  (Đã bù từ ngày {formatDDMMYYYY(makeupSession.makeup_original_date)})
+                </p>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Ngày học bù *</label>
+                <input
+                  type="date"
+                  value={makeupNewDate}
+                  onChange={e => setMakeupNewDate(e.target.value)}
+                  className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Giờ học bù</label>
+                <input
+                  type="time"
+                  value={makeupNewTime}
+                  onChange={e => setMakeupNewTime(e.target.value)}
+                  className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                />
               </div>
             </div>
 
-            {makeup.makeupType === "other_session" && (
-              <div className="space-y-3">
-                <div className="rounded-xl bg-sky-50 border border-sky-100 p-3">
-                  <p className="text-xs text-sky-800 font-semibold mb-1">Lý do vắng</p>
-                  <p className="text-xs text-sky-900">{makeupAbsentReason || "–"}</p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Chọn ngày bù *</label>
-                    {/* Calendar vẫn hiển thị lịch học; nhưng bạn có thể chọn bất kỳ ngày nào */}
-                    <p className="text-xs text-gray-500 mt-0.5 mb-1">Bấm vào ô ngày để chọn</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Giờ bù *</label>
-                    <input
-                      type="time"
-                      value={makeupOtherTime}
-                      onChange={(e) => {
-                        const next = e.target.value;
-                        setMakeupOtherTime(next);
-                        setMakeup(prev => prev ? { ...prev, note: buildOtherSessionNote(makeupSelectedDateKey, next) } : prev);
-                      }}
-                      className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="rounded-xl border border-gray-100 overflow-hidden bg-white">
-                  <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-100">
-                    <p className="text-xs font-semibold text-gray-700">
-                      {MONTH_NAMES[makeupCurMonth.getMonth()]} {makeupCurMonth.getFullYear()}
-                    </p>
-                    <div className="flex items-center gap-1">
-                      <Button variant="ghost" size="sm" className="h-auto p-1" icon={<ChevronLeft className="w-4 h-4" />} onClick={prevMakeupMonth} />
-                      <Button variant="ghost" size="sm" className="h-auto p-1" icon={<Calendar className="w-4 h-4" />} onClick={goMakeupToday} />
-                      <Button variant="ghost" size="sm" className="h-auto p-1" icon={<ChevronRight className="w-4 h-4" />} onClick={nextMakeupMonth} />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-7 border-b border-gray-100">
-                    {DAY_HEADERS.map(h => (
-                      <div key={h} className={`py-2 text-center text-xs font-semibold ${h === "CN" ? "text-rose-500" : "text-gray-500"}`}>
-                        {h}
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="grid grid-cols-7">
-                    {makeupCells.map((cell, idx) => {
-                      const key = dateKey(cell);
-                      const isCurrentMonth = cell.getMonth() === makeupCurMonth.getMonth();
-                      const isToday = key === dateKey(today);
-                      const isSelected = makeupSelectedDateKey === key;
-                      const daySessions = makeupSessionMap[key] || [];
-
-                      return (
-                        <div
-                          key={idx}
-                          onClick={() => {
-                            setMakeupSelectedDateKey(key);
-                            setMakeup(p => (
-                              p ? {
-                                ...p,
-                                targetSessionRef: "",
-                                note: buildOtherSessionNote(key, makeupOtherTime),
-                              } : p
-                            ));
-                          }}
-                          className={[
-                            "min-h-[90px] p-1.5 cursor-pointer transition-colors",
-                            !isCurrentMonth ? "bg-gray-50/50" : "bg-white hover:bg-gray-50",
-                            isSelected ? "bg-emerald-50" : "",
-                            !isCurrentMonth ? "" : "",
-                            idx % 7 !== 6 ? "border-r border-gray-100" : "",
-                            idx >= makeupCells.length - 7 ? "" : "border-b border-gray-100",
-                          ].join(" ")}
-                        >
-                          <div className="flex justify-end mb-1">
-                            <span className={[
-                              "text-xs font-semibold w-6 h-6 flex items-center justify-center rounded-full",
-                              isToday ? "bg-emerald-600 text-white" : "",
-                              isSelected ? "bg-emerald-100 text-emerald-700" : "",
-                              isCurrentMonth ? "text-gray-700" : "text-gray-300",
-                            ].join(" ")}>
-                              {cell.getDate()}
-                            </span>
-                          </div>
-
-                          <div className="space-y-0.5">
-                            {daySessions.slice(0, 2).map(s => {
-                              const ref = makeSessionRef(s);
-                              const active = makeup.targetSessionRef === ref;
-                              const colorClass = classColorMap[s.class_name || s.class_id || ""] || CLASS_COLORS[0];
-                              return (
-                                <button
-                                  key={ref}
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    const keyNow = key;
-                                    const nextTime = s.session_time || makeupOtherTime;
-                                    setMakeupOtherTime(nextTime || "");
-                                    setMakeup(p => (
-                                      p ? {
-                                        ...p,
-                                        targetSessionRef: "",
-                                        note: buildOtherSessionNote(keyNow, nextTime || ""),
-                                      } : p
-                                    ));
-                                    setMakeupSelectedDateKey(keyNow);
-                                  }}
-                                  className={[
-                                    "text-[10px] font-medium px-1.5 py-0.5 rounded-md border truncate cursor-pointer transition-opacity hover:opacity-80 w-full text-left",
-                                    colorClass,
-                                    active ? "ring-2 ring-emerald-500" : "",
-                                  ].join(" ")}
-                                  title={`${s.class_name} – Buổi #${s.session_no} ${s.session_time || ""}`}
-                                >
-                                  {s.session_time ? `${s.session_time} ` : ""}
-                                  {(s.class_name || "").split(" ")[0]}
-                                </button>
-                              );
-                            })}
-
-                            {daySessions.length > 2 && (
-                              <div className="text-[10px] text-gray-400 font-medium pl-1">
-                                +{daySessions.length - 2} buổi
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
+            {makeupNewDate && (
+              <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-xl">
+                <p className="text-xs text-emerald-600 font-medium">
+                  Ghi chú sẽ lưu: "Học bù từ ngày {formatDDMMYYYY(makeupSession.session_date)} → {dateInputToDisplay(makeupNewDate)}"
+                </p>
               </div>
             )}
 
+            <p className="text-xs text-gray-500">
+              ⚠ Thao tác này sẽ chuyển <strong>toàn bộ buổi học</strong> sang ngày mới. Tất cả học viên trong lớp sẽ học vào ngày bù.
+            </p>
+
+            <div className="flex gap-3 pt-1">
+              <Button variant="secondary" className="flex-1" onClick={() => setMakeupSession(null)}>Hủy</Button>
+              <Button type="button" className="flex-1" loading={savingMakeup} onClick={handleSaveMakeup}>
+                <CalendarCheck2 className="w-4 h-4 mr-1" />
+                Xác nhận học bù
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* ── Hủy Buổi Confirm Modal ── */}
+      <Modal open={!!cancelSession} onClose={() => setCancelSession(null)}
+        title={`Xác nhận hủy buổi #${cancelSession?.session_no}`}>
+        {cancelSession && (
+          <div className="space-y-4">
+            <div className="p-3 bg-red-50 border border-red-100 rounded-xl flex gap-3 items-start">
+              <AlertTriangle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-semibold text-red-700">Bạn sắp hủy buổi học này</p>
+                <p className="text-xs text-red-600 mt-1">
+                  {cancelSession.class_name} – Buổi #{cancelSession.session_no} – {formatDDMMYYYY(cancelSession.session_date)}
+                </p>
+                <p className="text-xs text-red-500 mt-2">
+                  Sau khi hủy, buổi học sẽ được đánh dấu "Đã hủy". Bạn vẫn có thể dùng nút "Học bù" để chuyển sang ngày khác sau.
+                </p>
+              </div>
+            </div>
+
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Ghi chú{makeup.makeupType === "other_session" && " *"}
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Lý do hủy (tùy chọn)</label>
               <textarea
-                className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"
+                className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-400 resize-none"
                 rows={2}
-                placeholder="Sẽ bù theo slot đã chọn..."
-                value={makeup.note}
-                onChange={e => setMakeup(p => p ? { ...p, note: e.target.value } : p)}
+                placeholder="Giáo viên bận, học viên nghỉ lễ..."
+                value={cancelNote}
+                onChange={e => setCancelNote(e.target.value)}
               />
             </div>
 
             <div className="flex gap-3 pt-1">
-              <Button variant="secondary" className="flex-1" onClick={() => setMakeup(null)}>Hủy</Button>
-              <Button type="button" className="flex-1" loading={savingMakeup} onClick={handleSaveMakeup}>Xác nhận học bù</Button>
+              <Button variant="secondary" className="flex-1" onClick={() => setCancelSession(null)}>
+                Quay lại
+              </Button>
+              <Button
+                className="flex-1 bg-red-500 hover:bg-red-600 text-white border-red-500"
+                loading={savingCancel}
+                onClick={handleConfirmCancel}
+              >
+                <Ban className="w-4 h-4 mr-1" />
+                Xác nhận hủy
+              </Button>
             </div>
           </div>
         )}

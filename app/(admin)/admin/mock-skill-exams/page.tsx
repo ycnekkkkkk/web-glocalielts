@@ -116,7 +116,7 @@ export default function AdminMockSkillExamsPage() {
     <PageWrapper>
       <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-brand-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-brand-500/20 shrink-0">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-brand-500 to-sky-600 flex items-center justify-center shadow-lg shadow-brand-500/20 shrink-0">
             <BookOpen className="w-6 h-6 text-white" />
           </div>
           <div>

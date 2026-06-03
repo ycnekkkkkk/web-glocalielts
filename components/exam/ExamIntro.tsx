@@ -144,7 +144,7 @@ export function ExamIntro({
         <button
           type="button"
           onClick={onStart}
-          className="w-full rounded-2xl bg-gradient-to-r from-brand-600 to-indigo-600 text-white py-4 font-bold text-base hover:opacity-90 transition-all shadow-lg hover:shadow-xl hover:scale-[1.01] active:scale-[0.99]"
+          className="w-full rounded-2xl bg-gradient-to-r from-brand-600 to-sky-600 text-white py-4 font-bold text-base hover:opacity-90 transition-all shadow-lg hover:shadow-xl hover:scale-[1.01] active:scale-[0.99]"
         >
           🚀 Bắt đầu làm bài
         </button>

@@ -67,7 +67,7 @@ export function ExamSubmittedConfirmation({
         <Link href="/student/dashboard" className="flex-1">
           <button
             type="button"
-            className="w-full flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-brand-600 to-indigo-600 text-white py-3 font-semibold text-sm hover:opacity-90 transition-all shadow-md"
+            className="w-full flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-brand-600 to-sky-600 text-white py-3 font-semibold text-sm hover:opacity-90 transition-all shadow-md"
           >
             <Home className="w-4 h-4" />
             Trang cá nhân

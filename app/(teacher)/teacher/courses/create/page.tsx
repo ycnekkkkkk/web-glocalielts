@@ -4,8 +4,8 @@ import { Card } from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Select from "@/components/ui/Select";
-import { ArrowLeft, Save } from "lucide-react";
-import Link from "next/link";
+import BackButton from "@/components/ui/BackButton";
+import { Save } from "lucide-react";
 import { useState } from "react";
 import toast from "react-hot-toast";
 
@@ -26,9 +26,7 @@ export default function CreateCoursePage() {
   return (
     <PageWrapper>
       <div className="mb-4">
-        <Link href="/teacher/courses">
-          <Button variant="ghost" size="sm" icon={<ArrowLeft className="w-4 h-4" />}>Danh sách lớp</Button>
-        </Link>
+        <BackButton href="/teacher/courses" label="Danh sách lớp" variant="button" />
       </div>
 
       <div className="page-header">

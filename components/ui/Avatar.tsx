@@ -23,7 +23,7 @@ const gradients = [
   "from-brand-400 to-brand-600",
   "from-emerald-400 to-teal-600",
   "from-sky-400 to-blue-600",
-  "from-purple-400 to-violet-600",
+  "from-sky-400 to-sky-600",
   "from-amber-400 to-orange-600",
   "from-rose-400 to-pink-600",
 ];

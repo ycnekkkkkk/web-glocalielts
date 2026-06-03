@@ -151,7 +151,7 @@ export default function StudentMyCoursesPage() {
             : 0;
           const statusInfo = STATUS_MAP[c.status] || { label: c.status, variant: "gray" as const };
           return (
-            <Link key={c.id} href={`/student/my-courses/${encodeURIComponent(c.id)}`}>
+            <Link key={c.id} href={`/student/my-courses/${encodeURIComponent(c.name)}`}>
               <Card hover className="p-5 cursor-pointer">
                 <div className="flex items-start justify-between mb-4">
                   <div className="w-12 h-12 bg-linear-to-br from-sky-400 to-blue-600 rounded-2xl flex items-center justify-center">

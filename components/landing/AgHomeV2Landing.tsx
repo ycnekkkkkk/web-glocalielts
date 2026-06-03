@@ -1,116 +1,26 @@
 "use client";
 
-import Button from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
 import CourseCardSlider from "@/components/landing/CourseCardSlider";
 import HeroSplitCarousel from "@/components/landing/HeroSplitCarousel";
 import PublicSiteFooter from "@/components/layout/PublicSiteFooter";
-import PublicSiteHeader from "@/components/layout/PublicSiteHeader";
-import { AG_LANDING_VI as t } from "@/lib/ag-landing-vi";
+import TopBar from "@/components/landing/TopBar";
 import type { PublicCourse } from "@/types/database";
-import { Banknote, Check, ChevronRight, Heart, Sparkles } from "lucide-react";
-import Image from "next/image";
 import { useMemo, useState } from "react";
 import toast from "react-hot-toast";
 
-type TabKey = "tab1" | "tab2" | "tab3";
-
-const COURSE_CATEGORIES = [
-  "Pronunciation",
-  "Speaking",
-  "IELTS Mentorship",
-  "IELTS Rocket",
-  "A+ Teacher",
-  "Practice IELTS with Native Teacher",
-  "Exchange Culture with Local Mentor",
-  "Hạ Hạ Mentoring Coaching",
-  "[AG x HR] Series Training Intern",
-] as const;
-
-const PARTNER_LOGOS = ["/doitac/1.png", "/doitac/2.png", "/doitac/3.png", "/doitac/4.png", "/doitac/5.png", "/doitac/6.png", "/doitac/7.png"] as const;
-const UPCOMING_EVENTS = [
-  {
-    title: "Workshop Listening 7.0+",
-    date: "19:30 · 20/04/2026",
-    mode: "Online Zoom",
-    note: "Phân tích bẫy đề thật + chiến lược làm Part 2, Part 3.",
-  },
-  {
-    title: "Mock Test 4 kỹ năng có chấm Speaking",
-    date: "08:00 · 27/04/2026",
-    mode: "Offline · TP.HCM",
-    note: "Thi thử đầy đủ, trả band dự kiến và góp ý chi tiết.",
-  },
-  {
-    title: "Q&A Du học + IELTS Pathway",
-    date: "19:00 · 04/05/2026",
-    mode: "Hybrid",
-    note: "Lộ trình IELTS theo mục tiêu học bổng và hồ sơ du học.",
-  },
-] as const;
-
-const CLIENT_FEEDBACKS = [
-  {
-    name: "Nguyễn Minh Anh",
-    target: "IELTS 7.0",
-    quote:
-      "Mình thích nhất phần chữa Writing rất cụ thể theo từng tiêu chí. Sau 6 tuần, điểm task response tăng rõ rệt.",
-  },
-  {
-    name: "Trần Hoàng Long",
-    target: "IELTS 6.5",
-    quote:
-      "Thi thử mô phỏng sát đề thật, đặc biệt Speaking có nhận xét thẳng vào lỗi phát âm và ý tưởng nên tiến bộ nhanh.",
-  },
-  {
-    name: "Lê Khánh Ngọc",
-    target: "IELTS 7.5",
-    quote:
-      "Mentor theo sát từng giai đoạn, có lịch học linh hoạt. Mình vừa đi làm vừa ôn vẫn giữ được tiến độ.",
-  },
-] as const;
-
 function detectCategory(course: PublicCourse): string {
-  const raw =
-    `${course.slug ?? ""} ${course.title} ${course.short_description ?? ""} ${course.description ?? ""}`.toLowerCase();
+  const raw = `${course.slug ?? ""} ${course.title} ${course.short_description ?? ""} ${course.description ?? ""}`.toLowerCase();
   const rawNoAccent = raw.normalize("NFD").replace(/\p{Diacritic}/gu, "").replace(/đ/g, "d").replace(/Đ/g, "d");
-
   const upper = `${course.slug ?? ""} ${course.title}`.toUpperCase();
-
-  // Legacy/program header entries
   if (raw.includes("ielts mentorship")) return "IELTS Mentorship";
-
-  // Code-first mapping for legacy codes that don't contain keyword strings
-  if (
-    upper.includes("CMO1") ||
-    upper.includes("GIG1") ||
-    upper.includes("GIO1") ||
-    raw.includes("pronunciation")
-  ) {
-    return "Pronunciation";
-  }
-
+  if (upper.includes("CMO1") || upper.includes("GIG1") || upper.includes("GIO1") || raw.includes("pronunciation")) return "Pronunciation";
   if (upper.includes("CMG1") || upper.includes("SPG5") || raw.includes("speaking")) return "Speaking";
-  if (
-    upper.includes("IM01") ||
-    upper.includes("IM02") ||
-    upper.includes("IM03") ||
-    upper.includes("IMO1") ||
-    upper.includes("IMO2") ||
-    upper.includes("IMO3") ||
-    upper.includes("IMG") ||
-    upper.includes("GIG2")
-  )
-    return "IELTS Mentorship";
-
+  if (upper.includes("IM01") || upper.includes("IM02") || upper.includes("IM03") || upper.includes("IMO1") || upper.includes("IMO2") || upper.includes("IMO3") || upper.includes("IMG") || upper.includes("GIG2")) return "IELTS Mentorship";
   if (upper.includes("RIG") || upper.includes("RIO") || raw.includes("rocket")) return "IELTS Rocket";
-
   if (raw.includes("a+ teacher") || raw.includes("a plus teacher")) return "A+ Teacher";
   if (raw.includes("native teacher")) return "Practice IELTS with Native Teacher";
   if (raw.includes("exchange culture") || raw.includes("local mentor")) return "Exchange Culture with Local Mentor";
   if (raw.includes("hạ hạ") || raw.includes("ha ha") || raw.includes("mentoring coaching")) return "Hạ Hạ Mentoring Coaching";
-
-  // Title-based mapping (legacy). These items may not include clear keywords in text.
   if (rawNoAccent.includes("tu duy lam it duoc nhieu")) return "Hạ Hạ Mentoring Coaching";
   if (rawNoAccent.includes("yearly reflection")) return "Hạ Hạ Mentoring Coaching";
   if (rawNoAccent.includes("bi kip gioi danh cho hoc sinh luoi")) return "Hạ Hạ Mentoring Coaching";
@@ -118,23 +28,25 @@ function detectCategory(course: PublicCourse): string {
   return "Khác";
 }
 
+const COURSE_CATEGORIES = [
+  "Pronunciation", "Speaking", "IELTS Mentorship", "IELTS Rocket", "A+ Teacher",
+  "Practice IELTS with Native Teacher", "Exchange Culture with Local Mentor",
+  "Hạ Hạ Mentoring Coaching", "[AG x HR] Series Training Intern",
+] as const;
+
+type TabKey = "tab1" | "tab2" | "tab3";
+
 export default function AgHomeV2Landing({ courses }: { courses: PublicCourse[] }) {
   const [tab, setTab] = useState<TabKey>("tab1");
-  const [form, setForm] = useState({
-    type: "",
-    full_name: "",
-    phone: "",
-    email: "",
-    code_refer: "",
-  });
+  const [form, setForm] = useState({ type: "", full_name: "", phone: "", email: "", code_refer: "" });
 
   function submitForm(e: React.FormEvent) {
     e.preventDefault();
     if (!form.type || !form.full_name.trim() || !form.phone.trim() || !form.email.trim()) {
-      toast.error("Vui lòng điền đủ các trường bắt buộc.");
+      toast.error("Vui lòng điền đầy đủ các trường bắt buộc.");
       return;
     }
-    toast.success(t.register_success);
+    toast.success("Cảm ơn bạn! Đội ngũ sẽ liên hệ trong 24 giờ.");
   }
 
   const groupedCourses = useMemo(() => {
@@ -149,482 +61,271 @@ export default function AgHomeV2Landing({ courses }: { courses: PublicCourse[] }
   }, [courses]);
 
   const categoryOrder = useMemo(() => {
-    const ordered = COURSE_CATEGORIES.filter((c) => (groupedCourses.get(c) ?? []).length > 0);
-    return ordered;
+    return COURSE_CATEGORIES.filter(c => (groupedCourses.get(c) ?? []).length > 0);
   }, [groupedCourses]);
 
   const orderedCourses = useMemo(() => {
-    return categoryOrder.flatMap((cat) => groupedCourses.get(cat) ?? []);
+    return categoryOrder.flatMap(cat => groupedCourses.get(cat) ?? []);
   }, [categoryOrder, groupedCourses]);
 
   return (
-    <div className="min-h-screen bg-slate-50 text-gray-900">
-      <PublicSiteHeader />
-
-      <HeroSplitCarousel />
-
-      <section className="py-12 sm:py-16 bg-slate-50 border-b border-gray-200/80">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 text-center">
-          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 leading-snug">
-            <span className="text-brand-600">{t.support}</span> {t.for_ielts_exam_registration}
-            <br />
-            <span className="text-gray-800">{t.with_idp_or_british_council}</span>
-          </h2>
-          <div className="grid md:grid-cols-3 gap-6 lg:gap-8 mt-12 text-left">
-            <Card className="p-6 flex flex-col items-center text-center h-full border-brand-100/80 bg-white">
-              <div className="w-20 h-20 mb-4 rounded-2xl bg-brand-100 flex items-center justify-center">
-                <Sparkles className="w-10 h-10 text-brand-600" strokeWidth={1.5} />
-              </div>
-              <h4 className="font-bold text-lg mb-2 text-gray-900">{t.convenient}</h4>
-              <p className="text-sm text-gray-600 leading-relaxed">{t.conten01}</p>
-            </Card>
-            <Card className="p-6 flex flex-col items-center text-center h-full border-brand-100/80 bg-white">
-              <div className="w-20 h-20 mb-4 rounded-2xl bg-indigo-100 flex items-center justify-center">
-                <Banknote className="w-10 h-10 text-indigo-700" strokeWidth={1.5} />
-              </div>
-              <h4 className="font-bold text-lg mb-2 text-gray-900">{t.expense}</h4>
-              <p className="text-sm text-gray-600 leading-relaxed">{t.conten02}</p>
-            </Card>
-            <Card className="p-6 flex flex-col items-center text-center h-full border-brand-100/80 bg-white">
-              <div className="w-20 h-20 mb-4 rounded-2xl bg-violet-100 flex items-center justify-center">
-                <Heart className="w-10 h-10 text-violet-700" strokeWidth={1.5} />
-              </div>
-              <h4 className="font-bold text-lg mb-2 text-gray-900">{t.tam}</h4>
-              <p className="text-sm text-gray-600 leading-relaxed">{t.conten03}</p>
-            </Card>
-          </div>
-          <div className="mt-10 flex justify-center">
-            <a href="#support-register-form">
-              <Button type="button" size="lg" variant="primary" className="px-10">
-                {t.register_now}
-              </Button>
-            </a>
-          </div>
+    <>
+      {/* ── Shared seamless gradient wrapper ── */}
+      <div
+        className="relative"
+        style={{
+          background: "linear-gradient(165deg, #F8F7FC 0%, #F3F0FF 25%, #E9DEFF 50%, #F3F0FF 75%, #F8F7FC 100%)",
+          minHeight: "100vh",
+        }}
+      >
+        {/* Ambient glow blobs — layered for premium SaaS depth */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div
+            className="absolute -top-32 -right-32 w-[800px] h-[800px] rounded-full blur-[140px]"
+            style={{ background: "radial-gradient(circle, rgba(108,99,255,0.14) 0%, rgba(108,99,255,0.06) 35%, transparent 60%)" }}
+          />
+          <div
+            className="absolute -top-16 -left-48 w-[600px] h-[600px] rounded-full blur-[120px]"
+            style={{ background: "radial-gradient(circle, rgba(233,222,255,0.7) 0%, rgba(243,240,255,0.3) 40%, transparent 65%)" }}
+          />
+          <div
+            className="absolute top-[55%] left-1/2 -translate-x-1/2 w-[700px] h-[400px] rounded-full blur-[140px]"
+            style={{ background: "radial-gradient(circle, rgba(108,99,255,0.08) 0%, transparent 65%)" }}
+          />
+          <div
+            className="absolute top-[70%] -left-24 w-[400px] h-[400px] rounded-full blur-[100px]"
+            style={{ background: "radial-gradient(circle, rgba(108,99,255,0.07) 0%, transparent 65%)" }}
+          />
         </div>
-      </section>
 
-      <section className="py-12 sm:py-16 bg-white border-b border-gray-200/80">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-center text-gray-900 mb-2">
-            <span className="block">{t.events}</span>
-            <span className="block text-brand-600">{t.upcoming}</span>
-          </h2>
-          <div className="mt-8 grid gap-4 md:grid-cols-3">
-            {UPCOMING_EVENTS.map((event) => (
-              <Card key={event.title} className="p-5 sm:p-6 bg-slate-50/80 border-brand-100/70">
-                <p className="text-xs font-semibold tracking-wide text-brand-700 uppercase">{event.mode}</p>
-                <h3 className="mt-2 text-base sm:text-lg font-bold text-gray-900 leading-snug">{event.title}</h3>
-                <p className="mt-2 text-sm font-medium text-gray-700">{event.date}</p>
-                <p className="mt-3 text-sm text-gray-600 leading-relaxed">{event.note}</p>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
+        {/* TopBar floats over the gradient */}
+        <TopBar />
 
-      <section className="py-12 sm:py-16 bg-slate-50 border-b border-gray-200/80">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-center mb-1 text-gray-900">
-            <span className="block">{t.courses}</span>
-            <span className="block text-brand-600 mt-1">{t.courses_attribute}</span>
-          </h2>
-          <div className="mt-10">
-            <CourseCardSlider courses={orderedCourses} />
-          </div>
-        </div>
-      </section>
+        <main className="relative z-10">
+          <HeroSplitCarousel />
 
-      <section className="py-12 sm:py-20 bg-white border-b border-gray-200/80">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <div className="grid lg:grid-cols-2 gap-10 items-center mb-14">
-            <div>
-              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold leading-tight text-gray-900">
-                <span className="block">{t.text1}</span>
-                <span className="block">{t.text2}</span>
-              </h2>
-              <ul className="mt-6 space-y-3 text-gray-700 text-sm sm:text-base leading-relaxed">
-                <li className="flex gap-2">
-                  <Check className="w-5 h-5 text-brand-600 shrink-0 mt-0.5" />
-                  {t.conten04}
-                </li>
-                <li className="flex gap-2">
-                  <Check className="w-5 h-5 text-brand-600 shrink-0 mt-0.5" />
-                  {t.conten05}
-                </li>
-                <li className="flex gap-2">
-                  <Check className="w-5 h-5 text-brand-600 shrink-0 mt-0.5" />
-                  {t.conten06}
-                </li>
-              </ul>
+          {/* ── Features grid ── */}
+          <section className="py-20 lg:py-28 bg-white">
+            <div className="max-w-6xl mx-auto px-5 lg:px-8">
+              <div className="text-center max-w-2xl mx-auto mb-16">
+                <span className="inline-block text-xs font-semibold tracking-widest uppercase text-brand-500 mb-4">Tại sao chọn chúng tôi</span>
+                <h2 className="text-3xl lg:text-4xl font-black text-gray-900 tracking-tight leading-tight">
+                  Mọi thứ bạn cần để chinh phục band điểm IELTS mong muốn
+                </h2>
+                <p className="mt-4 text-base text-gray-500 leading-relaxed">
+                  Chương trình luyện IELTS toàn diện kết hợp hướng dẫn chuyên gia, đề thi thực tế và hỗ trợ từ giáo viên bản ngữ.
+                </p>
+              </div>
+
+              <div className="grid md:grid-cols-3 gap-5">
+                {[
+                  {
+                    icon: <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5" /></svg>,
+                    title: "Đối tác chính thức IDP & BC",
+                    desc: "Đối tác đăng ký thi chính thức tại 40+ tỉnh thành với ưu đãi độc quyền và ưu tiên đặt lịch thi.",
+                    color: "#5B5BD6",
+                  },
+                  {
+                    icon: <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" /></svg>,
+                    title: "Đề thi thực tế",
+                    desc: "Bài mock test full-length với kết quả tức thì và phản hồi chi tiết từ chuyên gia về Writing & Speaking.",
+                    color: "#5B5BD6",
+                  },
+                  {
+                    icon: <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" /></svg>,
+                    title: "Giảng viên bản ngữ",
+                    desc: "Luyện tập với mentor Canada để có giao tiếp thực tế và hòa nhập văn hóa trước khi du học.",
+                    color: "#5B5BD6",
+                  },
+                  {
+                    icon: <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" /></svg>,
+                    title: "Chương trình IELTS chuyên sâu",
+                    desc: "Khóa học có cấu trúc bài bản, thiết kế bởi giáo viên IELTS chứng chỉ, phủ đủ cả 4 kỹ năng.",
+                    color: "#5B5BD6",
+                  },
+                  {
+                    icon: <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" /></svg>,
+                    title: "Theo dõi tiến độ",
+                    desc: "Bảng điều khiển giám sát band điểm cải thiện theo thời gian với phân tích dữ liệu chi tiết.",
+                    color: "#5B5BD6",
+                  },
+                  {
+                    icon: <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+                    title: "Học mọi lúc, mọi nơi",
+                    desc: "Truy cập tài liệu luyện tập và đề thi mock 24/7. Học theo tốc độ riêng trên mọi thiết bị.",
+                    color: "#5B5BD6",
+                  },
+                ].map(f => (
+                  <div key={f.title} className="group p-7 rounded-[20px] bg-white border border-gray-100 hover:border-gray-200 hover:shadow-[0_8px_40px_-8px_rgba(0,0,0,0.08)] transition-all duration-300">
+                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-5 transition-transform duration-300 group-hover:scale-110"
+                      style={{ background: `${f.color}15` }}>
+                      <span style={{ color: f.color }}>{f.icon}</span>
+                    </div>
+                    <h3 className="text-base font-bold text-gray-900">{f.title}</h3>
+                    <p className="mt-2.5 text-sm text-gray-500 leading-relaxed">{f.desc}</p>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="relative aspect-video overflow-hidden rounded-2xl border border-brand-100/80">
-              <Image
-                src="https://images.unsplash.com/photo-1488998427799-e3362cec87c3?auto=format&fit=crop&w=1400&q=80"
-                alt="Buổi tư vấn đăng ký thi IELTS"
-                fill
-                className="object-cover object-center"
-                sizes="(max-width: 1024px) 100vw, 48vw"
-              />
-            </div>
-          </div>
-          <div className="grid md:grid-cols-2 gap-6">
-            <Card className="p-6 sm:p-8 flex gap-4 bg-gradient-to-br from-amber-50 to-orange-50 border-amber-100/90">
-              <div className="relative w-16 h-16 shrink-0">
-                <Image src="/landing-ag/icon-mentoring-1.svg" alt="" fill className="object-contain" />
-              </div>
-              <div>
-                <h3 className="font-bold text-gray-900">{t.content14}</h3>
-                <ul className="mt-3 space-y-2 text-sm text-gray-700">
-                  <li className="flex gap-2">
-                    <Check className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                    {t.content15}
-                  </li>
-                  <li className="flex gap-2">
-                    <Check className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                    {t.content16}
-                  </li>
-                  <li className="flex gap-2">
-                    <Check className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                    {t.content17}
-                  </li>
-                </ul>
-                <a
-                  href="#support-register-form"
-                  className="inline-flex items-center gap-1 mt-4 text-brand-700 font-semibold text-sm hover:text-brand-800 hover:underline"
-                >
-                  {t.more} <ChevronRight className="w-4 h-4" />
+          </section>
+
+          {/* ── Courses section ── */}
+          <section className="py-20 lg:py-28 bg-white">
+            <div className="max-w-6xl mx-auto px-5 lg:px-8">
+              <div className="flex items-end justify-between mb-12">
+                <div>
+                  <span className="inline-block text-xs font-semibold tracking-widest uppercase text-brand-500 mb-3">Khám phá</span>
+                  <h2 className="text-3xl lg:text-4xl font-black text-gray-900 tracking-tight">Khóa học nổi bật</h2>
+                </div>
+                <a href="/courses" className="hidden sm:inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 hover:text-brand-700 transition-colors">
+                  Xem tất cả <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
                 </a>
               </div>
-            </Card>
-            <Card className="p-6 sm:p-8 flex gap-4 bg-gradient-to-br from-brand-50 to-indigo-50 border-brand-100/90">
-              <div className="relative w-16 h-16 shrink-0">
-                <Image src="/landing-ag/icon-mentoring-2.svg" alt="" fill className="object-contain" />
-              </div>
-              <div>
-                <h3 className="font-bold text-gray-900">{t.content19}</h3>
-                <ul className="mt-3 space-y-2 text-sm text-gray-700">
-                  <li className="flex gap-2">
-                    <Check className="w-4 h-4 text-brand-600 shrink-0 mt-0.5" />
-                    {t.content20}
-                  </li>
-                  <li className="flex gap-2">
-                    <Check className="w-4 h-4 text-brand-600 shrink-0 mt-0.5" />
-                    {t.content21}
-                  </li>
-                  <li className="flex gap-2">
-                    <Check className="w-4 h-4 text-brand-600 shrink-0 mt-0.5" />
-                    {t.content22}
-                  </li>
-                </ul>
-                <a
-                  href="#support-register-form"
-                  className="inline-flex items-center gap-1 mt-4 text-brand-700 font-semibold text-sm hover:text-brand-800 hover:underline"
-                >
-                  {t.more} <ChevronRight className="w-4 h-4" />
-                </a>
-              </div>
-            </Card>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-12 sm:py-16 bg-slate-50 border-b border-gray-200/80">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-center mb-10 text-gray-900">
-            <span className="text-brand-600">{t.support}</span> {t.other}
-            <br />
-            <span className="text-gray-800 font-semibold text-lg sm:text-xl md:text-2xl mt-1 block">
-              {t.passion_for_lifetime_companion}
-            </span>
-          </h2>
-          <div className="flex flex-wrap justify-center gap-2 mb-8 border-b border-gray-200 pb-4">
-            {(
-              [
-                { id: "tab1" as TabKey, label: t.tab_study_abroad_consulting },
-                { id: "tab2" as TabKey, label: t.tab_study_abroad_support },
-                { id: "tab3" as TabKey, label: t.tab_doVisa },
-              ] as const
-            ).map((x) => (
-              <button
-                key={x.id}
-                type="button"
-                onClick={() => setTab(x.id)}
-                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${tab === x.id
-                    ? "bg-brand-600 text-white shadow-sm"
-                    : "bg-white text-gray-700 border border-gray-200 hover:bg-brand-50/80 hover:border-brand-200"
-                  }`}
-              >
-                {x.label}
-              </button>
-            ))}
-          </div>
-          <div className="grid md:grid-cols-2 gap-8 items-start">
-            <div>
-              {tab === "tab1" && (
-                <>
-                  <h3 className="text-lg font-bold text-gray-900">{t.tab_study_abroad_consulting}</h3>
-                  <ul className="mt-4 space-y-3 text-gray-700 text-sm leading-relaxed">
-                    <li className="flex gap-2">
-                      <Check className="w-5 h-5 text-brand-600 shrink-0" />
-                      {t.content26}
-                    </li>
-                    <li className="flex gap-2">
-                      <Check className="w-5 h-5 text-brand-600 shrink-0" />
-                      {t.content27}
-                    </li>
-                    <li className="flex gap-2">
-                      <Check className="w-5 h-5 text-brand-600 shrink-0" />
-                      {t.content28}
-                    </li>
-                  </ul>
-                </>
-              )}
-              {tab === "tab2" && (
-                <>
-                  <h3 className="text-lg font-bold text-gray-900">{t.tab_study_abroad_support}</h3>
-                  <ul className="mt-4 space-y-3 text-gray-700 text-sm leading-relaxed">
-                    <li className="flex gap-2">
-                      <Check className="w-5 h-5 text-brand-600 shrink-0" />
-                      {t.content08}
-                    </li>
-                    <li className="flex gap-2">
-                      <Check className="w-5 h-5 text-brand-600 shrink-0" />
-                      {t.content09}
-                    </li>
-                    <li className="flex gap-2">
-                      <Check className="w-5 h-5 text-brand-600 shrink-0" />
-                      {t.content10}
-                    </li>
-                  </ul>
-                </>
-              )}
-              {tab === "tab3" && (
-                <>
-                  <h3 className="text-lg font-bold text-gray-900">{t.tab_doVisa}</h3>
-                  <ul className="mt-4 space-y-3 text-gray-700 text-sm leading-relaxed">
-                    <li className="flex gap-2">
-                      <Check className="w-5 h-5 text-brand-600 shrink-0" />
-                      {t.understand_visa_law}
-                    </li>
-                    <li className="flex gap-2">
-                      <Check className="w-5 h-5 text-brand-600 shrink-0" />
-                      {t.well_groomed_and_professional}
-                    </li>
-                    <li className="flex gap-2">
-                      <Check className="w-5 h-5 text-brand-600 shrink-0" />
-                      {t.canada_usa_australia_new_zealand}
-                    </li>
-                  </ul>
-                </>
-              )}
+              <CourseCardSlider courses={orderedCourses} />
             </div>
-            <div className="relative aspect-video overflow-hidden rounded-2xl border border-brand-100/80">
-              <Image
-                src="https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=1400&q=80"
-                alt="Mentor hỗ trợ lộ trình học và du học"
-                fill
-                className="object-cover object-center"
-                sizes="(max-width: 1024px) 100vw, 48vw"
-              />
-            </div>
-          </div>
-        </div>
-      </section>
+          </section>
 
-      <section id="support-register-form" className="py-12 sm:py-20 bg-white border-b border-gray-200/80 scroll-mt-20">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <div className="grid lg:grid-cols-5 gap-10 items-stretch">
-            <div className="lg:col-span-2">
-              <Card className="h-full p-6 sm:p-8 border-brand-100/80 bg-slate-50/50">
-                <h3 className="text-lg sm:text-xl font-bold text-brand-700 mb-6">{t.register_support_now}</h3>
-                <form onSubmit={submitForm} className="space-y-4">
-                  <div>
-                    <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-1">
-                      {t.what_for_support}
-                    </label>
-                    <select
-                      id="type"
-                      required
-                      value={form.type}
-                      onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm bg-white"
+          {/* ── CTA banner ── */}
+          <section className="pb-20 lg:pb-28 bg-white">
+            <div className="max-w-6xl mx-auto px-5 lg:px-8">
+              <div className="relative overflow-hidden rounded-[24px] px-8 lg:px-14 py-14 lg:py-16 text-center"
+                style={{ background: "linear-gradient(135deg, #5B5BD6 0%, #6B6BD6 35%, #5B5BD6 65%, #7B79E8 100%)" }}>
+                <div className="absolute top-0 right-0 w-80 h-80 rounded-full" style={{ background: "rgba(255,255,255,0.06)" }} />
+                <div className="absolute -bottom-20 -left-10 w-60 h-60 rounded-full" style={{ background: "rgba(255,255,255,0.05)" }} />
+                <div className="absolute top-10 right-10 w-4 h-4 rounded-full" style={{ background: "rgba(255,255,255,0.2)" }} />
+                <div className="absolute bottom-20 right-40 w-2 h-2 rounded-full" style={{ background: "rgba(255,255,255,0.15)" }} />
+                <div className="absolute top-[20%] left-[20%] w-2 h-2 rounded-full" style={{ background: "rgba(255,255,255,0.1)" }} />
+                <div className="absolute bottom-[30%] left-[10%] w-1.5 h-1.5 rounded-full" style={{ background: "rgba(255,255,255,0.12)" }} />
+                <div className="relative z-10">
+                  <h2 className="text-2xl lg:text-4xl font-black text-white tracking-tight">
+                    Sẵn sàng bắt đầu hành trình IELTS của bạn?
+                  </h2>
+                  <p className="mt-3 text-white/70 text-sm lg:text-base max-w-xl mx-auto">
+                    Tham gia cùng hàng nghìn học viên đã chinh phục band điểm mong muốn cùng Glocal IELTS.
+                  </p>
+                  <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+                    <a href="/register"
+                      className="px-7 py-3.5 bg-white text-brand-600 font-semibold text-sm rounded-2xl hover:bg-white/95 hover:shadow-xl transition-all duration-200">
+                      Bắt đầu miễn phí
+                    </a>
+                    <a href="/courses"
+                      className="px-7 py-3.5 text-white/90 font-medium text-sm rounded-2xl border border-white/30 hover:bg-white/10 transition-all duration-200">
+                      Xem khóa học
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* ── Registration form ── */}
+          <section id="support-register-form" className="py-20 lg:py-28 bg-white">
+            <div className="max-w-6xl mx-auto px-5 lg:px-8">
+              <div className="grid lg:grid-cols-2 gap-12 lg:gap-16">
+                <div className="lg:pt-4">
+                  <span className="inline-block text-xs font-semibold tracking-widest uppercase text-brand-500 mb-4">Bắt đầu ngay</span>
+                  <h2 className="text-3xl lg:text-4xl font-black text-gray-900 tracking-tight leading-tight">
+                    Đăng ký tư vấn IELTS miễn phí
+                  </h2>
+                  <p className="mt-5 text-base text-gray-500 leading-relaxed">
+                    Điền thông tin, đội ngũ chuyên gia sẽ liên hệ bạn trong 24 giờ với lộ trình học cá nhân hóa.
+                  </p>
+                  <div className="mt-8 space-y-4">
+                    {[
+                      "Lộ trình học cá nhân hóa theo trình độ hiện tại của bạn",
+                      "Hướng dẫn đăng ký thi IDP & BC từ chuyên gia",
+                      "Bài mock test miễn phí để đánh giá band điểm",
+                      "Học bổng độc quyền và tư vấn khóa học phù hợp",
+                    ].map(item => (
+                      <div key={item} className="flex items-start gap-3">
+                        <span className="mt-0.5 w-5 h-5 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(108,99,255,0.1)" }}>
+                          <svg className="w-3 h-3 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                        </span>
+                        <span className="text-sm text-gray-600">{item}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-[24px] border border-gray-100 p-7 lg:p-8 shadow-[0_4px_40px_-12px_rgba(0,0,0,0.06)]">
+                  <form onSubmit={submitForm} className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Quan tâm đến</label>
+                      <select
+                        value={form.type}
+                        onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
+                        className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-800 outline-none focus:border-brand-300 focus:ring-2 focus:ring-brand-100 transition-all"
+                        required
+                      >
+                        <option value="">Chọn một tùy chọn</option>
+                        <option value="ielts-course">Khóa học IELTS</option>
+                        <option value="mock-test">Thi thử</option>
+                        <option value="study-abroad">Tư vấn du học</option>
+                        <option value="other">Khác</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Họ và tên</label>
+                      <input
+                        type="text"
+                        value={form.full_name}
+                        onChange={e => setForm(f => ({ ...f, full_name: e.target.value }))}
+                        placeholder="Nhập họ và tên của bạn"
+                        className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-800 placeholder:text-gray-300 outline-none focus:border-brand-300 focus:ring-2 focus:ring-brand-100 transition-all"
+                        required
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Số điện thoại</label>
+                        <input
+                          type="tel"
+                          value={form.phone}
+                          onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+                          placeholder="Số điện thoại"
+                          className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-800 placeholder:text-gray-300 outline-none focus:border-brand-300 focus:ring-2 focus:ring-brand-100 transition-all"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Email</label>
+                        <input
+                          type="email"
+                          value={form.email}
+                          onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                          placeholder="Địa chỉ email"
+                          className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-800 placeholder:text-gray-300 outline-none focus:border-brand-300 focus:ring-2 focus:ring-brand-100 transition-all"
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Mã giới thiệu (Tùy chọn)</label>
+                      <input
+                        type="text"
+                        value={form.code_refer}
+                        onChange={e => setForm(f => ({ ...f, code_refer: e.target.value }))}
+                        placeholder="Nhập mã giới thiệu"
+                        className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-800 placeholder:text-gray-300 outline-none focus:border-brand-300 focus:ring-2 focus:ring-brand-100 transition-all"
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      className="w-full mt-2 py-3.5 text-sm font-semibold text-white rounded-xl transition-all duration-200 hover:opacity-90 hover:shadow-lg hover:shadow-brand-500/20"
+                      style={{ background: "linear-gradient(135deg, #5B5BD6 0%, #6B6BD6 100%)" }}
                     >
-                      <option value="">{t.choose_your_need}</option>
-                      <option value={t.opt_ietls_practice_test}>{t.opt_ietls_practice_test}</option>
-                      <option value={t.opt_support_registration}>{t.opt_support_registration}</option>
-                      <option value={t.opt_video_english_course}>{t.opt_video_english_course}</option>
-                      <option value={t.opt_mentorship}>{t.opt_mentorship}</option>
-                      <option value={t.opt_ielts_class}>{t.opt_ielts_class}</option>
-                      <option value={t.opt_classes_with_native}>{t.opt_classes_with_native}</option>
-                      <option value={t.opt_visa}>{t.opt_visa}</option>
-                      <option value={t.opt_study_abroad}>{t.opt_study_abroad}</option>
-                      <option value={t.opt_register_extracurricular_program}>{t.opt_register_extracurricular_program}</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label htmlFor="full_name" className="block text-sm font-medium text-gray-700 mb-1">
-                      {t.full_name}
-                    </label>
-                    <input
-                      id="full_name"
-                      required
-                      value={form.full_name}
-                      onChange={(e) => setForm((f) => ({ ...f, full_name: e.target.value }))}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">{t.printed_in_capitals_and_accented}</p>
-                  </div>
-                  <div>
-                    <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                      {t.phone}
-                    </label>
-                    <input
-                      id="phone"
-                      required
-                      value={form.phone}
-                      onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                      {t.email}
-                    </label>
-                    <input
-                      id="email"
-                      type="email"
-                      required
-                      value={form.email}
-                      onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="code_refer" className="block text-sm font-medium text-gray-700 mb-1">
-                      {t.code_refer}
-                    </label>
-                    <input
-                      id="code_refer"
-                      value={form.code_refer}
-                      onChange={(e) => setForm((f) => ({ ...f, code_refer: e.target.value }))}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                    />
-                  </div>
-                  <Button type="submit" variant="primary" className="w-full mt-2">
-                    {t.register}
-                  </Button>
-                </form>
-              </Card>
-            </div>
-            <div className="lg:col-span-3 relative h-full min-h-[240px] overflow-hidden rounded-2xl border border-brand-100/60 hidden lg:block">
-              <Image
-                src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1600&q=80"
-                alt="Học viên trao đổi cùng giảng viên trong buổi định hướng"
-                fill
-                className="object-cover object-center"
-                sizes="(max-width: 1024px) 100vw, 60vw"
-              />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-12 sm:py-16 bg-slate-50 border-b border-gray-200/80">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <div className="grid lg:grid-cols-2 gap-10 items-start">
-            <div>
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
-                <span className="block">{t.story}</span>
-                <span className="block mt-1 text-brand-700">{t.from_ielts_to_local_impact}</span>
-              </h2>
-              <ul className="mt-8 space-y-8">
-                <li className="flex gap-4">
-                  <div className="w-10 h-10 rounded-full bg-brand-600 text-white font-bold flex items-center justify-center shrink-0 text-sm shadow-sm">
-                    01
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-gray-900">{t.vision}</h4>
-                    <p className="mt-2 text-gray-600 text-sm leading-relaxed">{t.content11}</p>
-                  </div>
-                </li>
-                <li className="flex gap-4">
-                  <div className="w-10 h-10 rounded-full bg-brand-600 text-white font-bold flex items-center justify-center shrink-0 text-sm shadow-sm">
-                    02
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-gray-900">{t.mission}</h4>
-                    <p className="mt-2 text-gray-600 text-sm leading-relaxed">{t.content12}</p>
-                  </div>
-                </li>
-              </ul>
-            </div>
-            <div className="relative aspect-video overflow-hidden rounded-2xl border border-brand-100/80">
-              <Image
-                src="https://images.unsplash.com/photo-1513258496099-48168024aec0?auto=format&fit=crop&w=1400&q=80"
-                alt="Hành trình học viên từ luyện thi đến mục tiêu du học"
-                fill
-                className="object-cover object-center"
-                sizes="(max-width: 1024px) 100vw, 48vw"
-              />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-12 sm:py-16 bg-white border-b border-gray-200/80">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
-          <Card className="p-8 sm:p-10 border-brand-100/60 bg-gradient-to-b from-white to-brand-50/20">
-            <h3 className="text-base sm:text-lg md:text-xl font-bold text-gray-900 leading-relaxed">
-              <span className="block">{t.content23}</span>
-              <span className="block mt-2">{t.content24}</span>
-              <span className="block mt-2 text-brand-800">{t.content25}</span>
-            </h3>
-          </Card>
-        </div>
-      </section>
-
-      <section className="py-12 sm:py-16 bg-slate-50 border-b border-gray-200/80">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-center mb-2 text-gray-900">
-            <span className="block">{t.feeling}</span>
-            <span className="block text-brand-600 mt-1">{t.client}</span>
-          </h2>
-          <div className="mt-8 grid gap-4 md:grid-cols-3">
-            {CLIENT_FEEDBACKS.map((item) => (
-              <Card key={item.name} className="p-5 sm:p-6 bg-white">
-                <p className="text-sm text-gray-700 leading-relaxed">&ldquo;{item.quote}&rdquo;</p>
-                <div className="mt-4 border-t border-gray-100 pt-3">
-                  <p className="text-sm font-bold text-gray-900">{item.name}</p>
-                  <p className="text-xs text-brand-700 font-medium mt-1">Mục tiêu: {item.target}</p>
+                      Nhận tư vấn miễn phí
+                    </button>
+                    <p className="text-center text-xs text-gray-400">Không spam. Hủy đăng ký bất kỳ lúc nào.</p>
+                  </form>
                 </div>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
+              </div>
+            </div>
+          </section>
 
-      <section className="py-12 sm:py-20 bg-white border-b border-gray-200/80">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 text-center">
-          <h2 className="text-xl sm:text-2xl font-bold mb-8 text-gray-900">{t.partner}</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
-            {PARTNER_LOGOS.map((src, idx) => (
-              <Card key={src} className="p-4 sm:p-5 bg-white border-gray-200/80">
-                <div className="relative h-14 sm:h-16">
-                  <Image
-                    src={src}
-                    alt={`Đối tác ${idx + 1}`}
-                    fill
-                    sizes="(max-width: 640px) 45vw, (max-width: 1024px) 28vw, 220px"
-                    className="object-contain"
-                  />
-                </div>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <PublicSiteFooter />
-    </div>
+          <PublicSiteFooter />
+        </main>
+      </div>
+    </>
   );
 }

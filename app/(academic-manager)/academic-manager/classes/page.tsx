@@ -843,7 +843,7 @@ export default function AcademicManagerClassesPage() {
 
       {loading ? (
         <div className="flex justify-center py-20">
-          <div className="w-8 h-8 border-4 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+          <div className="w-8 h-8 border-4 border-sky-400 border-t-transparent rounded-full animate-spin" />
         </div>
       ) : !error && classes.length === 0 ? (
         <Card className="p-12 text-center">
@@ -858,7 +858,7 @@ export default function AcademicManagerClassesPage() {
               ? Math.round(((cls.sessions_done ?? 0) / (cls.total_sessions ?? 0)) * 100)
               : 0;
             return (
-              <Link key={cls.id} href={`/academic-manager/classes/${cls.id}`}>
+              <Link key={cls.id} href={`/academic-manager/classes/${encodeURIComponent(cls.name)}`}>
                 <Card className="p-5 hover:shadow-md transition-shadow cursor-pointer h-full flex flex-col gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
@@ -910,7 +910,7 @@ export default function AcademicManagerClassesPage() {
                     </div>
                     <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-indigo-500 rounded-full transition-all"
+                        className="h-full bg-sky-500 rounded-full transition-all"
                         style={{ width: `${progress}%` }}
                       />
                     </div>

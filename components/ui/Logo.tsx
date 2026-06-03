@@ -4,7 +4,7 @@ import type { MouseEventHandler } from "react";
 
 /** AG (nhỏ hơn) trước, GI (lớn hơn) sau — đồng bộ mọi chỗ dùng BrandMarks */
 const SIZE_PAIR = {
-  sm: { ag: "h-6 w-6", gi: "h-[30px] w-[30px]" },
+  sm: { ag: "h-7 w-7", gi: "h-7 w-7" },
   md: { ag: "h-[34px] w-[34px]", gi: "h-[38px] w-[38px]" },
   lg: { ag: "h-10 w-10", gi: "h-[46px] w-[46px]" },
 } as const;
@@ -41,9 +41,9 @@ interface LogoProps {
   onClick?: MouseEventHandler<HTMLAnchorElement>;
 }
 
-export default function Logo({ light = false, size = "md", className, href, onClick }: LogoProps) {
+export default function Logo({ light = false, size = "md", className, href, onClick, subColor: customSubColor }: LogoProps & { subColor?: string }) {
   const textColor = light ? "text-white" : "text-gray-900";
-  const subColor = light ? "text-brand-300" : "text-brand-600";
+  const subColor = customSubColor || (light ? "text-brand-300" : "text-[#6B7280]");
   const textSize = size === "sm" ? "text-base" : size === "lg" ? "text-xl" : "text-lg";
 
   const wordmark = (

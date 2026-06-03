@@ -206,7 +206,7 @@ export default function AdminAcademicManagersPage() {
 
         {loading ? (
           <div className="flex justify-center py-16">
-            <div className="w-8 h-8 border-4 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-4 border-sky-400 border-t-transparent rounded-full animate-spin" />
           </div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-16 text-gray-400">
@@ -234,7 +234,7 @@ export default function AdminAcademicManagersPage() {
                   {mgr.assigned_classes.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-2">
                       {mgr.assigned_classes.map(c => (
-                        <span key={c.class_id} className="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-full border border-indigo-100">
+                        <span key={c.class_id} className="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-sky-50 text-sky-700 rounded-full border border-sky-100">
                           <BookOpen className="w-3 h-3" />{c.class_name}
                         </span>
                       ))}
@@ -255,7 +255,7 @@ export default function AdminAcademicManagersPage() {
                   <button
                     onClick={() => setCreatedCreds({ email: mgr.email || "", password: "••••••••", name: mgr.full_name || "" })}
                     title="Xem thông tin đăng nhập"
-                    className="p-2 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+                    className="p-2 rounded-lg text-gray-400 hover:text-sky-600 hover:bg-sky-50 transition-colors"
                   >
                     <KeyRound className="w-4 h-4" />
                   </button>
@@ -276,7 +276,7 @@ export default function AdminAcademicManagersPage() {
       {/* Create Modal */}
       <Modal open={createModal} onClose={() => setCreateModal(false)} title="Tạo Tài Khoản Quản Lý Học Vụ">
         <form onSubmit={handleCreate} className="space-y-4">
-          <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-xl text-xs text-indigo-700">
+          <div className="p-3 bg-sky-50 border border-sky-100 rounded-xl text-xs text-sky-700">
             Tài khoản này sẽ đăng nhập tại địa chỉ:{" "}
             <span className="font-mono font-semibold">/academic-manager</span>
           </div>
@@ -305,7 +305,7 @@ export default function AdminAcademicManagersPage() {
                 placeholder="Tối thiểu 8 ký tự"
                 required
                 minLength={8}
-                className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm pr-10 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm pr-10 focus:outline-none focus:ring-2 focus:ring-sky-500"
               />
               <button
                 type="button"
@@ -350,7 +350,7 @@ export default function AdminAcademicManagersPage() {
                 <div>
                   <p className="text-xs text-gray-500 mb-1">Trang đăng nhập</p>
                   <div className="flex items-center gap-2 p-2.5 bg-white rounded-lg border border-gray-200">
-                    <code className="flex-1 text-sm font-mono text-indigo-600">/academic-manager</code>
+                    <code className="flex-1 text-sm font-mono text-sky-600">/academic-manager</code>
                     <button
                       onClick={() => copyToClipboard("/academic-manager", "URL")}
                       className="p-1 text-gray-400 hover:text-gray-600"

@@ -4,8 +4,8 @@ import PageWrapper from "@/components/layouts/PageWrapper";
 import { createBrowserClient } from "@/lib/supabase/client";
 import { getBandDescriptor } from "@/lib/mock-skill/band-mapping";
 import { cn } from "@/utils/cn";
-import { ArrowLeft, Calendar, ChevronRight, Clock, History, Bot, Sparkles } from "lucide-react";
-import Link from "next/link";
+import BackButton from "@/components/ui/BackButton";
+import { Calendar, ChevronRight, Clock, History, Bot, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 
 interface AIScore {
@@ -178,7 +178,7 @@ function StudentAIScoreDisplay({ skill, score }: { skill: "writing" | "speaking"
                   <h4 className="text-sm font-black text-gray-800 flex items-center gap-2">🚀 Gợi ý nâng cấp Từ vựng</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {score.feedback.vocabulary_suggestions.map((item, i) => (
-                      <div key={i} className="rounded-xl border border-indigo-100 bg-white p-3.5 shadow-sm space-y-2">
+                      <div key={i} className="rounded-xl border border-sky-100 bg-white p-3.5 shadow-sm space-y-2">
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded">Từ đã dùng</span>
                           <span className="text-xs font-bold text-brand-700 bg-brand-50 px-2 py-0.5 rounded">Premium Alternatives</span>
@@ -224,10 +224,10 @@ function StudentAIScoreDisplay({ skill, score }: { skill: "writing" | "speaking"
                   <h4 className="text-sm font-black text-gray-800 flex items-center gap-2">🗣️ Chi tiết lỗi Phát âm</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {score.feedback.pronunciation_issues.map((item, i) => (
-                      <div key={i} className="rounded-xl border border-violet-100 bg-white p-3.5 shadow-sm space-y-2">
+                      <div key={i} className="rounded-xl border border-sky-100 bg-white p-3.5 shadow-sm space-y-2">
                         <div className="flex items-center justify-between border-b border-gray-100 pb-1.5">
                           <p className="text-xs font-bold text-red-600">{item.word}</p>
-                          <span className="text-xs font-bold text-violet-700 bg-violet-50 px-2 py-0.5 rounded font-mono">{item.correct_pronunciation}</span>
+                          <span className="text-xs font-bold text-sky-700 bg-sky-50 px-2 py-0.5 rounded font-mono">{item.correct_pronunciation}</span>
                         </div>
                         <div className="bg-gray-50 rounded-lg p-2.5 text-xs text-gray-600 leading-relaxed">
                           <span className="font-bold text-gray-700 block mb-0.5">💡 Mẹo phát âm đúng:</span>
@@ -314,15 +314,9 @@ export default function TestHistoryPage() {
 
   return (
     <PageWrapper>
-      <Link 
-        href="/student/thi-thu" 
-        className="group inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-gray-200/80 bg-white hover:bg-gray-50 text-xs font-semibold text-gray-600 hover:text-brand-700 shadow-sm hover:shadow transition-all duration-200 mb-4"
-      >
-        <ArrowLeft className="w-3.5 h-3.5 text-gray-500 group-hover:text-brand-600 transition-transform group-hover:-translate-x-0.5" />
-        <span>Quay lại danh sách đề</span>
-      </Link>
+      <BackButton href="/student/thi-thu" label="Quay lại danh sách đề" className="mb-4" />
       <div className="mb-6 flex items-center gap-3">
-        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-brand-500 to-indigo-600 flex items-center justify-center">
+        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-brand-500 to-sky-600 flex items-center justify-center">
           <History className="w-4 h-4 text-white" />
         </div>
         <div>
@@ -438,7 +432,7 @@ export default function TestHistoryPage() {
                             : "text-gray-500 hover:text-gray-800"
                         )}
                       >
-                        <Bot className="w-3.5 h-3.5 text-indigo-500" /> Nhận xét Writing
+                        <Bot className="w-3.5 h-3.5 text-sky-500" /> Nhận xét Writing
                       </button>
                       <button
                         type="button"
@@ -450,7 +444,7 @@ export default function TestHistoryPage() {
                             : "text-gray-500 hover:text-gray-800"
                         )}
                       >
-                        <Bot className="w-3.5 h-3.5 text-violet-500" /> Nhận xét Speaking
+                        <Bot className="w-3.5 h-3.5 text-sky-500" /> Nhận xét Speaking
                       </button>
                     </div>
 

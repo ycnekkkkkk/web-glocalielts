@@ -1,16 +1,17 @@
 "use client";
 import PageWrapper from "@/components/layouts/PageWrapper";
+import { usePageTitle } from "@/components/layouts/PageTitleContext";
 import { Card } from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import { createBrowserClient } from "@/lib/supabase/client";
+import BackButton from "@/components/ui/BackButton";
 import {
-  ArrowLeft, BookOpen, Calendar, CheckCircle, DollarSign, Download, FileText, History, MessageSquare, Pencil, Plus, Star, Trash2, Upload, Users, Video, WrapText, ZoomIn, ChevronRight,
+  BookOpen, Calendar, CheckCircle, DollarSign, Download, FileText, History, MessageSquare, Pencil, Plus, Star, Trash2, Upload, Users, Video, WrapText, ZoomIn, ChevronRight, ChevronDown,
 } from "lucide-react";
-import Link from "next/link";
-import { use, useEffect, useState, Fragment } from "react";
+import { use, useEffect, useState, useRef, Fragment } from "react";
 import toast from "react-hot-toast";
 import type { ClassEvaluationRow, MakeupStatusRow, MonthlyStudentEvaluation, PeriodicTest, PeriodicTestSubmission, Session } from "@/types";
 
@@ -60,9 +61,10 @@ interface EnrollmentPayment {
 interface AttendanceRow {
   student_id?: string | null;
   student_name?: string | null;
-  attendance_status?: "on_time" | "late" | "absent" | null;
+  attendance_status?: "on_time" | "absent" | null;
   class_name: string | null;
   session_ref: string | null;
+  session_id?: number | null;
 }
 
 interface AttendanceReportRow {
@@ -72,7 +74,6 @@ interface AttendanceReportRow {
   email: string | null;
   phone: string | null;
   on_time: number;
-  late: number;
   absent: number;
   present_total: number;
   makeup_assigned: number;
@@ -96,15 +97,36 @@ function formatVND(amount: number) {
   return new Intl.NumberFormat("vi-VN").format(amount) + " VNĐ";
 }
 
-export default function AcademicManagerClassDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id: classId } = use(params);
+export default function AcademicManagerClassDetailPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug: classSlug } = use(params);
+  const { setTitle } = usePageTitle();
+  const setTitleRef = useRef(setTitle);
+  setTitleRef.current = setTitle;
 
   const [loading, setLoading] = useState(true);
   const [classDetail, setClassDetail] = useState<ClassDetail | null>(null);
+  const classIdRef = useRef<string>("");
   const [tab, setTab] = useState<TabId>("overview");
+
+  // Clear page title on unmount
+  useEffect(() => {
+    return () => { setTitleRef.current(""); };
+  }, []);
 
   const [evaluations, setEvaluations] = useState<ClassEvaluationRow[]>([]);
   const [evalLoading, setEvalLoading] = useState(false);
+
+  const [studentEvaluations, setStudentEvaluations] = useState<any[]>([]);
+  const [isClassEvalVisible, setIsClassEvalVisible] = useState(true);
+  const [expandedSessions, setExpandedSessions] = useState<Record<string, boolean>>({});
+
+  function toggleSessionExpand(sessionRef: string | null) {
+    if (!sessionRef) return;
+    setExpandedSessions(prev => ({
+      ...prev,
+      [sessionRef]: !prev[sessionRef]
+    }));
+  }
 
   const [makeupRows, setMakeupRows] = useState<MakeupStatusRow[]>([]);
   const [makeupLoading, setMakeupLoading] = useState(false);
@@ -142,6 +164,11 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
   const [editingZoomId, setEditingZoomId] = useState<number | null>(null);
   const [editingZoomValue, setEditingZoomValue] = useState("");
   const [sessionsAttendance, setSessionsAttendance] = useState<AttendanceRow[]>([]);
+
+  // Word Export Modal States
+  const [showWordModal, setShowWordModal] = useState(false);
+  const [exportWordMonth, setExportWordMonth] = useState("");
+  const [exportWordStudentId, setExportWordStudentId] = useState("all");
 
   // Enrolled students state
   const [enrolledStudents, setEnrolledStudents] = useState<EnrolledStudent[]>([]);
@@ -213,19 +240,14 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
     async function load() {
       const supabase = createBrowserClient();
 
+      // Fetch by name (slug from URL) first
       const { data: classData } = await supabase
         .from("classes")
         .select("id, name, schedule, total_sessions, sessions_done, level_out, level_in, status, teacher_id, start_date, end_date, teacher:profiles!teacher_id(full_name)")
-        .eq("id", classId)
+        .eq("name", classSlug)
         .maybeSingle();
 
       if (!classData) { setLoading(false); return; }
-
-      const { count: studentCount } = await supabase
-        .from("enrollments")
-        .select("id", { count: "exact", head: true })
-        .eq("class_id", classId)
-        .eq("status", "active");
 
       const c = classData as {
         id: string; name: string; schedule: string | null;
@@ -235,11 +257,20 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
         teacher?: { full_name: string | null } | null;
       };
 
+      const classId = c.id;
+      classIdRef.current = classId;
+
+      const { count: studentCount } = await supabase
+        .from("enrollments")
+        .select("id", { count: "exact", head: true })
+        .eq("class_id", classIdRef.current)
+        .eq("status", "active");
+
       // Derive taught sessions from sessions table (status = 'DONE')
       const { data: sessionData } = await supabase
         .from("sessions")
         .select("status")
-        .eq("class_id", classId);
+        .eq("class_id", classIdRef.current);
 
       const doneFromSessionStatus = ((sessionData || []) as { status: string | null }[])
         .filter(s => s.status === "DONE").length;
@@ -262,17 +293,36 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
         start_date: c.start_date,
         end_date: c.end_date,
       });
+      setTitle(c.name);
       setLoading(false);
     }
     load().catch(console.error);
-  }, [classId]);
+  }, [classSlug]);
 
   async function loadEvaluations() {
     if (!classDetail) return;
     setEvalLoading(true);
-    const { data, error } = await createBrowserClient().rpc("get_class_evaluations", { p_class_name: classDetail.name });
-    if (!error) setEvaluations((data as ClassEvaluationRow[]) || []);
-    setEvalLoading(false);
+    try {
+      const supabase = createBrowserClient();
+      const [evalsRes, studEvalsRes] = await Promise.all([
+        supabase.rpc("get_class_evaluations", { p_class_name: classDetail.name }),
+        supabase
+          .from("session_student_evaluation")
+          .select("id, session_ref, student_name, rating, comment, session_no, session_date")
+          .eq("class_name", classDetail.name)
+      ]);
+
+      if (!evalsRes.error) {
+        setEvaluations((evalsRes.data as ClassEvaluationRow[]) || []);
+      }
+      if (!studEvalsRes.error) {
+        setStudentEvaluations((studEvalsRes.data as any[]) || []);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setEvalLoading(false);
+    }
   }
 
   async function loadMonthlyEvaluations() {
@@ -323,9 +373,10 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
           updated_at: mse.updated_at,
         }));
         setMonthlyEvals(mappedData);
-        if (mappedData.length > 0 && !selectedMonth) {
+        if (mappedData.length > 0) {
           const months = [...new Set(mappedData.map(m => m.evaluation_month))].sort().reverse();
-          setSelectedMonth(months[0] || "");
+          if (!selectedMonth) setSelectedMonth(months[0] || "");
+          setExportWordMonth(prev => prev || months[0] || "");
         }
       }
     } catch (e) { console.error(e); }
@@ -404,16 +455,21 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
       const { data } = await supabase
         .from("sessions")
         .select("*")
-        .eq("class_id", classId)
+        .eq("class_id", classIdRef.current)
         .order("session_no");
-      setSessions((data as Session[]) || []);
 
-      if (classDetail) {
+      const sessionList = (data as Session[]) || [];
+      setSessions(sessionList);
+
+      const sessionIds = sessionList.map((s) => s.id);
+      if (sessionIds.length > 0) {
         const { data: attData } = await supabase
           .from("session_attendance")
-          .select("student_id, student_name, attendance_status, class_name, session_ref")
-          .eq("class_name", classDetail.name);
+          .select("student_id, student_name, attendance_status, class_name, session_ref, session_id")
+          .in("session_id", sessionIds);
         setSessionsAttendance((attData as AttendanceRow[]) || []);
+      } else {
+        setSessionsAttendance([]);
       }
     } catch (e) { console.error(e); }
     setSessionsLoading(false);
@@ -525,7 +581,7 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
     if (!classDetail || !studentToConfigure) return;
     setAddingId(studentToConfigure.id);
     const supabase = createBrowserClient();
-    
+
     // 1. Insert into enrollments
     const { data: enrollment, error } = await supabase
       .from("enrollments")
@@ -592,25 +648,25 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
   // ── Financial Modal Logic ───────────────────────────────────
   async function openFinancialModal(student: EnrolledStudent) {
     setFinancialModal(student);
-    setFinancialData({ 
-      level_in: student.level_in || '', 
-      level_out: student.level_out || '', 
-      amount: student.tuition_fee || 0, 
-      paid_total: student.paid_fee || 0, 
-      remaining: (student.tuition_fee || 0) - (student.paid_fee || 0) 
+    setFinancialData({
+      level_in: student.level_in || '',
+      level_out: student.level_out || '',
+      amount: student.tuition_fee || 0,
+      paid_total: student.paid_fee || 0,
+      remaining: (student.tuition_fee || 0) - (student.paid_fee || 0)
     });
 
     const supabase = createBrowserClient();
     try {
       const supabase = createBrowserClient();
-      
+
       // Load payment history
       const { data: payData } = await supabase
         .from("enrollment_payments")
         .select("*")
         .eq("enrollment_id", student.enrollment_id)
         .order("paid_at", { ascending: false });
-      
+
       // Auto-repair: If student has paid_fee > 0 but no history records, create the initial payment record
       const sumPayments = (payData || []).reduce((acc: number, p: any) => acc + Number(p.amount), 0);
       if (student.paid_fee > 0 && sumPayments === 0) {
@@ -623,7 +679,7 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
           })
           .select()
           .single();
-        
+
         if (!repairErr && newPay) {
           setPaymentHistory([newPay]);
         } else {
@@ -671,12 +727,12 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
         })
         .select()
         .single();
-      
+
       if (error) throw error;
-      
+
       toast.success("Đã thêm đợt nộp phí!");
       setPaymentHistory(prev => [data, ...prev]);
-      
+
       const newTotalPaid = financialData.paid_total + newPayment.amount;
       setFinancialData(prev => ({
         ...prev,
@@ -684,9 +740,9 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
         remaining: prev.amount - newTotalPaid
       }));
 
-      setEnrolledStudents(prev => prev.map(s => 
-        s.enrollment_id === financialModal.enrollment_id 
-          ? { ...s, paid_fee: newTotalPaid } 
+      setEnrolledStudents(prev => prev.map(s =>
+        s.enrollment_id === financialModal.enrollment_id
+          ? { ...s, paid_fee: newTotalPaid }
           : s
       ));
 
@@ -710,7 +766,7 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
 
       const removed = paymentHistory.find(p => p.id === id);
       setPaymentHistory(prev => prev.filter(p => p.id !== id));
-      
+
       if (removed && financialModal) {
         const newTotalPaid = financialData.paid_total - removed.amount;
         setFinancialData(prev => ({
@@ -718,9 +774,9 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
           paid_total: newTotalPaid,
           remaining: prev.amount - newTotalPaid
         }));
-        setEnrolledStudents(prev => prev.map(s => 
-          s.enrollment_id === financialModal.enrollment_id 
-            ? { ...s, paid_fee: newTotalPaid } 
+        setEnrolledStudents(prev => prev.map(s =>
+          s.enrollment_id === financialModal.enrollment_id
+            ? { ...s, paid_fee: newTotalPaid }
             : s
         ));
       }
@@ -745,19 +801,19 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
           paid_amount: financialData.paid_total
         })
         .eq("id", financialModal.enrollment_id);
-        
+
       if (error) throw error;
       toast.success("Cập nhật thành công!");
-      
-      setEnrolledStudents(prev => prev.map(s => 
-        s.enrollment_id === financialModal.enrollment_id 
-          ? { 
-              ...s, 
-              level_in: financialData.level_in || null, 
-              level_out: financialData.level_out || null,
-              tuition_fee: financialData.amount,
-              paid_fee: financialData.paid_total
-            } 
+
+      setEnrolledStudents(prev => prev.map(s =>
+        s.enrollment_id === financialModal.enrollment_id
+          ? {
+            ...s,
+            level_in: financialData.level_in || null,
+            level_out: financialData.level_out || null,
+            tuition_fee: financialData.amount,
+            paid_fee: financialData.paid_total
+          }
           : s
       ));
       setFinancialModal(null);
@@ -777,7 +833,7 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
       supabase
         .from("enrollments")
         .select("student_id, students:students!inner(id, student_code, full_name, email, phone)")
-        .eq("class_id", classId)
+        .eq("class_id", classIdRef.current)
         .eq("status", "active"),
       supabase
         .from("session_attendance")
@@ -786,7 +842,7 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
       supabase
         .from("sessions")
         .select("class_name, session_no, session_date, status")
-        .eq("class_id", classId),
+        .eq("class_id", classIdRef.current),
     ]);
 
     type EnrollmentLite = {
@@ -813,7 +869,6 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
         email: e.students.email,
         phone: e.students.phone,
         on_time: 0,
-        late: 0,
         absent: 0,
         present_total: 0,
         makeup_assigned: 0,
@@ -836,7 +891,18 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
     const taughtSessionSet = new Set<string>();
     for (const row of attendanceRows) {
       if (!row.session_ref || !doneSessionRefs.has(row.session_ref)) continue;
-      taughtSessionSet.add(row.session_ref);
+
+      // Extract session number to avoid duplicate counting of alternative session_ref formats (# vs __)
+      const getSessionNo = (ref: string) => {
+        const hashParts = ref.split("#");
+        if (hashParts.length === 3) return hashParts[1];
+        const legacyParts = ref.split("__");
+        if (legacyParts.length === 3) return legacyParts[1];
+        return ref;
+      };
+      const sessionNo = row.session_ref ? getSessionNo(row.session_ref) : "";
+
+      taughtSessionSet.add(sessionNo || row.session_ref);
 
       const resolvedStudentId =
         (row.student_id && rowsByKey.has(row.student_id) ? row.student_id : null)
@@ -845,17 +911,16 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
       const status = row.attendance_status;
       if (!status) continue;
 
-      const dedupeKey = `${resolvedStudentId}__${row.session_ref}`;
+      const dedupeKey = `${resolvedStudentId}__${sessionNo || row.session_ref}`;
       if (uniqueAttendanceKeys.has(dedupeKey)) continue;
       uniqueAttendanceKeys.add(dedupeKey);
 
       const target = rowsByKey.get(resolvedStudentId);
       if (!target) continue;
       if (status === "on_time") target.on_time += 1;
-      if (status === "late") target.late += 1;
       if (status === "absent") target.absent += 1;
       target.taught_sessions += 1;
-      target.present_total = target.on_time + target.late;
+      target.present_total = target.on_time;
     }
 
     const classSessionRows = (classSessions || []) as { class_name: string; session_no: number | null; session_date: string | null; status: string | null }[];
@@ -933,7 +998,7 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
     const sortedRows = Array.from(rowsByKey.values())
       .map((r) => {
         const convertedAbsences = Math.min(r.absent, r.makeup_completed);
-        const presentWithMakeup = r.on_time + r.late + convertedAbsences;
+        const presentWithMakeup = r.on_time + convertedAbsences;
         return {
           ...r,
           present_total: presentWithMakeup,
@@ -977,7 +1042,6 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
       "Email",
       "So dien thoai",
       "So buoi dung gio",
-      "So buoi di muon",
       "So buoi vang",
       "Tong buoi di hoc",
       "Vang da duoc xep hoc bu",
@@ -1001,7 +1065,6 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
       ["Danh gia GV TB (HV danh gia)", exportAvgTeacherRating],
       ["So luot HV danh gia GV", exportTeacherEvals.length],
       ["Tong luot dung gio", attendanceSummary.on_time],
-      ["Tong luot di muon", attendanceSummary.late],
       ["Tong luot vang", attendanceSummary.absent],
       ["Tong luot di hoc (co tinh hoc bu hoan thanh)", attendanceSummary.present],
     ];
@@ -1042,7 +1105,6 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
         escapeCsv(row.email),
         escapeCsv(row.phone),
         row.on_time,
-        row.late,
         row.absent,
         row.present_total,
         row.makeup_assigned,
@@ -1101,7 +1163,7 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
   if (loading) return (
     <PageWrapper>
       <div className="flex justify-center py-20">
-        <div className="w-8 h-8 border-4 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-4 border-sky-400 border-t-transparent rounded-full animate-spin" />
       </div>
     </PageWrapper>
   );
@@ -1111,9 +1173,7 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
       <div className="text-center py-20 text-gray-400">
         <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-30" />
         <p>Không tìm thấy lớp học hoặc bạn không có quyền xem</p>
-        <Link href="/academic-manager/classes" className="mt-4 inline-block text-indigo-600 text-sm hover:underline">
-          ← Quay lại danh sách
-        </Link>
+        <BackButton href="/academic-manager/classes" label="Quay lại danh sách" variant="button" className="mt-4" />
       </div>
     </PageWrapper>
   );
@@ -1136,30 +1196,27 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
   const attendanceSummary = attendanceReportRows.reduce(
     (acc, row) => {
       acc.on_time += row.on_time;
-      acc.late += row.late;
       acc.absent += row.absent;
       acc.present += row.present_total;
       return acc;
     },
-    { on_time: 0, late: 0, absent: 0, present: 0 },
+    { on_time: 0, absent: 0, present: 0 },
   );
 
   const tabItems: { id: TabId; label: string; icon: React.ReactNode }[] = [
-    { id: "overview",    label: "Tổng Quan",   icon: <BookOpen className="w-4 h-4" /> },
-    { id: "attendance",  label: "Điểm Danh",   icon: <CheckCircle className="w-4 h-4" /> },
-    { id: "students",   label: "Học Viên",    icon: <Users className="w-4 h-4" /> },
-    { id: "sessions",   label: "Buổi Học",    icon: <Calendar className="w-4 h-4" /> },
-    { id: "evaluations", label: "Đánh Giá",    icon: <Star className="w-4 h-4" /> },
-    { id: "makeup",     label: "Học Bù",      icon: <WrapText className="w-4 h-4" /> },
-    { id: "tests",      label: "Kiểm Tra",    icon: <FileText className="w-4 h-4" /> },
+    { id: "overview", label: "Tổng Quan", icon: <BookOpen className="w-4 h-4" /> },
+    { id: "attendance", label: "Điểm Danh", icon: <CheckCircle className="w-4 h-4" /> },
+    { id: "students", label: "Học Viên", icon: <Users className="w-4 h-4" /> },
+    { id: "sessions", label: "Buổi Học", icon: <Calendar className="w-4 h-4" /> },
+    { id: "evaluations", label: "Đánh Giá", icon: <Star className="w-4 h-4" /> },
+    { id: "makeup", label: "Học Bù", icon: <WrapText className="w-4 h-4" /> },
+    { id: "tests", label: "Kiểm Tra", icon: <FileText className="w-4 h-4" /> },
   ];
 
   return (
     <PageWrapper>
       <div className="mb-4">
-        <Link href="/academic-manager/classes">
-          <Button variant="ghost" size="sm" icon={<ArrowLeft className="w-4 h-4" />}>Danh sách lớp</Button>
-        </Link>
+        <BackButton href="/academic-manager/classes" label="Danh sách lớp" variant="button" />
       </div>
 
       <div className="page-header">
@@ -1172,8 +1229,8 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
       {/* Stats row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
         <Card className="p-4 flex items-center gap-3">
-          <div className="w-9 h-9 bg-indigo-100 rounded-xl flex items-center justify-center">
-            <Users className="w-4 h-4 text-indigo-600" />
+          <div className="w-9 h-9 bg-sky-100 rounded-xl flex items-center justify-center">
+            <Users className="w-4 h-4 text-sky-600" />
           </div>
           <div>
             <p className="text-xl font-bold text-gray-900">{classDetail.student_count}</p>
@@ -1218,24 +1275,37 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
             <button
               key={t.id}
               onClick={() => switchTab(t.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-                tab === t.id ? "bg-white shadow text-gray-900" : "text-gray-500 hover:text-gray-700"
-              }`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${tab === t.id ? "bg-white shadow text-gray-900" : "text-gray-500 hover:text-gray-700"
+                }`}
             >
               {t.icon}{t.label}
             </button>
           ))}
         </div>
-        <Button
-          size="sm"
-          variant="outline"
-          icon={<Download className="w-4 h-4" />}
-          onClick={() => { void exportAttendanceCsv(); }}
-          disabled={attendanceReportRows.length === 0}
-          className="w-fit"
-        >
-          Xuất báo cáo CSV
-        </Button>
+        <div className="flex gap-2 w-fit">
+          {/* <Button
+            size="sm"
+            variant="outline"
+            icon={<Download className="w-4 h-4" />}
+            onClick={() => { void exportAttendanceCsv(); }}
+            disabled={attendanceReportRows.length === 0}
+          >
+            Xuất báo cáo CSV
+          </Button> */}
+          <Button
+            size="sm"
+            variant="primary"
+            className="bg-sky-600 hover:bg-sky-700 text-white font-medium shadow-sm"
+            icon={<FileText className="w-4 h-4" />}
+            onClick={() => {
+              if (!studentsTabLoaded) { void loadEnrolledStudents(); }
+              if (monthlyEvals.length === 0) { void loadMonthlyEvaluations(); }
+              setShowWordModal(true);
+            }}
+          >
+            Xuất báo cáo Học lực (.docx)
+          </Button>
+        </div>
       </div>
 
       {/* ── Tab: Tổng Quan ── */}
@@ -1299,7 +1369,7 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
                   <span className="text-gray-500"> buổi học</span>
                 </p>
                 {classDetail.level_out && (
-                  <p className="text-sm text-indigo-600 font-medium mt-2">
+                  <p className="text-sm text-sky-600 font-medium mt-2">
                     Mục tiêu: {classDetail.level_out}
                   </p>
                 )}
@@ -1322,7 +1392,7 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
 
             {attendanceReportLoading ? (
               <div className="flex justify-center py-16">
-                <div className="w-8 h-8 border-4 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+                <div className="w-8 h-8 border-4 border-sky-400 border-t-transparent rounded-full animate-spin" />
               </div>
             ) : attendanceReportRows.length === 0 ? (
               <div className="text-center py-16 text-gray-400">
@@ -1338,7 +1408,6 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
                         <th className="text-left py-2 pr-3 font-medium">Mã HV</th>
                         <th className="text-left py-2 pr-3 font-medium">Học viên</th>
                         <th className="text-left py-2 pr-3 font-medium">Tổng đúng giờ</th>
-                        <th className="text-left py-2 pr-3 font-medium">Tổng muộn</th>
                         <th className="text-left py-2 pr-3 font-medium">Tổng vắng</th>
                         <th className="text-left py-2 pr-3 font-medium">Đã học bù</th>
                         <th className="text-left py-2 pr-3 font-medium">Đi học</th>
@@ -1356,10 +1425,9 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
                             <td className="py-2.5 pr-3 text-gray-600">{row.student_code || "–"}</td>
                             <td className="py-2.5 pr-3 font-medium text-gray-800">{row.student_name}</td>
                             <td className="py-2.5 pr-3 text-emerald-600 font-semibold">{row.on_time}/{row.taught_sessions}</td>
-                            <td className="py-2.5 pr-3 text-amber-600 font-semibold">{row.late}/{row.taught_sessions}</td>
                             <td className="py-2.5 pr-3 text-red-600 font-semibold">{row.absent}/{row.taught_sessions}</td>
                             <td className="py-2.5 pr-3 text-emerald-700 font-semibold">{row.makeup_completed}/{row.taught_sessions}</td>
-                            <td className="py-2.5 pr-3 text-indigo-700 font-semibold">{row.present_total}</td>
+                            <td className="py-2.5 pr-3 text-sky-700 font-semibold">{row.present_total}</td>
                             <td className="py-2.5 pr-3">
                               <Badge variant={rate >= 80 ? "success" : rate >= 60 ? "warning" : "danger"}>
                                 {rate}%
@@ -1414,29 +1482,103 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
               {/* Class evaluations */}
               {classEvals.length > 0 && (
                 <Card className="p-5">
-                  <h3 className="section-title mb-4">Đánh Giá Lớp (Giảng viên)</h3>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="text-xs text-gray-500 border-b border-gray-100">
-                          <th className="text-left py-2 pr-4 font-medium">Buổi</th>
-                          <th className="text-left py-2 pr-4 font-medium">Ngày</th>
-                          <th className="text-left py-2 pr-4 font-medium">Xếp loại</th>
-                          <th className="text-left py-2 font-medium">Nhận xét</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-50">
-                        {classEvals.map((e, i) => (
-                          <tr key={i} className="hover:bg-gray-50">
-                            <td className="py-2.5 pr-4 font-semibold text-gray-700">#{e.session_no}</td>
-                            <td className="py-2.5 pr-4 text-gray-500">{e.session_date}</td>
-                            <td className="py-2.5 pr-4"><StarDisplay value={e.rating} /></td>
-                            <td className="py-2.5 text-gray-600">{e.comment || "–"}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                  <div className="flex items-center justify-between mb-4 border-b border-gray-100 pb-3">
+                    <div className="flex items-center gap-2">
+                      <h3 className="section-title mb-0">Đánh Giá Lớp (Giảng viên)</h3>
+                      <span className="text-xs text-gray-400 font-normal">({classEvals.length} buổi)</span>
+                    </div>
+                    <button
+                      onClick={() => setIsClassEvalVisible(!isClassEvalVisible)}
+                      className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors text-gray-500 hover:text-gray-900 flex items-center gap-1.5 text-xs font-medium"
+                    >
+                      <span>{isClassEvalVisible ? "Ẩn bớt" : "Hiện tất cả"}</span>
+                      <ChevronDown className={`w-4 h-4 transition-transform ${isClassEvalVisible ? "rotate-180 text-sky-600" : ""}`} />
+                    </button>
                   </div>
+                  {isClassEvalVisible && (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="text-xs text-gray-500 border-b border-gray-100">
+                            <th className="text-left py-2 pr-4 font-medium w-[15%]">Buổi</th>
+                            <th className="text-left py-2 pr-4 font-medium w-[20%]">Ngày</th>
+                            <th className="text-left py-2 pr-4 font-medium w-[25%]">Xếp loại</th>
+                            <th className="text-left py-2 pr-4 font-medium w-[30%]">Nhận xét</th>
+                            <th className="text-right py-2 font-medium w-[10%]">Chi tiết</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-50">
+                          {classEvals.map((e, i) => {
+                            const isExpanded = expandedSessions[e.session_ref || ""] || false;
+
+                            // Lọc & loại bỏ trùng lặp đánh giá học viên theo tên
+                            const sessionStudEvals = studentEvaluations.filter(se => se.session_ref === e.session_ref);
+                            const uniqueStudEvals: any[] = [];
+                            const seenNames = new Set<string>();
+                            for (const se of sessionStudEvals) {
+                              if (!se.student_name) continue;
+                              const nameKey = se.student_name.trim().toLowerCase();
+                              if (!seenNames.has(nameKey)) {
+                                seenNames.add(nameKey);
+                                uniqueStudEvals.push(se);
+                              }
+                            }
+
+                            return (
+                              <Fragment key={i}>
+                                <tr
+                                  className="hover:bg-gray-50 cursor-pointer transition-colors"
+                                  onClick={() => toggleSessionExpand(e.session_ref)}
+                                >
+                                  <td className="py-3 pr-4 font-semibold text-gray-700 select-none">
+                                    <div className="flex items-center gap-2">
+                                      <ChevronRight className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? "rotate-90 text-sky-600" : ""}`} />
+                                      <span>#{e.session_no}</span>
+                                    </div>
+                                  </td>
+                                  <td className="py-3 pr-4 text-gray-500">{e.session_date}</td>
+                                  <td className="py-3 pr-4"><StarDisplay value={e.rating} /></td>
+                                  <td className="py-3 pr-4 text-gray-600 truncate max-w-[200px]">{e.comment || "–"}</td>
+                                  <td className="py-3 text-right text-xs text-sky-600 font-medium select-none">
+                                    {isExpanded ? "Thu gọn" : "Xem chi tiết"}
+                                  </td>
+                                </tr>
+                                {isExpanded && (
+                                  <tr className="bg-sky-50/10">
+                                    <td colSpan={5} className="px-6 py-5 border-t border-b border-sky-100/30">
+                                      <div className="max-w-4xl">
+                                        <h4 className="text-xs font-semibold text-sky-800 mb-3.5 flex items-center gap-1.5">
+                                          <span className="w-1.5 h-1.5 bg-sky-500 rounded-full"></span>
+                                          Đánh giá chi tiết từng học viên ({uniqueStudEvals.length})
+                                        </h4>
+                                        {uniqueStudEvals.length === 0 ? (
+                                          <p className="text-xs text-gray-400 italic pl-3">Không có đánh giá chi tiết từng học viên cho buổi học này.</p>
+                                        ) : (
+                                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pl-3">
+                                            {uniqueStudEvals.map((se, sIdx) => (
+                                              <div key={sIdx} className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex flex-col gap-1.5">
+                                                <div className="flex items-center justify-between">
+                                                  <span className="text-xs font-semibold text-gray-800">{se.student_name}</span>
+                                                  <StarDisplay value={se.rating} />
+                                                </div>
+                                                <p className="text-xs text-gray-600 leading-relaxed whitespace-pre-line">
+                                                  {se.comment || <span className="text-gray-400 italic">Không có nhận xét</span>}
+                                                </p>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        )}
+                                      </div>
+                                    </td>
+                                  </tr>
+                                )}
+                              </Fragment>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </Card>
               )}
 
@@ -1479,7 +1621,7 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
                     <select
                       value={selectedMonth}
                       onChange={e => setSelectedMonth(e.target.value)}
-                      className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500"
                     >
                       {[...new Set(monthlyEvals.map(e => e.evaluation_month))].sort().reverse().map(month => (
                         <option key={month} value={month}>{month}</option>
@@ -1503,7 +1645,7 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
                               <tr className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => setExpandedEvalIndex(expandedEvalIndex === i ? null : i)}>
                                 <td className="py-2.5 pr-3 font-medium text-gray-800 select-none">
                                   <div className="flex items-center gap-2">
-                                    <ChevronRight className={`w-4 h-4 text-gray-400 transition-transform ${expandedEvalIndex === i ? "rotate-90 text-indigo-600" : ""}`} />
+                                    <ChevronRight className={`w-4 h-4 text-gray-400 transition-transform ${expandedEvalIndex === i ? "rotate-90 text-sky-600" : ""}`} />
                                     <span>{e.student_name || "–"}</span>
                                   </div>
                                 </td>
@@ -1512,19 +1654,19 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
                                     {e.performance === "excellent" ? "Xuất sắc" : e.performance === "good" ? "Tốt" : e.performance === "average" ? "Trung bình" : e.performance === "below_average" ? "Yếu" : "Kém"}
                                   </Badge>
                                 </td>
-                                <td className="py-2.5 text-right text-xs text-indigo-600 font-medium select-none">
+                                <td className="py-2.5 text-right text-xs text-sky-600 font-medium select-none">
                                   {expandedEvalIndex === i ? "Thu gọn" : "Xem chi tiết"}
                                 </td>
                               </tr>
                               {expandedEvalIndex === i && (
-                                <tr className="bg-indigo-50/20">
-                                  <td colSpan={3} className="px-6 py-5 border-t border-b border-indigo-100/40">
+                                <tr className="bg-sky-50/20">
+                                  <td colSpan={3} className="px-6 py-5 border-t border-b border-sky-100/40">
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
-                                      
+
                                       {/* Kiến thức đã học */}
                                       <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col gap-2">
-                                        <div className="flex items-center gap-2 font-semibold text-indigo-700">
-                                          <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full"></span>
+                                        <div className="flex items-center gap-2 font-semibold text-sky-700">
+                                          <span className="w-1.5 h-1.5 bg-sky-500 rounded-full"></span>
                                           Kiến thức đã học
                                         </div>
                                         <div className="text-gray-700 whitespace-pre-line text-xs pl-3 leading-relaxed">
@@ -1657,7 +1799,7 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
 
           {sessionsLoading ? (
             <div className="flex justify-center py-16">
-              <div className="w-8 h-8 border-4 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+              <div className="w-8 h-8 border-4 border-sky-400 border-t-transparent rounded-full animate-spin" />
             </div>
           ) : sessions.length === 0 ? (
             <div className="text-center py-16 text-gray-400">
@@ -1682,7 +1824,7 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
                   {sessions.map((s) => (
                     <tr key={s.id} className="hover:bg-gray-50">
                       <td className="px-4 py-3">
-                        <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center text-xs font-bold text-indigo-700">
+                        <div className="w-8 h-8 bg-sky-100 rounded-lg flex items-center justify-center text-xs font-bold text-sky-700">
                           #{s.session_no}
                         </div>
                       </td>
@@ -1698,11 +1840,23 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
                           }
                           const ref1 = `${s.class_name}#${s.session_no}#${s.session_date}`;
                           const ref2 = `${s.class_name}__${s.session_no}__${s.session_date}`;
-                          const attList = sessionsAttendance.filter(
-                            (a) => a.session_ref === ref1 || a.session_ref === ref2
+                          const rawAttList = sessionsAttendance.filter(
+                            (a) => a.session_id === s.id || a.session_ref === ref1 || a.session_ref === ref2
                           );
+
+                          // Deduplicate by student name (preferring records with session_id)
+                          const attMap = new Map<string, typeof rawAttList[0]>();
+                          for (const a of rawAttList) {
+                            const name = (a.student_name || "").trim();
+                            if (!name) continue;
+                            const existing = attMap.get(name);
+                            if (!existing || (a.session_id && !existing.session_id)) {
+                              attMap.set(name, a);
+                            }
+                          }
+                          const attList = Array.from(attMap.values());
+
                           const onTimeStudents = attList.filter((a) => a.attendance_status === "on_time");
-                          const lateStudents = attList.filter((a) => a.attendance_status === "late");
                           const absentStudents = attList.filter((a) => a.attendance_status === "absent");
 
                           return (
@@ -1713,14 +1867,6 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
                                   className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-100"
                                 >
                                   {st.student_name} (Đúng giờ)
-                                </span>
-                              ))}
-                              {lateStudents.map((st, idx) => (
-                                <span
-                                  key={`lt-${idx}`}
-                                  className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-50 text-amber-700 border border-amber-100"
-                                >
-                                  {st.student_name} (Muộn)
                                 </span>
                               ))}
                               {absentStudents.map((st, idx) => (
@@ -1750,7 +1896,7 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
                                 if (e.key === "Enter") { e.preventDefault(); saveZoom(s.id as number); }
                                 if (e.key === "Escape") setEditingZoomId(null);
                               }}
-                              className="w-52 rounded-lg border border-indigo-400 bg-white px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                              className="w-52 rounded-lg border border-sky-400 bg-white px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-sky-500"
                               placeholder="https://zoom.us/j/..."
                             />
                           </div>
@@ -1765,7 +1911,7 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
                             <button
                               type="button"
                               onClick={() => startEditZoom(s)}
-                              className="p-1 text-gray-400 hover:text-indigo-600 transition-colors"
+                              className="p-1 text-gray-400 hover:text-sky-600 transition-colors"
                               title="Sửa link"
                             >
                               <Pencil className="w-3.5 h-3.5" />
@@ -1777,7 +1923,7 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
                             <button
                               type="button"
                               onClick={() => startEditZoom(s)}
-                              className="p-1 text-gray-300 hover:text-indigo-600 transition-colors"
+                              className="p-1 text-gray-300 hover:text-sky-600 transition-colors"
                               title="Thêm link học"
                             >
                               <Pencil className="w-3.5 h-3.5" />
@@ -1786,13 +1932,32 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
                         )}
                       </td>
                       <td className="px-4 py-3">
-                        {s.status === "DONE" ? (
-                          <Badge variant="success">Hoàn thành</Badge>
-                        ) : s.status === "CANCELLED" ? (
-                          <Badge variant="danger">Đã hủy</Badge>
-                        ) : (
-                          <Badge variant="info">Sắp tới</Badge>
-                        )}
+                        <div className="flex flex-col gap-1">
+                          {s.status === "DONE" ? (
+                            <Badge variant="success">Hoàn thành</Badge>
+                          ) : s.status === "CANCELLED" ? (
+                            <Badge variant="danger">Đã hủy</Badge>
+                          ) : s.makeup_original_date ? (
+                            <Badge variant="warning">🔄 Học bù</Badge>
+                          ) : (
+                            <Badge variant="info">Sắp tới</Badge>
+                          )}
+                          {s.makeup_original_date && (
+                            <p className="text-[10px] text-orange-600 leading-tight font-semibold mt-0.5">
+                              🔸 Học bù từ {s.makeup_original_date}
+                            </p>
+                          )}
+                          {s.makeup_note && (
+                            <p className="text-[10px] text-orange-500 italic leading-tight">
+                              Ghi chú: {s.makeup_note}
+                            </p>
+                          )}
+                          {s.status === "CANCELLED" && s.cancelled_note && (
+                            <p className="text-[10px] text-red-500 leading-tight font-semibold mt-0.5">
+                              ❌ Lý do: {s.cancelled_note}
+                            </p>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -1819,7 +1984,7 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
 
             {enrolledLoading ? (
               <div className="flex justify-center py-16">
-                <div className="w-8 h-8 border-4 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+                <div className="w-8 h-8 border-4 border-sky-400 border-t-transparent rounded-full animate-spin" />
               </div>
             ) : enrolledStudents.length === 0 ? (
               <div className="text-center py-16 text-gray-400">
@@ -1837,7 +2002,7 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
                     placeholder="Tìm học viên..."
                     value={studentSearch}
                     onChange={e => setStudentSearch(e.target.value)}
-                    className="w-full sm:w-64 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    className="w-full sm:w-64 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
                   />
                 </div>
                 <div className="overflow-x-auto">
@@ -1848,7 +2013,7 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
                         <th className="text-left py-2 pr-3 font-medium">Họ tên</th>
                         <th className="text-left py-2 pr-3 font-medium">Email</th>
                         <th className="text-left py-2 pr-3 font-medium">Trình độ</th>
-                        <th className="text-left py-2 pr-3 font-medium text-indigo-600">Học phí</th>
+                        <th className="text-left py-2 pr-3 font-medium text-sky-600">Học phí</th>
                         <th className="text-left py-2 font-medium">Thao tác</th>
                       </tr>
                     </thead>
@@ -1866,7 +2031,7 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
                               </div>
                             </td>
                             <td className="py-2.5 pr-3">
-                              <div className="text-xs font-bold text-indigo-600">
+                              <div className="text-xs font-bold text-sky-600">
                                 {formatVND(s.tuition_fee)}
                               </div>
                               <div className="text-[10px] text-emerald-600 font-medium">
@@ -1876,21 +2041,21 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
                             <td className="py-2.5">
                               <div className="flex items-center gap-1">
                                 <Button
-                                  variant="subtle" size="sm" className="text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 h-auto text-[10px] font-bold rounded-lg"
+                                  variant="subtle" size="sm" className="text-sky-600 bg-sky-50 hover:bg-sky-100 px-2 py-1 h-auto text-[10px] font-bold rounded-lg"
                                   onClick={() => openFinancialModal(s)}
                                 >
                                   Tài chính & Trình độ
                                 </Button>
-                              <button
-                                disabled={removingId === s.enrollment_id}
-                                onClick={() => removeStudent(s.enrollment_id)}
-                                className="group-hover:opacity-100 p-1.5 rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600 transition-all disabled:opacity-50"
-                                title="Xóa khỏi lớp"
-                              >
-                                {removingId === s.enrollment_id
-                                  ? <div className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
-                                  : <Trash2 className="w-4 h-4" />}
-                              </button>
+                                <button
+                                  disabled={removingId === s.enrollment_id}
+                                  onClick={() => removeStudent(s.enrollment_id)}
+                                  className="group-hover:opacity-100 p-1.5 rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600 transition-all disabled:opacity-50"
+                                  title="Xóa khỏi lớp"
+                                >
+                                  {removingId === s.enrollment_id
+                                    ? <div className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
+                                    : <Trash2 className="w-4 h-4" />}
+                                </button>
                               </div>
                             </td>
                           </tr>
@@ -1921,7 +2086,7 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
                 placeholder="Nhập tên hoặc mã học viên..."
                 value={addSearch}
                 onChange={e => setAddSearch(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
                 autoFocus
               />
             </div>
@@ -1995,7 +2160,7 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
                   </label>
                   <input
                     type="text"
-                    className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500"
+                    className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-sky-500"
                     placeholder="VD: 5.0"
                     value={newStudentConfig.level_in}
                     onChange={(e) =>
@@ -2009,7 +2174,7 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
                   </label>
                   <input
                     type="text"
-                    className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500"
+                    className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-sky-500"
                     placeholder="VD: 6.5"
                     value={newStudentConfig.level_out}
                     onChange={(e) =>
@@ -2025,7 +2190,7 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
                 </label>
                 <input
                   type="number"
-                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500 font-semibold text-indigo-600"
+                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-sky-500 font-semibold text-sky-600"
                   placeholder="VD: 8000000"
                   value={newStudentConfig.tuition_fee || ""}
                   onChange={(e) =>
@@ -2168,7 +2333,7 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
                 {periodicTests.map((test) => (
                   <Card
                     key={test.id}
-                    className={`p-4 cursor-pointer transition-all ${selectedTest?.id === test.id ? "ring-2 ring-indigo-500" : "hover:shadow-md"}`}
+                    className={`p-4 cursor-pointer transition-all ${selectedTest?.id === test.id ? "ring-2 ring-sky-500" : "hover:shadow-md"}`}
                     onClick={() => setSelectedTest(test)}
                   >
                     <div className="flex items-start justify-between">
@@ -2309,16 +2474,18 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
           {showCreateTestModal && (
             <Modal
               open={true}
-              onClose={() => { setShowCreateTestModal(false); setNewTestForm({
-                test_name: "",
-                test_date: "",
-                test_type: "regular",
-                max_score: 100,
-                passing_score: 50,
-                description: "",
-                test_material_link: "",
-                zoom_link: "",
-              }); }}
+              onClose={() => {
+                setShowCreateTestModal(false); setNewTestForm({
+                  test_name: "",
+                  test_date: "",
+                  test_type: "regular",
+                  max_score: 100,
+                  passing_score: 50,
+                  description: "",
+                  test_material_link: "",
+                  zoom_link: "",
+                });
+              }}
               title="Tạo Kỳ Thi Mới"
             >
               <div className="space-y-4">
@@ -2436,9 +2603,9 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
 
       {/* Financial & Level Modal */}
       {financialModal && (
-        <Modal 
-          open={true} 
-          onClose={() => setFinancialModal(null)} 
+        <Modal
+          open={true}
+          onClose={() => setFinancialModal(null)}
           title={`Quản lý Học phí & Trình độ`}
         >
           <div className="space-y-6 max-w-2xl mx-auto px-1">
@@ -2517,84 +2684,170 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
               </div>
             </div>
 
-                    {/* Bottom Sections: Vertical Stack for Space */}
-                    <div className="space-y-6">
-                       {/* Lịch sử đóng tiền */}
-                       <section>
-                          <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                            <History className="w-4 h-4 text-brand-500" /> Lịch sử nộp phí
-                          </h4>
-                          <div className="space-y-2 max-h-[180px] overflow-y-auto pr-2 custom-scrollbar">
-                            {paymentHistory.map((p) => (
-                              <div key={p.id} className="flex items-center justify-between p-3.5 bg-white border border-gray-100 rounded-2xl shadow-sm hover:border-brand-100 transition-all group">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-9 h-9 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 shadow-sm border border-emerald-100">
-                                    <DollarSign className="w-4 h-4" />
-                                  </div>
-                                  <div>
-                                    <div className="font-bold text-gray-900 text-sm">{formatVND(p.amount)}</div>
-                                    <div className="text-[10px] text-gray-400 font-medium">{new Date(p.paid_at).toLocaleDateString("vi-VN")} {p.note && `· ${p.note}`}</div>
-                                  </div>
-                                </div>
-                                <button type="button" onClick={() => removePayment(p.id)} className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl opacity-0 group-hover:opacity-100 transition-all"><Trash2 className="w-4 h-4" /></button>
-                              </div>
-                            ))}
-                            {paymentHistory.length === 0 && (
-                              <div className="flex flex-col items-center justify-center py-8 bg-gray-50/50 rounded-2xl border border-dashed border-gray-200">
-                                <p className="text-xs text-gray-400 italic">Chưa có lịch sử nộp phí</p>
-                              </div>
-                            )}
-                          </div>
-                       </section>
-
-                       {/* Nộp thêm đợt mới */}
-                       <section>
-                          <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                            <Plus className="w-4 h-4 text-brand-500" /> Nộp thêm đợt mới
-                          </h4>
-                          <div className="p-6 bg-brand-600 rounded-3xl shadow-xl shadow-brand-100 relative overflow-hidden">
-                            <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full -mr-24 -mt-24 blur-3xl" />
-                            <div className="absolute bottom-0 left-0 w-32 h-32 bg-black/10 rounded-full -ml-16 -mb-16 blur-2xl" />
-                            
-                            <div className="space-y-4 relative z-10">
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div className="space-y-1.5">
-                                  <label className="text-[10px] font-bold text-brand-100 uppercase ml-1">Số tiền đóng (VNĐ)</label>
-                                  <input 
-                                    type="text"
-                                    inputMode="numeric"
-                                    placeholder="0"
-                                    value={newPayment.amount ? formatVND(newPayment.amount).replace(" ₫", "") : ""}
-                                    onChange={e => {
-                                      const val = e.target.value.replace(/\D/g, "");
-                                      setNewPayment(p => ({ ...p, amount: Number(val) }));
-                                    }}
-                                    className="w-full rounded-2xl border-none bg-white/20 text-white placeholder:text-white/40 px-4 py-3 text-sm focus:ring-2 focus:ring-white font-black text-right"
-                                  />
-                                </div>
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold text-brand-100 uppercase ml-1">Ghi chú</label>
-                          <input 
-                            type="text"
-                            placeholder="Đợt 2, Chuyển khoản..."
-                            value={newPayment.note}
-                            onChange={e => setNewPayment(p => ({ ...p, note: e.target.value }))}
-                            className="w-full rounded-2xl border-none bg-white/20 text-white placeholder:text-white/40 px-4 py-3 text-sm focus:ring-2 focus:ring-white font-medium"
-                          />
+            {/* Bottom Sections: Vertical Stack for Space */}
+            <div className="space-y-6">
+              {/* Lịch sử đóng tiền */}
+              <section>
+                <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                  <History className="w-4 h-4 text-brand-500" /> Lịch sử nộp phí
+                </h4>
+                <div className="space-y-2 max-h-[180px] overflow-y-auto pr-2 custom-scrollbar">
+                  {paymentHistory.map((p) => (
+                    <div key={p.id} className="flex items-center justify-between p-3.5 bg-white border border-gray-100 rounded-2xl shadow-sm hover:border-brand-100 transition-all group">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 shadow-sm border border-emerald-100">
+                          <DollarSign className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <div className="font-bold text-gray-900 text-sm">{formatVND(p.amount)}</div>
+                          <div className="text-[10px] text-gray-400 font-medium">{new Date(p.paid_at).toLocaleDateString("vi-VN")} {p.note && `· ${p.note}`}</div>
                         </div>
                       </div>
-                      <Button 
-                        type="button"
-                        loading={addingPayment}
-                        onClick={handleAddPayment}
-                        disabled={newPayment.amount <= 0}
-                        className="w-full bg-white text-brand-700 hover:bg-brand-50 font-black rounded-2xl py-4 shadow-2xl transition-transform active:scale-[0.98]"
-                      >
-                        Xác nhận nộp phí ngay
-                      </Button>
+                      <button type="button" onClick={() => removePayment(p.id)} className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl opacity-0 group-hover:opacity-100 transition-all"><Trash2 className="w-4 h-4" /></button>
                     </div>
+                  ))}
+                  {paymentHistory.length === 0 && (
+                    <div className="flex flex-col items-center justify-center py-8 bg-gray-50/50 rounded-2xl border border-dashed border-gray-200">
+                      <p className="text-xs text-gray-400 italic">Chưa có lịch sử nộp phí</p>
+                    </div>
+                  )}
+                </div>
+              </section>
+
+              {/* Nộp thêm đợt mới */}
+              <section>
+                <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                  <Plus className="w-4 h-4 text-brand-500" /> Nộp thêm đợt mới
+                </h4>
+                <div className="p-6 bg-brand-600 rounded-3xl shadow-xl shadow-brand-100 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full -mr-24 -mt-24 blur-3xl" />
+                  <div className="absolute bottom-0 left-0 w-32 h-32 bg-black/10 rounded-full -ml-16 -mb-16 blur-2xl" />
+
+                  <div className="space-y-4 relative z-10">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-brand-100 uppercase ml-1">Số tiền đóng (VNĐ)</label>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="0"
+                          value={newPayment.amount ? formatVND(newPayment.amount).replace(" ₫", "") : ""}
+                          onChange={e => {
+                            const val = e.target.value.replace(/\D/g, "");
+                            setNewPayment(p => ({ ...p, amount: Number(val) }));
+                          }}
+                          className="w-full rounded-2xl border-none bg-white/20 text-white placeholder:text-white/40 px-4 py-3 text-sm focus:ring-2 focus:ring-white font-black text-right"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-brand-100 uppercase ml-1">Ghi chú</label>
+                        <input
+                          type="text"
+                          placeholder="Đợt 2, Chuyển khoản..."
+                          value={newPayment.note}
+                          onChange={e => setNewPayment(p => ({ ...p, note: e.target.value }))}
+                          className="w-full rounded-2xl border-none bg-white/20 text-white placeholder:text-white/40 px-4 py-3 text-sm focus:ring-2 focus:ring-white font-medium"
+                        />
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      loading={addingPayment}
+                      onClick={handleAddPayment}
+                      disabled={newPayment.amount <= 0}
+                      className="w-full bg-white text-brand-700 hover:bg-brand-50 font-black rounded-2xl py-4 shadow-2xl transition-transform active:scale-[0.98]"
+                    >
+                      Xác nhận nộp phí ngay
+                    </Button>
                   </div>
-               </section>
+                </div>
+              </section>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Modal: Xuất Báo Cáo Học Lực (.docx) */}
+      {showWordModal && (
+        <Modal
+          open={true}
+          onClose={() => setShowWordModal(false)}
+          title="Xuất Báo Cáo Học Lực Hàng Tháng"
+          size="md"
+        >
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600">
+              Xuất tệp Word (.docx) báo cáo học lực hàng tháng cho học viên trong lớp khớp hoàn hảo với mẫu thiết kế.
+            </p>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+                  Chọn tháng báo cáo
+                </label>
+                <select
+                  value={exportWordMonth}
+                  onChange={e => setExportWordMonth(e.target.value)}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 font-medium"
+                >
+                  <option value="">-- Chọn tháng --</option>
+                  {(() => {
+                    const months = [...new Set(monthlyEvals.map(e => e.evaluation_month))].sort().reverse();
+                    return months.map(month => (
+                      <option key={month} value={month}>{month}</option>
+                    ));
+                  })()}
+                </select>
+                {monthlyEvals.length === 0 && (
+                  <p className="text-xs text-amber-600 italic mt-1">
+                    * Lớp học chưa có dữ liệu đánh giá tháng nào. Vui lòng tạo đánh giá ở tab "Đánh giá" trước.
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+                  Chọn học viên
+                </label>
+                <select
+                  value={exportWordStudentId}
+                  onChange={e => setExportWordStudentId(e.target.value)}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 font-medium"
+                >
+                  <option value="all">Tất cả học viên (Tải file nén .zip)</option>
+                  {enrolledStudents.map(student => (
+                    <option key={student.student_id} value={student.student_id}>
+                      {student.full_name} {student.student_code ? `(${student.student_code})` : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-3 border-t border-gray-100">
+              <Button
+                variant="outline"
+                className="flex-1 rounded-xl"
+                onClick={() => setShowWordModal(false)}
+              >
+                Hủy
+              </Button>
+              <Button
+                className="flex-1 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-semibold shadow-lg shadow-sky-100"
+                disabled={!exportWordMonth}
+                onClick={() => {
+                  if (!exportWordMonth) {
+                    toast.error("Vui lòng chọn tháng báo cáo");
+                    return;
+                  }
+                  setShowWordModal(false);
+                  const downloadUrl = `/api/export-docx?classId=${classIdRef.current}&month=${exportWordMonth}&studentId=${exportWordStudentId}`;
+                  window.open(downloadUrl, "_blank");
+                  toast.success("Bắt đầu tải báo cáo!");
+                }}
+              >
+                Tải Báo Cáo
+              </Button>
             </div>
           </div>
         </Modal>

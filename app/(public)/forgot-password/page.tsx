@@ -3,8 +3,7 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Logo from "@/components/ui/Logo";
 import { createBrowserClient } from "@/lib/supabase/client";
-import { ArrowLeft, Mail } from "lucide-react";
-import Link from "next/link";
+import BackButton from "@/components/ui/BackButton";
 import { useState } from "react";
 import toast from "react-hot-toast";
 
@@ -35,13 +34,7 @@ export default function ForgotPasswordPage() {
     <div className="min-h-screen bg-linear-to-br from-brand-950 via-brand-900 to-brand-800 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="mb-6">
-          <Link
-            href="/login"
-            className="inline-flex items-center gap-2 text-sm text-brand-200/90 hover:text-white transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4 shrink-0" />
-            Quay lại đăng nhập
-          </Link>
+            <BackButton href="/login" label="Quay lại đăng nhập" variant="inline" className="text-brand-200/90 hover:text-white" />
         </div>
         <div className="text-center mb-8">
           <div className="inline-flex justify-center mb-4">

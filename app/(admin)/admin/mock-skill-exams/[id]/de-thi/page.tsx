@@ -12,12 +12,12 @@ import type {
   MockSkillWritingTask,
 } from "@/lib/mock-skill/types";
 import type { MockSkillExamDef } from "@/types";
+import BackButton from "@/components/ui/BackButton";
 import {
-  ArrowLeft, ChevronDown, ChevronUp, Plus, Trash2,
+  ChevronDown, ChevronUp, Plus, Trash2,
   AlignLeft, Headphones, Image as ImageIcon, GripVertical, Settings, Save, Eye, FileText, CheckCircle2,
   Mic, PenTool, BookOpen, Upload, Loader2
 } from "lucide-react";
-import Link from "next/link";
 import { use, useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { ListeningSection } from "@/components/exam/ListeningSection";
@@ -86,7 +86,7 @@ function BlockEditor({
 
   return (
     <div className="group relative rounded-2xl border border-gray-200 bg-white shadow-sm hover:shadow-md hover:border-brand-300 transition-all duration-300 overflow-hidden">
-      <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-gray-200 to-gray-300 group-hover:from-brand-400 group-hover:to-indigo-500 transition-all" />
+      <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-gray-200 to-gray-300 group-hover:from-brand-400 group-hover:to-sky-500 transition-all" />
 
       <div className="p-4 pl-6 space-y-4">
         <div className="flex items-center justify-between gap-2 border-b border-gray-100 pb-3">
@@ -1343,12 +1343,12 @@ function SpeakingPartsEditor({
     <div className="space-y-6 mt-8 border-t border-gray-100 pt-6">
       <div className="flex items-center justify-between border-b border-gray-100 pb-3">
         <h3 className="text-lg font-black text-gray-800 flex items-center gap-2">
-          <Mic className="w-5 h-5 text-violet-500" /> Cấu trúc Speaking Parts ({parts.length})
+          <Mic className="w-5 h-5 text-sky-500" /> Cấu trúc Speaking Parts ({parts.length})
         </h3>
         <button
           type="button"
           onClick={addPart}
-          className="text-xs font-bold text-white bg-violet-600 hover:bg-violet-700 px-3 py-1.5 rounded-lg flex items-center gap-1 transition-all"
+          className="text-xs font-bold text-white bg-sky-600 hover:bg-sky-700 px-3 py-1.5 rounded-lg flex items-center gap-1 transition-all"
         >
           <Plus className="w-3.5 h-3.5" /> Thêm Part mới
         </button>
@@ -1363,16 +1363,16 @@ function SpeakingPartsEditor({
           {parts.map((p, idx) => {
             const isPart2 = p.part === "2";
             return (
-              <div key={idx} className="p-5 bg-white rounded-2xl border border-gray-200 shadow-sm space-y-4 hover:shadow-md hover:border-violet-300 transition-all duration-300 relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-1.5 h-full bg-violet-500" />
+              <div key={idx} className="p-5 bg-white rounded-2xl border border-gray-200 shadow-sm space-y-4 hover:shadow-md hover:border-sky-300 transition-all duration-300 relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-1.5 h-full bg-sky-500" />
                 <div className="flex items-center justify-between gap-2 border-b border-gray-100 pb-3">
                   <div className="flex items-center gap-2">
-                    <span className="bg-violet-50 text-violet-700 px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider">
+                    <span className="bg-sky-50 text-sky-700 px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider">
                       Part {p.part}
                     </span>
                     <input
                       type="text"
-                      className="font-bold text-gray-900 border-b border-transparent hover:border-gray-200 focus:border-violet-500 focus:outline-none px-1 text-sm bg-transparent"
+                      className="font-bold text-gray-900 border-b border-transparent hover:border-gray-200 focus:border-sky-500 focus:outline-none px-1 text-sm bg-transparent"
                       value={p.type || ""}
                       placeholder="Nhập Topic (VD: Work or Study)"
                       onChange={(e) => updatePart(idx, { ...p, type: e.target.value })}
@@ -1423,7 +1423,7 @@ function SpeakingPartsEditor({
                       <div>
                         <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Đề bài Cue Card (Task Prompt)</label>
                         <textarea
-                          className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-2 focus:ring-violet-500/20 focus:outline-none min-h-[80px] bg-white"
+                          className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-2 focus:ring-sky-500/20 focus:outline-none min-h-[80px] bg-white"
                           value={p.task || ""}
                           placeholder="Describe a journey you made by public transport..."
                           onChange={(e) => updatePart(idx, { ...p, task: e.target.value })}
@@ -1433,7 +1433,7 @@ function SpeakingPartsEditor({
                       <div>
                         <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Cues (Gợi ý chi tiết)</label>
                         <textarea
-                          className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-2 focus:ring-violet-500/20 focus:outline-none min-h-[60px] bg-white font-mono text-xs"
+                          className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-2 focus:ring-sky-500/20 focus:outline-none min-h-[60px] bg-white font-mono text-xs"
                           value={p.cues?.join("\n") || ""}
                           placeholder="Mỗi dòng một gợi ý (VD: - Where you went&#10;- Who you went with...)"
                           onChange={(e) => updatePart(idx, { ...p, cues: e.target.value.split("\n").filter(Boolean) })}
@@ -1444,7 +1444,7 @@ function SpeakingPartsEditor({
                         <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Câu hỏi Follow-up</label>
                         <input
                           type="text"
-                          className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-2 focus:ring-violet-500/20 focus:outline-none bg-white"
+                          className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-2 focus:ring-sky-500/20 focus:outline-none bg-white"
                           value={p.follow_up || ""}
                           placeholder="Do you think young people travel more than old people?"
                           onChange={(e) => updatePart(idx, { ...p, follow_up: e.target.value })}
@@ -1460,7 +1460,7 @@ function SpeakingPartsEditor({
                             <span className="text-xs font-mono font-bold text-gray-400 w-5 text-right">{qIdx + 1}.</span>
                             <input
                               type="text"
-                              className="flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-2 focus:ring-violet-500/20 focus:outline-none"
+                              className="flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm focus:ring-2 focus:ring-sky-500/20 focus:outline-none"
                               value={qText}
                               onChange={(e) => {
                                 const nextQs = [...(p.questions || [])];
@@ -1488,7 +1488,7 @@ function SpeakingPartsEditor({
                           const nextQs = [...(p.questions || []), ""];
                           updatePart(idx, { ...p, questions: nextQs });
                         }}
-                        className="text-xs font-semibold text-violet-600 hover:text-violet-700 bg-violet-50 hover:bg-violet-100/80 px-3 py-1.5 rounded-lg flex items-center gap-1 transition-all w-fit mt-1"
+                        className="text-xs font-semibold text-sky-600 hover:text-sky-700 bg-sky-50 hover:bg-sky-100/80 px-3 py-1.5 rounded-lg flex items-center gap-1 transition-all w-fit mt-1"
                       >
                         <Plus className="w-3 h-3" /> Thêm câu hỏi
                       </button>
@@ -1817,9 +1817,7 @@ export default function AdminMockSkillEditorPage({ params }: { params: Promise<{
           </div>
           <h2 className="text-2xl font-bold text-gray-900">Không tìm thấy đề thi</h2>
           <p className="text-gray-500">Đề thi này không tồn tại hoặc bạn không có quyền truy cập.</p>
-          <Link href="/admin/mock-skill-exams">
-            <Button variant="primary" icon={<ArrowLeft className="w-4 h-4" />}>Quay lại danh sách</Button>
-          </Link>
+          <BackButton href="/admin/mock-skill-exams" label="Quay lại danh sách" variant="button" />
         </div>
       </PageWrapper>
     );
@@ -1831,13 +1829,11 @@ export default function AdminMockSkillEditorPage({ params }: { params: Promise<{
       <div className="relative mb-8 bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-gray-100 overflow-hidden">
         {/* Decorative background shapes */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-brand-50 to-transparent rounded-bl-full pointer-events-none opacity-60" />
-        <div className="absolute bottom-0 right-32 w-32 h-32 bg-gradient-to-tl from-indigo-50 to-transparent rounded-tl-full pointer-events-none opacity-60" />
+        <div className="absolute bottom-0 right-32 w-32 h-32 bg-gradient-to-tl from-sky-50 to-transparent rounded-tl-full pointer-events-none opacity-60" />
 
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="flex-1">
-            <Link href="/admin/mock-skill-exams" className="inline-flex items-center gap-1.5 text-sm font-semibold text-gray-500 hover:text-brand-700 transition-colors mb-3 bg-gray-50 px-3 py-1 rounded-full w-fit">
-              <ArrowLeft className="w-3.5 h-3.5" /> Quay lại danh sách
-            </Link>
+            <BackButton href="/admin/mock-skill-exams" label="Quay lại danh sách" className="mb-3" />
             <h1 className="text-3xl font-black text-gray-900 tracking-tight leading-tight mb-2">
               {title || exam.title}
             </h1>

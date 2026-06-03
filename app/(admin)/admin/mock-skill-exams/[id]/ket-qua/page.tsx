@@ -6,8 +6,8 @@ import Button from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { createBrowserClient } from "@/lib/supabase/client";
 import type { MockSkillExamDef, MockSkillSubmission } from "@/types";
-import { ArrowLeft, Bot, CheckCircle2, ChevronDown, ChevronUp, FolderOpen, Loader2, Trash2, X } from "lucide-react";
-import Link from "next/link";
+import BackButton from "@/components/ui/BackButton";
+import { Bot, CheckCircle2, ChevronDown, ChevronUp, FolderOpen, Loader2, Trash2, X } from "lucide-react";
 import { use, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { rawScoreToBand } from "@/lib/mock-skill/band-mapping";
@@ -200,7 +200,7 @@ function AIScoreDisplay({ skill, score }: { skill: "writing" | "speaking"; score
                   <h4 className="text-sm font-black text-gray-800 flex items-center gap-2">🚀 Gợi ý nâng cấp Từ vựng</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {(score.feedback.vocabulary_suggestions as any[]).map((item: any, i: number) => (
-                      <div key={i} className="rounded-xl border border-indigo-100 bg-white p-3.5 shadow-sm space-y-2">
+                      <div key={i} className="rounded-xl border border-sky-100 bg-white p-3.5 shadow-sm space-y-2">
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded">Từ đã dùng</span>
                           <span className="text-xs font-bold text-brand-700 bg-brand-50 px-2 py-0.5 rounded">Premium Alternatives</span>
@@ -253,10 +253,10 @@ function AIScoreDisplay({ skill, score }: { skill: "writing" | "speaking"; score
                   <h4 className="text-sm font-black text-gray-800 flex items-center gap-2">🗣️ Chi tiết lỗi Phát âm</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {(score.feedback.pronunciation_issues as any[]).map((item: any, i: number) => (
-                      <div key={i} className="rounded-xl border border-violet-100 bg-white p-3.5 shadow-sm space-y-2">
+                      <div key={i} className="rounded-xl border border-sky-100 bg-white p-3.5 shadow-sm space-y-2">
                         <div className="flex items-center justify-between border-b border-gray-100 pb-1.5">
                           <p className="text-xs font-bold text-red-600">{item.word}</p>
-                          <span className="text-xs font-bold text-violet-700 bg-violet-50 px-2 py-0.5 rounded font-mono">{item.correct_pronunciation}</span>
+                          <span className="text-xs font-bold text-sky-700 bg-sky-50 px-2 py-0.5 rounded font-mono">{item.correct_pronunciation}</span>
                         </div>
                         <div className="bg-gray-50 rounded-lg p-2.5 text-xs text-gray-600 leading-relaxed">
                           <span className="font-bold text-gray-700 block mb-0.5">💡 Mẹo phát âm đúng:</span>
@@ -711,7 +711,7 @@ export default function AdminMockSkillKetQuaPage({ params }: { params: Promise<{
   if (!exam) return (
     <PageWrapper>
       <p className="text-gray-600">Không tìm thấy đề.</p>
-      <Link href="/admin/mock-skill-exams" className="inline-block mt-4"><Button variant="outline" icon={<ArrowLeft className="w-4 h-4" />}>Quay lại</Button></Link>
+      <div className="mt-4"><BackButton href="/admin/mock-skill-exams" label="Quay lại" variant="button" /></div>
     </PageWrapper>
   );
 
@@ -723,9 +723,7 @@ export default function AdminMockSkillKetQuaPage({ params }: { params: Promise<{
       )}
 
       <div className="mb-6">
-        <Link href="/admin/mock-skill-exams" className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-brand-700 mb-4">
-          <ArrowLeft className="w-4 h-4" /> Danh sách đề
-        </Link>
+        <BackButton href="/admin/mock-skill-exams" label="Danh sách đề" variant="inline" className="mb-4" />
         <div className="flex items-start justify-between flex-wrap gap-4">
           <div>
             <h1 className="page-title">Kết quả — {exam.title}</h1>

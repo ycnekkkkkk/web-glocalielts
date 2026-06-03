@@ -8,9 +8,9 @@ export default function AcademicManagerLoginPage() {
         role: "academic_manager",
         title: "Đăng nhập Quản Lý Học Vụ",
         subtitle: "Trang dành riêng cho quản lý học vụ",
-        gradient: "bg-gradient-to-br from-indigo-900 via-indigo-800 to-blue-700",
-        accentClass: "text-indigo-600",
-        spinnerClass: "border-indigo-600",
+        gradient: "bg-gradient-to-br from-sky-900 via-sky-800 to-sky-700",
+        accentClass: "text-sky-600",
+        spinnerClass: "border-sky-600",
         dashboard: "/academic-manager/classes",
       }}
     />

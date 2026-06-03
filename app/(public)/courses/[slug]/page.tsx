@@ -5,9 +5,9 @@ import { Card } from "@/components/ui/Card";
 import PublicPageShell from "@/components/layout/PublicPageShell";
 import { createBrowserClient } from "@/lib/supabase/client";
 import type { PublicCourse, PublicCourseLesson } from "@/types";
-import { ArrowLeft, BookOpen, UserCircle2 } from "lucide-react";
+import { BookOpen, UserCircle2 } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
+import BackButton from "@/components/ui/BackButton";
 import { use, useEffect, useMemo, useState } from "react";
 import { extractObjective } from "@/lib/parse-course-metadata";
 
@@ -93,11 +93,7 @@ export default function PublicCourseDetailPage({ params }: { params: Promise<{ s
   return (
     <PublicPageShell>
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 w-full">
-        <Link href="/courses">
-          <Button variant="ghost" size="sm" icon={<ArrowLeft className="w-4 h-4" />} className="text-gray-600 hover:text-brand-700">
-            Danh sách khóa học
-          </Button>
-        </Link>
+        <BackButton href="/courses" label="Danh sách khóa học" variant="button" className="text-gray-600 hover:text-brand-700" />
 
         {loading ? (
           <div className="h-72 mt-4 rounded-2xl border border-gray-100 bg-white shadow-[var(--shadow-card)] animate-pulse" />
@@ -114,7 +110,7 @@ export default function PublicCourseDetailPage({ params }: { params: Promise<{ s
           <Card className="mt-4 border-brand-100/60 overflow-hidden p-0">
             {/* Hero thumbnail */}
             {thumbnail && (
-              <div className="relative w-full h-56 sm:h-72 bg-gradient-to-br from-brand-100 to-indigo-100 overflow-hidden">
+              <div className="relative w-full h-56 sm:h-72 bg-gradient-to-br from-brand-100 to-sky-100 overflow-hidden">
                 <Image
                   src={thumbnail}
                   alt={course.title}

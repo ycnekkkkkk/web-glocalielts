@@ -1,5 +1,6 @@
 "use client";
 import PageWrapper from "@/components/layouts/PageWrapper";
+import { usePageTitle } from "@/components/layouts/PageTitleContext";
 import { Card } from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
@@ -7,9 +8,9 @@ import Modal from "@/components/ui/Modal";
 import { SkeletonPage } from "@/components/ui/Skeleton";
 import { createBrowserClient } from "@/lib/supabase/client";
 import { SESSION_STATUS } from "@/lib/constants";
-import { ArrowLeft, BookOpen, Calendar, CheckCircle, Clock, GraduationCap, MessageSquare, Star, Video, ExternalLink } from "lucide-react";
-import Link from "next/link";
-import { use, useEffect, useMemo, useState } from "react";
+import BackButton from "@/components/ui/BackButton";
+import { BookOpen, Calendar, CheckCircle, Clock, GraduationCap, MessageSquare, Star, Video, ExternalLink } from "lucide-react";
+import { use, useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import type { AttendanceMakeup, ClassCurrent, Session, SessionAttendance, SessionStudentEvaluation, SessionTeacherEvaluation } from "@/types";
 
@@ -49,9 +50,12 @@ function StarRating({ value, onChange, readonly }: { value: number; onChange?: (
   );
 }
 
-export default function StudentCourseDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
-  const classId = decodeURIComponent(id);
+export default function StudentCourseDetailPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = use(params);
+  const className = decodeURIComponent(slug);
+  const { setTitle } = usePageTitle();
+  const setTitleRef = useRef(setTitle);
+  setTitleRef.current = setTitle;
 
   const [cls, setCls] = useState<ClassCurrent | null>(null);
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -79,6 +83,10 @@ export default function StudentCourseDetailPage({ params }: { params: Promise<{ 
   const [rateComment, setRateComment] = useState("");
   const [savingRate, setSavingRate] = useState(false);
   useEffect(() => {
+    return () => { setTitleRef.current(""); };
+  }, []);
+
+  useEffect(() => {
     let isActive = true;
 
     async function load() {
@@ -104,17 +112,8 @@ export default function StudentCourseDetailPage({ params }: { params: Promise<{ 
         let { data: normClass } = await supabase
           .from("classes")
           .select("id, name, status, schedule, total_sessions, sessions_done, level_out, teacher_id")
-          .eq("id", classId)
+          .eq("name", className)
           .maybeSingle();
-        // Backward compatibility for old links that still pass class name.
-        if (!normClass) {
-          const byName = await supabase
-            .from("classes")
-            .select("id, name, status, schedule, total_sessions, sessions_done, level_out, teacher_id")
-            .eq("name", classId)
-            .maybeSingle();
-          normClass = byName.data;
-        }
         if (!normClass) {
           setCls(null);
           setSessions([]);
@@ -160,6 +159,7 @@ export default function StudentCourseDetailPage({ params }: { params: Promise<{ 
           hoc_vien: name,
         } as unknown as typeof cls extends null ? never : NonNullable<typeof cls>);
 
+        setTitle(normClass.name);
         setSessions(sessList);
         setLoading(false); // render main content first
 
@@ -247,7 +247,7 @@ export default function StudentCourseDetailPage({ params }: { params: Promise<{ 
     return () => {
       isActive = false;
     };
-  }, [classId]);
+  }, [className]);
 
   function openRateTeacher(session: Session) {
     const sessionRef = `${session.class_name}#${session.session_no}#${session.session_date}`;
@@ -318,7 +318,6 @@ export default function StudentCourseDetailPage({ params }: { params: Promise<{ 
 
   const attendanceSummary = useMemo(() => {
     let onTime = 0;
-    let late = 0;
     let absent = 0;
     let makeupCompleted = 0;
     const absentSessions: { sessionNo: number | null; date: string | null; note: string }[] = [];
@@ -329,10 +328,6 @@ export default function StudentCourseDetailPage({ params }: { params: Promise<{ 
       if (!att) return;
       if (att.attendance_status === "on_time") {
         onTime += 1;
-        return;
-      }
-      if (att.attendance_status === "late") {
-        late += 1;
         return;
       }
       const makeup = makeupBySessionRef[sessionRef];
@@ -353,10 +348,10 @@ export default function StudentCourseDetailPage({ params }: { params: Promise<{ 
       }
     });
 
-    return { onTime, late, absent, makeupCompleted, absentSessions };
+    return { onTime, absent, makeupCompleted, absentSessions };
   }, [sessions, attendanceBySessionRef, makeupBySessionRef, targetSessionStatusByRef]);
 
-  const learnedCount = attendanceSummary.onTime + attendanceSummary.late + attendanceSummary.makeupCompleted;
+  const learnedCount = attendanceSummary.onTime + attendanceSummary.makeupCompleted;
 
   if (loading) return <PageWrapper><SkeletonPage /></PageWrapper>;
   if (loadError) return <PageWrapper><p className="text-amber-600 p-6">{loadError}</p></PageWrapper>;
@@ -370,13 +365,7 @@ export default function StudentCourseDetailPage({ params }: { params: Promise<{ 
   return (
     <PageWrapper>
       <div className="mb-4">
-        <Link 
-          href="/student/my-courses" 
-          className="group inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-gray-200/80 bg-white hover:bg-gray-50 text-xs font-semibold text-gray-600 hover:text-brand-700 shadow-sm hover:shadow transition-all duration-200"
-        >
-          <ArrowLeft className="w-3.5 h-3.5 text-gray-500 group-hover:text-brand-600 transition-transform group-hover:-translate-x-0.5" />
-          <span>Khóa học của tôi</span>
-        </Link>
+        <BackButton href="/student/my-courses" label="Khóa học của tôi" />
       </div>
 
       <div className="page-header">
@@ -422,9 +411,8 @@ export default function StudentCourseDetailPage({ params }: { params: Promise<{ 
 
       <Card className="p-5 mb-5">
         <h3 className="text-sm font-semibold text-gray-800 mb-3">Tổng kết điểm danh</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
           <div className="rounded-xl bg-emerald-50 border border-emerald-100 px-3 py-2">Đúng giờ: <b>{attendanceSummary.onTime}</b></div>
-          <div className="rounded-xl bg-amber-50 border border-amber-100 px-3 py-2">Đi trễ: <b>{attendanceSummary.late}</b></div>
           <div className="rounded-xl bg-sky-50 border border-sky-100 px-3 py-2">Vắng đã bù xong: <b>{attendanceSummary.makeupCompleted}</b></div>
           <div className="rounded-xl bg-rose-50 border border-rose-100 px-3 py-2">Vắng chưa bù: <b>{attendanceSummary.absent}</b></div>
         </div>
@@ -483,8 +471,21 @@ export default function StudentCourseDetailPage({ params }: { params: Promise<{ 
                     #{s.session_no}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900">{s.topic || "Buổi học"}</p>
-                    <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-500">
+                    <p className="text-sm font-medium text-gray-900 flex items-center flex-wrap gap-2">
+                      <span>{s.topic || "Buổi học"}</span>
+                      {s.makeup_original_date && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                          Học bù từ {s.makeup_original_date}
+                        </span>
+                      )}
+                    </p>
+                    {s.makeup_note && (
+                      <p className="text-xs text-amber-600 font-medium mt-0.5">Ghi chú học bù: {s.makeup_note}</p>
+                    )}
+                    {s.status === SESSION_STATUS.CANCELLED && s.cancelled_note && (
+                      <p className="text-xs text-rose-600 font-medium mt-0.5">Lý do hủy: {s.cancelled_note}</p>
+                    )}
+                    <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
                       <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{s.session_date}</span>
                       <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{s.session_time}</span>
                       {s.zoom_link && (

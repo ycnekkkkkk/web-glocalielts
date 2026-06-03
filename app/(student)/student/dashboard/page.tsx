@@ -247,15 +247,15 @@ export default function StudentDashboard() {
   return (
     <PageWrapper>
       {/* 🚀 Welcome Hero Banner (Executive Warm-Light Style) */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-50 via-indigo-50/20 to-slate-50 border border-slate-200/80 p-6 sm:p-8 shadow-sm mb-6">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-50 via-sky-50/20 to-slate-50 border border-slate-200/80 p-6 sm:p-8 shadow-sm mb-6">
         {/* Soft elegant radial blur */}
-        <div className="absolute right-0 top-0 w-72 h-72 rounded-full bg-indigo-500/5 blur-3xl pointer-events-none" />
+        <div className="absolute right-0 top-0 w-72 h-72 rounded-full bg-sky-500/5 blur-3xl pointer-events-none" />
         <div className="absolute left-1/3 bottom-0 w-72 h-72 rounded-full bg-amber-500/5 blur-3xl pointer-events-none" />
         
         <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div className="space-y-2.5">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-indigo-100/50 text-indigo-700 border border-indigo-200/30">
-              <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-sky-100/50 text-sky-700 border border-sky-200/30">
+              <Sparkles className="w-3.5 h-3.5 text-sky-600" />
               Chương trình học thuật cá nhân hóa
             </span>
             <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-slate-900">
@@ -269,7 +269,7 @@ export default function StudentDashboard() {
           <div className="flex gap-5 bg-white border border-slate-200/60 rounded-2xl p-4 shrink-0 shadow-sm">
             <div className="text-center min-w-16">
               <p className="text-[9px] text-slate-400 uppercase tracking-widest font-extrabold">Buổi đã xong</p>
-              <p className="text-xl font-black text-indigo-650 mt-0.5">{completedSessions}/{sessions.length || 0}</p>
+              <p className="text-xl font-black text-sky-650 mt-0.5">{completedSessions}/{sessions.length || 0}</p>
               <p className="text-[9px] text-slate-500 font-semibold mt-0.5">buổi học lớp</p>
             </div>
             <div className="w-px bg-slate-200 self-stretch" />
@@ -289,8 +289,8 @@ export default function StudentDashboard() {
             title: "Khóa học đang học",
             value: classes.length,
             icon: GraduationCap,
-            iconColor: "text-indigo-600",
-            iconBg: "bg-indigo-50 border-indigo-100",
+            iconColor: "text-sky-600",
+            iconBg: "bg-sky-50 border-sky-100",
             label: "chương trình hoạt động",
           },
           {
@@ -376,7 +376,7 @@ export default function StudentDashboard() {
                         <p className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-brand-600 transition-colors truncate">{c.name}</p>
                         <div className="flex items-center gap-3 mt-1.5">
                           <div className="flex-1 bg-slate-200/70 rounded-full h-1.5 max-w-[200px] overflow-hidden">
-                            <div className="bg-gradient-to-r from-sky-400 to-indigo-500 h-1.5 rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
+                            <div className="bg-gradient-to-r from-sky-400 to-sky-500 h-1.5 rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
                           </div>
                           <span className="text-[9px] font-bold text-slate-500">{c.sessions_done}/{c.total_sessions} buổi</span>
                         </div>
@@ -435,8 +435,8 @@ export default function StudentDashboard() {
             {upcomingSessions.slice(0, 1).map(s => (
               <div key={s.id} className="space-y-3.5">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 bg-indigo-500/10 border border-indigo-500/20 rounded-xl flex items-center justify-center shrink-0">
-                    <BookOpen className="w-4 h-4 text-indigo-600" />
+                  <div className="w-9 h-9 bg-sky-500/10 border-sky-500/20 rounded-xl flex items-center justify-center shrink-0">
+                    <BookOpen className="w-4 h-4 text-sky-600" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-bold text-slate-900 truncate">{s.class_name}</p>
@@ -494,15 +494,15 @@ export default function StudentDashboard() {
         </div>
 
         {/* 1. IDP/BC Registration Support - Light Professional Style */}
-        <div className="relative overflow-hidden bg-gradient-to-br from-indigo-50/40 via-slate-50 to-slate-50 border border-slate-200/80 rounded-3xl p-5 sm:p-6 mb-6 shadow-sm">
+        <div className="relative overflow-hidden bg-gradient-to-br from-sky-50/40 via-slate-50 to-slate-50 border border-slate-200/80 rounded-3xl p-5 sm:p-6 mb-6 shadow-sm">
           <h3 className="text-base font-extrabold tracking-tight relative z-10 leading-snug text-slate-900">
-            <span className="text-indigo-600">{t.support}</span> {t.for_ielts_exam_registration}{" "}
+            <span className="text-sky-600">{t.support}</span> {t.for_ielts_exam_registration}{" "}
             <span className="text-slate-800 font-semibold">{t.with_idp_or_british_council}</span>
           </h3>
           
           <div className="grid md:grid-cols-3 gap-4 mt-5 relative z-10">
             {[
-              { title: t.convenient, text: t.conten01, icon: Sparkles, color: "text-indigo-600", bg: "bg-indigo-50/50 border-indigo-100" },
+              { title: t.convenient, text: t.conten01, icon: Sparkles, color: "text-sky-600", bg: "bg-sky-50/50 border-sky-100" },
               { title: t.expense, text: t.conten02, icon: Banknote, color: "text-emerald-600", bg: "bg-emerald-50/50 border-emerald-100" },
               { title: t.tam, text: t.conten03, icon: Heart, color: "text-rose-600", bg: "bg-rose-50/50 border-rose-100" }
             ].map((card, cidx) => {
@@ -559,7 +559,7 @@ export default function StudentDashboard() {
         {/* 4. Visa & Study Abroad support tabs */}
         <div className="bg-white border border-slate-200/60 rounded-3xl p-5 mb-6 shadow-sm">
           <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-1.5">
-            <span className="w-1 h-3 bg-violet-600 rounded" />
+            <span className="w-1 h-3 bg-sky-600 rounded" />
             HÀNH TRÌNH ĐỊNH HƯỚNG & DU HỌC TRỌN GÓI
           </h3>
           
@@ -594,7 +594,7 @@ export default function StudentDashboard() {
                   {tab === "tab1" && (
                     <>
                       <h4 className="text-xs font-extrabold text-slate-850 uppercase tracking-wide mb-1 flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5 text-indigo-650" />
+                        <Sparkles className="w-3.5 h-3.5 text-sky-650" />
                         {t.tab_study_abroad_consulting}
                       </h4>
                       {[t.content26, t.content27, t.content28].map((text, idx) => (
@@ -610,7 +610,7 @@ export default function StudentDashboard() {
                   {tab === "tab2" && (
                     <>
                       <h4 className="text-xs font-extrabold text-slate-850 uppercase tracking-wide mb-1 flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5 text-indigo-650" />
+                        <Sparkles className="w-3.5 h-3.5 text-sky-650" />
                         {t.tab_study_abroad_support}
                       </h4>
                       {[t.content08, t.content09, t.content10].map((text, idx) => (
@@ -626,7 +626,7 @@ export default function StudentDashboard() {
                   {tab === "tab3" && (
                     <>
                       <h4 className="text-xs font-extrabold text-slate-850 uppercase tracking-wide mb-1 flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5 text-indigo-650" />
+                        <Sparkles className="w-3.5 h-3.5 text-sky-650" />
                         {t.tab_doVisa}
                       </h4>
                       {[t.understand_visa_law, t.well_groomed_and_professional, t.canada_usa_australia_new_zealand].map((text, idx) => (

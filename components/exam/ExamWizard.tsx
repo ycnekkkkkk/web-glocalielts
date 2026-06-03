@@ -290,10 +290,10 @@ export function ExamWizard({ slug }: ExamWizardProps) {
 
   if (!isLoggedIn) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-indigo-50/30 px-4">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-sky-50/30 px-4">
         <div className="max-w-md w-full bg-white rounded-3xl shadow-xl p-8 text-center space-y-5">
-          <div className="w-16 h-16 rounded-2xl bg-indigo-100 flex items-center justify-center mx-auto">
-            <Lock className="w-8 h-8 text-indigo-600" />
+          <div className="w-16 h-16 rounded-2xl bg-sky-100 flex items-center justify-center mx-auto">
+            <Lock className="w-8 h-8 text-sky-600" />
           </div>
           <h1 className="text-xl font-black text-gray-900">Đăng nhập để làm bài</h1>
           <p className="text-sm text-gray-500 leading-relaxed">
@@ -301,7 +301,7 @@ export function ExamWizard({ slug }: ExamWizardProps) {
           </p>
           <a
             href={loginHref}
-            className="block w-full rounded-2xl bg-gradient-to-r from-brand-600 to-indigo-600 text-white py-3.5 font-bold text-sm hover:opacity-90 transition-all shadow-md"
+            className="block w-full rounded-2xl bg-gradient-to-r from-brand-600 to-sky-600 text-white py-3.5 font-bold text-sm hover:opacity-90 transition-all shadow-md"
           >
             Đăng nhập / Tạo tài khoản
           </a>
@@ -368,7 +368,7 @@ export function ExamWizard({ slug }: ExamWizardProps) {
 
   if (step === "intro") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-indigo-50/30">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-sky-50/30">
         <ExamIntro
           examTitle={exam.title}
           examDescription={exam.description || undefined}
@@ -418,7 +418,7 @@ export function ExamWizard({ slug }: ExamWizardProps) {
         onSaveExit={() => {
           saveSession(slug, { examSlug: slug, step, listeningPicks, readingPicks, writingText: JSON.stringify(writingValues), flaggedQuestions: flagged, startedAt: startTimeMs, lastSavedAt: Date.now() });
           toast.success("Đã lưu bài. Bạn có thể tiếp tục sau.");
-          window.location.href = thiThuRoot;
+          setTimeout(() => router.push(thiThuRoot), 300);
         }}
       />
 
@@ -470,7 +470,7 @@ export function ExamWizard({ slug }: ExamWizardProps) {
               "flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-bold transition-all shadow-sm",
               isLastSkillStep
                 ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white hover:opacity-90 shadow-md"
-                : "bg-gradient-to-r from-brand-600 to-indigo-600 text-white hover:opacity-90",
+                : "bg-gradient-to-r from-brand-600 to-sky-600 text-white hover:opacity-90",
               submitting && "opacity-60 cursor-not-allowed"
             )}
           >

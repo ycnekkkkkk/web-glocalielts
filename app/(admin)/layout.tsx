@@ -1,14 +1,14 @@
 "use client";
 import Header from "@/components/layouts/Header";
-import Sidebar from "@/components/layouts/Sidebar";
+import { SidebarInner } from "@/components/layouts/Sidebar";
+import { SidebarProvider } from "@/components/layouts/SidebarContext";
+import { PageTitleProvider } from "@/components/layouts/PageTitleContext";
 import Avatar from "@/components/ui/Avatar";
 import { useRoleGuard } from "@/hooks/useRoleGuard";
 import {
   BarChart3, BookOpen, BookMarked, Building2, DollarSign, FileText,
   GraduationCap, LayoutDashboard, Settings, ShoppingCart, Users, UserSquare2, Calendar, ClipboardList, ShieldCheck,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
 import type { NavGroup } from "@/types";
 
 const navGroups: NavGroup[] = [
@@ -65,22 +65,26 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   const footerContent = user && (
-    <div className="flex items-center gap-3 px-2 py-1">
+    <div className="flex items-center gap-2 px-1 py-1">
       <Avatar name={user.name} size="sm" />
       <div className="flex-1 min-w-0">
-        <p className="text-xs font-semibold text-white truncate">{user.name}</p>
-        <p className="text-[11px] text-brand-400">Quản trị viên</p>
+        <p className="text-[12px] font-semibold text-[#1F2937] truncate">{user.name}</p>
+        <p className="text-[11px] text-[#9CA3AF]">Quản trị viên</p>
       </div>
     </div>
   );
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <Sidebar groups={navGroups} theme="brand" footerContent={footerContent} />
-      <div className="flex-1 flex flex-col min-w-0">
-        <Header user={user} />
-        {children}
-      </div>
-    </div>
+    <SidebarProvider>
+      <PageTitleProvider>
+        <div className="flex min-h-screen bg-gray-50">
+          <SidebarInner groups={navGroups} theme="purple" footerContent={footerContent} />
+          <div className="flex-1 flex flex-col min-w-0">
+            <Header user={user} />
+            {children}
+          </div>
+        </div>
+      </PageTitleProvider>
+    </SidebarProvider>
   );
 }

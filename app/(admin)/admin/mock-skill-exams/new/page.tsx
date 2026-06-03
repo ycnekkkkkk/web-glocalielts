@@ -3,8 +3,7 @@
 import PageWrapper from "@/components/layouts/PageWrapper";
 import Button from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { ArrowLeft } from "lucide-react";
-import Link from "next/link";
+import BackButton from "@/components/ui/BackButton";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import toast from "react-hot-toast";
@@ -69,9 +68,7 @@ export default function AdminNewMockExamPage() {
   return (
     <PageWrapper>
       <div className="mb-6">
-        <Link href="/admin/mock-skill-exams" className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-brand-700 mb-3">
-          <ArrowLeft className="w-4 h-4" /> Danh sách đề
-        </Link>
+        <BackButton href="/admin/mock-skill-exams" label="Danh sách đề" variant="inline" className="mb-3" />
         <h1 className="page-title">Tạo đề thi thử mới</h1>
         <p className="page-subtitle">Điền thông tin cơ bản. Sau khi tạo bạn sẽ được chuyển sang trang nhập nội dung đề.</p>
       </div>

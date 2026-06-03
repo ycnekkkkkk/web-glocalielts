@@ -69,18 +69,18 @@ function weekInputToMonday(weekValue: string): Date | null {
 }
 
 const CLASS_COLORS = [
-  "bg-violet-100 text-violet-700 border-violet-200",
+  "bg-sky-100 text-sky-700 border-sky-200",
   "bg-sky-100 text-sky-700 border-sky-200",
   "bg-emerald-100 text-emerald-700 border-emerald-200",
   "bg-rose-100 text-rose-700 border-rose-200",
   "bg-amber-100 text-amber-700 border-amber-200",
   "bg-cyan-100 text-cyan-700 border-cyan-200",
   "bg-pink-100 text-pink-700 border-pink-200",
-  "bg-indigo-100 text-indigo-700 border-indigo-200",
+  "bg-sky-100 text-sky-800 border-sky-200",
 ];
 const CLASS_DOT_COLORS = [
-  "bg-violet-500", "bg-sky-500", "bg-emerald-500", "bg-rose-500",
-  "bg-amber-500",  "bg-cyan-500", "bg-pink-500",   "bg-indigo-500",
+  "bg-sky-500", "bg-sky-500", "bg-emerald-500", "bg-rose-500",
+  "bg-amber-500",  "bg-cyan-500", "bg-pink-500",   "bg-sky-500",
 ];
 
 function statusBadge(status: string) {
@@ -356,23 +356,175 @@ export default function AdminSessionsPage() {
     if (!rescheduleSession || !rescheduleDate) return;
     setSavingReschedule(true);
     try {
+      const supabase = createBrowserClient();
+      const originalDate = rescheduleSession.session_date || "";
       const newDate = fromInputDate(rescheduleDate);
       const newTime = rescheduleTime || rescheduleSession.session_time;
-      const { error } = await createBrowserClient().from("sessions").update({
-        session_date: newDate, session_time: newTime || null,
-        ...(rescheduleNote.trim() ? { topic: rescheduleNote.trim() } : {}),
-      }).eq("id", rescheduleSession.id);
-      if (error) throw new Error(error.message);
-      setSessions(prev => prev.map(s =>
-        s.id === rescheduleSession.id
-          ? { ...s, session_date: newDate, session_time: newTime || s.session_time, topic: rescheduleNote.trim() || s.topic }
-          : s
-      ));
+      const makeupNote = `Học bù từ ngày ${originalDate} → ${newDate}`;
+
+      // ── CHAIN SHIFTING LOGIC ──
+      const HOLIDAYS = ["01/01", "30/04", "01/05", "02/09"];
+      const isHolidayLocal = (date: Date): boolean => {
+        const d = String(date.getDate()).padStart(2, "0");
+        const m = String(date.getMonth() + 1).padStart(2, "0");
+        return HOLIDAYS.includes(`${d}/${m}`);
+      };
+
+      const parseSessionDateLocal = (dateStr: string): Date | null => {
+        if (!dateStr) return null;
+        const parts = dateStr.split("/");
+        if (parts.length !== 3) return null;
+        const d = parseInt(parts[0], 10);
+        const m = parseInt(parts[1], 10) - 1;
+        const y = parseInt(parts[2], 10);
+        if (isNaN(d) || isNaN(m) || isNaN(y)) return null;
+        return new Date(y, m, d);
+      };
+
+      const formatDateFullLocal = (date: Date): string => {
+        const dd = String(date.getDate()).padStart(2, "0");
+        const mm = String(date.getMonth() + 1).padStart(2, "0");
+        return `${dd}/${mm}/${date.getFullYear()}`;
+      };
+
+      const getNextScheduleDateLocal = (afterDateStr: string, recurringDays: number[]): string => {
+        const start = parseSessionDateLocal(afterDateStr);
+        if (!start) return afterDateStr;
+        const current = new Date(start);
+        for (let i = 0; i < 365; i++) {
+          current.setDate(current.getDate() + 1);
+          if (recurringDays.includes(current.getDay()) && !isHolidayLocal(current)) {
+            return formatDateFullLocal(current);
+          }
+        }
+        const fallback = new Date(start);
+        fallback.setDate(fallback.getDate() + 7);
+        return formatDateFullLocal(fallback);
+      };
+
+      const classSessions = sessions
+        .filter(s => s.class_id === rescheduleSession.class_id || s.class_name === rescheduleSession.class_name)
+        .map(s => s.id === rescheduleSession.id ? { ...s, status: SESSION_STATUS.UPCOMING } : s)
+        .sort((a, b) => (a.session_no || 0) - (b.session_no || 0));
+
+      const daysSet = new Set<number>();
+      classSessions.forEach(s => {
+        if (s.status !== SESSION_STATUS.CANCELLED && s.session_date) {
+          const d = parseSessionDateLocal(s.session_date);
+          if (d) daysSet.add(d.getDay());
+        }
+      });
+      const recurringDays = daysSet.size > 0 
+        ? Array.from(daysSet).sort((a, b) => a - b) 
+        : [1, 3, 5];
+
+      const currentDates = new Map<any, string>();
+      classSessions.forEach(s => {
+        if (s.session_date) currentDates.set(s.id, s.session_date);
+      });
+
+      currentDates.set(rescheduleSession.id, newDate);
+
+      let hasCollision = true;
+      let safetyCounter = 0;
+      while (hasCollision && safetyCounter < 100) {
+        safetyCounter++;
+        hasCollision = false;
+        for (let i = 0; i < classSessions.length; i++) {
+          const s1 = classSessions[i];
+          if (s1.status === SESSION_STATUS.CANCELLED) continue;
+          const date1 = currentDates.get(s1.id);
+          if (!date1) continue;
+
+          const colliding = classSessions.find(s2 => 
+            s2.id !== s1.id && 
+            s2.status !== SESSION_STATUS.CANCELLED && 
+            currentDates.get(s2.id) === date1
+          );
+
+          if (colliding) {
+            let toShift = colliding;
+            if (s1.status === SESSION_STATUS.DONE) {
+              toShift = colliding;
+            } else if (colliding.status === SESSION_STATUS.DONE) {
+              toShift = s1;
+            } else if (s1.id === rescheduleSession.id) {
+              toShift = colliding;
+            } else if (colliding.id === rescheduleSession.id) {
+              toShift = s1;
+            } else {
+              toShift = (s1.session_no || 0) > (colliding.session_no || 0) ? s1 : colliding;
+            }
+
+            const idx = classSessions.findIndex(s => s.id === toShift.id);
+            let nextDateVal: string;
+            if (idx + 1 < classSessions.length) {
+              const nextSession = classSessions[idx + 1];
+              nextDateVal = nextSession.session_date || "";
+            } else {
+              const currentVal = currentDates.get(toShift.id) || "";
+              nextDateVal = getNextScheduleDateLocal(currentVal, recurringDays);
+            }
+            currentDates.set(toShift.id, nextDateVal);
+            hasCollision = true;
+            break;
+          }
+        }
+      }
+
+      // Update all changed sessions in parallel
+      const changedSessions = classSessions.filter(s => currentDates.get(s.id) !== s.session_date);
+      await Promise.all(
+        changedSessions.map(async (s) => {
+          const newDateVal = currentDates.get(s.id)!;
+          if (s.id === rescheduleSession.id) {
+            const { error } = await supabase.from("sessions").update({
+              session_date: newDateVal,
+              session_time: newTime || null,
+              makeup_original_date: originalDate,
+              makeup_note: makeupNote,
+              status: SESSION_STATUS.UPCOMING,
+              ...(rescheduleNote.trim() ? { topic: rescheduleNote.trim() } : {}),
+            }).eq("id", s.id);
+            if (error) throw error;
+          } else {
+            const { error } = await supabase.from("sessions").update({
+              session_date: newDateVal,
+            }).eq("id", s.id);
+            if (error) throw error;
+          }
+        })
+      );
+
+      // Update react state
+      setSessions(prev => prev.map(s => {
+        const newDateVal = currentDates.get(s.id);
+        if (!newDateVal || newDateVal === s.session_date) return s;
+        if (s.id === rescheduleSession.id) {
+          return { 
+            ...s, 
+            session_date: newDateVal, 
+            session_time: newTime || s.session_time, 
+            topic: rescheduleNote.trim() || s.topic,
+            makeup_original_date: originalDate, 
+            makeup_note: makeupNote, 
+            status: SESSION_STATUS.UPCOMING 
+          };
+        } else {
+          return { 
+            ...s, 
+            session_date: newDateVal 
+          };
+        }
+      }));
+
       toast.success(`Đã đổi lịch buổi #${rescheduleSession.session_no} sang ${newDate}!`);
       setRescheduleSession(null);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Có lỗi xảy ra");
-    } finally { setSavingReschedule(false); }
+    } finally {
+      setSavingReschedule(false);
+    }
   }
 
   // ── create ────────────────────────────────────────────────────────────────

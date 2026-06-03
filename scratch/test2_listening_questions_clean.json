@@ -1,0 +1,681 @@
+{
+  "test": "Test 2",
+  "sections": [
+    {
+      "section": "Section 1",
+      "type": "table_completion",
+      "title": "Notes on A Part-time Society",
+      "instructions": "Write ONE WORD AND/OR A NUMBER for each answer.",
+      "raw_text": "Complete the table below.\nWrite ONE WORD AND/OR A NUMBER for each answer.\nNotes on A Part-time Society\nExample\nName of society: Leighton Location: (1) …………………. house.\nWant: (2) …………………. actors and singers (no experience required) Transportation:\nshuttle services (need someone who is able to (3) ………………….)\nMeeting time: 6:00-8:00pm\nevery 4 …………….\nClose time: during 5 …………….\nMembership fee (including 6 …………….)\n- £40 for employed members (under 30 years of age)\n- £ 60 for employed members (30-60 years of age)\n- £ 7 for retired or unemployed members (over 60 years of age)\nMinimum joining age\n- 8 …………….\nMost members are\n- friendly.\n- fond of culture and music.\n- 9.......................... authors looking for new experiences to write about in their books\nCharity\nThe children’s 10 …………………. will get the money raised by the annual dinner.",
+      "layout_blocks": [
+        {
+          "type": "heading",
+          "text": "Notes on A Part-time Society"
+        },
+        {
+          "type": "group",
+          "title": "Example",
+          "items": [
+            "Name of society: Leighton"
+          ]
+        },
+        {
+          "type": "inline_blank",
+          "text": "Location: (1) _____ house.",
+          "question_number": 1
+        },
+        {
+          "type": "inline_blank",
+          "text": "Want: (2) _____ actors and singers (no experience required)",
+          "question_number": 2
+        },
+        {
+          "type": "group",
+          "title": "Transportation",
+          "items": [
+            "shuttle services"
+          ]
+        },
+        {
+          "type": "inline_blank",
+          "text": "(need someone who is able to (3) _____)",
+          "question_number": 3
+        },
+        {
+          "type": "inline_blank",
+          "text": "Meeting time: 6:00-8:00pm every 4 (4) _____",
+          "question_number": 4
+        },
+        {
+          "type": "inline_blank",
+          "text": "Close time: during 5 (5) _____",
+          "question_number": 5
+        },
+        {
+          "type": "group",
+          "title": "Membership fee",
+          "items": [
+            "including 6 (6) _____",
+            "- £40 for employed members (under 30 years of age)",
+            "- £ 60 for employed members (30-60 years of age)",
+            "- £ (7) _____ for retired or unemployed members (over 60 years of age)"
+          ]
+        },
+        {
+          "type": "inline_blank",
+          "text": "Minimum joining age: (8) _____",
+          "question_number": 8
+        },
+        {
+          "type": "group",
+          "title": "Most members are",
+          "items": [
+            "friendly.",
+            "fond of culture and music.",
+            "(9) _____ authors looking for new experiences to write about in their books"
+          ]
+        },
+        {
+          "type": "group",
+          "title": "Charity",
+          "items": [
+            "The children's (10) _____ will get the money raised by the annual dinner."
+          ]
+        }
+      ],
+      "questions": [
+        {
+          "number": 1,
+          "answer": "club",
+          "accepted_answers": ["club"],
+          "type": "text"
+        },
+        {
+          "number": 2,
+          "answer": "male",
+          "accepted_answers": ["male"],
+          "type": "text"
+        },
+        {
+          "number": 3,
+          "answer": "drive",
+          "accepted_answers": ["drive"],
+          "type": "text"
+        },
+        {
+          "number": 4,
+          "answer": "tuesday",
+          "accepted_answers": ["tuesday", "tuesdays"],
+          "type": "text"
+        },
+        {
+          "number": 5,
+          "answer": "august",
+          "accepted_answers": ["august"],
+          "type": "text"
+        },
+        {
+          "number": 6,
+          "answer": "dinner",
+          "accepted_answers": ["dinner"],
+          "type": "text"
+        },
+        {
+          "number": 7,
+          "answer": "25",
+          "accepted_answers": ["25", "twenty five", "twenty-five"],
+          "type": "text"
+        },
+        {
+          "number": 8,
+          "answer": "16",
+          "accepted_answers": ["16", "sixteen"],
+          "type": "text"
+        },
+        {
+          "number": 9,
+          "answer": "modern",
+          "accepted_answers": ["modern"],
+          "type": "text"
+        },
+        {
+          "number": 10,
+          "answer": "hospital",
+          "accepted_answers": ["hospital", "hospitals"],
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "section": "Section 2",
+      "type": "multiple_choice_and_map",
+      "title": "Leisure Complex Changes & Plan",
+      "instructions": "Questions 11-14: Choose the correct letter, A, B or C.\nQuestions 15-20: Label the map below. Write the correct letter, A-F, next to questions 15-20.",
+      "raw_text": "Questions 11-14\nChoose the correct letter, A, B or C.\n11 What kind of changes is the station making?\nA. relocation\nB. reconstruction\nC. expansion\n12 The original buildings on the site were\nA. houses.\nB. industrial buildings.\nC. shops.\n13 Firstly the station intended to use the site as\nA. a leisure centre.\nB. a car park.\nC. a lounge.\n14 The new buildings will be situated to the right side of\nA. the shopping district.\nB. the apartment blocks.\nC. the new formal gardens.\nQuestion 15- 20\nLabel the map below.\nWrite the correct letter, A-F, next to questions 15-20.\nLeisure Complex Plan\n15 Cafe\n16 Taxi Rank\n17 CarPark\n18 Passenger Waiting Area\n19 Waiting Area for Wheelchair Users\n20 Tourist Office",
+      "layout_blocks": [
+        {
+          "type": "heading",
+          "text": "Questions 11-14"
+        },
+        {
+          "type": "paragraph",
+          "text": "Choose the correct letter, A, B or C."
+        },
+        {
+          "type": "options",
+          "question_number": 11,
+          "question": "What kind of changes is the station making?",
+          "choices": [
+            "A. relocation",
+            "B. reconstruction",
+            "C. expansion"
+          ]
+        },
+        {
+          "type": "options",
+          "question_number": 12,
+          "question": "The original buildings on the site were",
+          "choices": [
+            "A. houses.",
+            "B. industrial buildings.",
+            "C. shops."
+          ]
+        },
+        {
+          "type": "options",
+          "question_number": 13,
+          "question": "Firstly the station intended to use the site as",
+          "choices": [
+            "A. a leisure centre.",
+            "B. a car park.",
+            "C. a lounge."
+          ]
+        },
+        {
+          "type": "options",
+          "question_number": 14,
+          "question": "The new buildings will be situated to the right side of",
+          "choices": [
+            "A. the shopping district.",
+            "B. the apartment blocks.",
+            "C. the new formal gardens."
+          ]
+        },
+        {
+          "type": "heading",
+          "text": "Questions 15-20"
+        },
+        {
+          "type": "paragraph",
+          "text": "Label the map below. Write the correct letter, A-F, next to questions 15-20."
+        },
+        {
+          "type": "map",
+          "map_title": "Leisure Complex Plan",
+          "orientation": {
+            "north": "top",
+            "entrances": [
+              "bottom"
+            ]
+          },
+          "locations": [
+            {
+              "label": "A",
+              "description": "Tourist Office"
+            },
+            {
+              "label": "B",
+              "description": "Waiting Area for Wheelchair Users"
+            },
+            {
+              "label": "C",
+              "description": "Taxi Rank"
+            },
+            {
+              "label": "D",
+              "description": "CarPark"
+            },
+            {
+              "label": "E",
+              "description": "Passenger Waiting Area"
+            },
+            {
+              "label": "F",
+              "description": "Cafe"
+            }
+          ]
+        },
+        {
+          "type": "matching_group",
+          "items": [
+            {
+              "question_number": 15,
+              "label": "Cafe"
+            },
+            {
+              "question_number": 16,
+              "label": "Taxi Rank"
+            },
+            {
+              "question_number": 17,
+              "label": "CarPark"
+            },
+            {
+              "question_number": 18,
+              "label": "Passenger Waiting Area"
+            },
+            {
+              "question_number": 19,
+              "label": "Waiting Area for Wheelchair Users"
+            },
+            {
+              "question_number": 20,
+              "label": "Tourist Office"
+            }
+          ]
+        }
+      ],
+      "questions": [
+        {
+          "number": 11,
+          "answer": "C",
+          "accepted_answers": ["C"],
+          "type": "single_choice"
+        },
+        {
+          "number": 12,
+          "answer": "A",
+          "accepted_answers": ["A"],
+          "type": "single_choice"
+        },
+        {
+          "number": 13,
+          "answer": "B",
+          "accepted_answers": ["B"],
+          "type": "single_choice"
+        },
+        {
+          "number": 14,
+          "answer": "A",
+          "accepted_answers": ["A"],
+          "type": "single_choice"
+        },
+        {
+          "number": 15,
+          "answer": "F",
+          "accepted_answers": ["F"],
+          "type": "matching"
+        },
+        {
+          "number": 16,
+          "answer": "C",
+          "accepted_answers": ["C"],
+          "type": "matching"
+        },
+        {
+          "number": 17,
+          "answer": "D",
+          "accepted_answers": ["D"],
+          "type": "matching"
+        },
+        {
+          "number": 18,
+          "answer": "E",
+          "accepted_answers": ["E"],
+          "type": "matching"
+        },
+        {
+          "number": 19,
+          "answer": "B",
+          "accepted_answers": ["B"],
+          "type": "matching"
+        },
+        {
+          "number": 20,
+          "answer": "A",
+          "accepted_answers": ["A"],
+          "type": "matching"
+        }
+      ]
+    },
+    {
+      "section": "Section 3",
+      "type": "multiple_choice_and_matching",
+      "title": "Group Research Project Tasks",
+      "instructions": "Questions 21-25: Choose the correct letter, A, B or C.\nQuestions 26-30: Choose FIVE answers from the box and write the correct letter, A-G, next to questions 26-30.",
+      "raw_text": "Questions 21-25\nChoose the correct letter, A, B or C.\n21 What has Irene recently done?\nA. She has almost finished planning the experiment.\nB. She is not applying herself enough to her work.\nC. She spends a lot of time in the laboratory.\n22 What is Bill’s attitude toward Kim?\nA. He is grateful for Kim's contribution.\nB. He is not fond of Kim's tastes in clothes.\nC. He thinks Kim is not good at laboratory work.\n23 What does Jen think of the other people in the group?\nA. The boys are good at maths which is very helpful.\nB. They would fail the experiment without Irene’s contribution.\nC. Irene has completed the data analysis so the experiment is nearly done.\n24 How did Jen and Bill feel about Linda?\nA. She was always submitted her work late for the group work.\nB. She was difficult to get in touch with.\nC. She thought it was easy to get a high score.\n25 Why was Jen invited to the professor’s individual project?\nA. She was quite popular among students.\nB. She always finished reading all the assignments.\nC. She was close to the professor.\nQuestion 26- 30\nWhat task has been given to each person?\nChoose FIVE answers from the box and write the correct letter, A-G, next to questions 26-30.\nTasks\nA. Abstract\nB. Acknowledgement\nC. Methodology\nD. Bibliography\nE. Literature review\nF. Results\nG. Discussion\nPerson\n26 Irene\n27 Kim\n28 Jen\n29 Bill\n30 Linda",
+      "layout_blocks": [
+        {
+          "type": "heading",
+          "text": "Questions 21-25"
+        },
+        {
+          "type": "paragraph",
+          "text": "Choose the correct letter, A, B or C."
+        },
+        {
+          "type": "options",
+          "question_number": 21,
+          "question": "What has Irene recently done?",
+          "choices": [
+            "A. She has almost finished planning the experiment.",
+            "B. She is not applying herself enough to her work.",
+            "C. She spends a lot of time in the laboratory."
+          ]
+        },
+        {
+          "type": "options",
+          "question_number": 22,
+          "question": "What is Bill’s attitude toward Kim?",
+          "choices": [
+            "A. He is grateful for Kim's contribution.",
+            "B. He is not fond of Kim's tastes in clothes.",
+            "C. He thinks Kim is not good at laboratory work."
+          ]
+        },
+        {
+          "type": "options",
+          "question_number": 23,
+          "question": "What does Jen think of the other people in the group?",
+          "choices": [
+            "A. The boys are good at maths which is very helpful.",
+            "B. They would fail the experiment without Irene’s contribution.",
+            "C. Irene has completed the data analysis so the experiment is nearly done."
+          ]
+        },
+        {
+          "type": "options",
+          "question_number": 24,
+          "question": "How did Jen and Bill feel about Linda?",
+          "choices": [
+            "A. She was always submitted her work late for the group work.",
+            "B. She was difficult to get in touch with.",
+            "C. She thought it was easy to get a high score."
+          ]
+        },
+        {
+          "type": "options",
+          "question_number": 25,
+          "question": "Why was Jen invited to the professor’s individual project?",
+          "choices": [
+            "A. She was quite popular among students.",
+            "B. She always finished reading all the assignments.",
+            "C. She was close to the professor."
+          ]
+        },
+        {
+          "type": "heading",
+          "text": "Questions 26-30"
+        },
+        {
+          "type": "paragraph",
+          "text": "What task has been given to each person? Choose FIVE answers from the box and write the correct letter, A-G, next to questions 26-30."
+        },
+        {
+          "type": "group",
+          "title": "Tasks Available",
+          "items": [
+            "A. Abstract",
+            "B. Acknowledgement",
+            "C. Methodology",
+            "D. Bibliography",
+            "E. Literature review",
+            "F. Results",
+            "G. Discussion"
+          ]
+        },
+        {
+          "type": "matching_group",
+          "items": [
+            {
+              "question_number": 26,
+              "label": "Irene"
+            },
+            {
+              "question_number": 27,
+              "label": "Kim"
+            },
+            {
+              "question_number": 28,
+              "label": "Jen"
+            },
+            {
+              "question_number": 29,
+              "label": "Bill"
+            },
+            {
+              "question_number": 30,
+              "label": "Linda"
+            }
+          ]
+        }
+      ],
+      "questions": [
+        {
+          "number": 21,
+          "answer": "C",
+          "accepted_answers": ["C"],
+          "type": "single_choice"
+        },
+        {
+          "number": 22,
+          "answer": "A",
+          "accepted_answers": ["A"],
+          "type": "single_choice"
+        },
+        {
+          "number": 23,
+          "answer": "C",
+          "accepted_answers": ["C"],
+          "type": "single_choice"
+        },
+        {
+          "number": 24,
+          "answer": "B",
+          "accepted_answers": ["B"],
+          "type": "single_choice"
+        },
+        {
+          "number": 25,
+          "answer": "B",
+          "accepted_answers": ["B"],
+          "type": "single_choice"
+        },
+        {
+          "number": 26,
+          "answer": "C",
+          "accepted_answers": ["C"],
+          "type": "matching"
+        },
+        {
+          "number": 27,
+          "answer": "F",
+          "accepted_answers": ["F"],
+          "type": "matching"
+        },
+        {
+          "number": 28,
+          "answer": "E",
+          "accepted_answers": ["E"],
+          "type": "matching"
+        },
+        {
+          "number": 29,
+          "answer": "D",
+          "accepted_answers": ["D"],
+          "type": "matching"
+        },
+        {
+          "number": 30,
+          "answer": "G",
+          "accepted_answers": ["G"],
+          "type": "matching"
+        }
+      ]
+    },
+    {
+      "section": "Section 4",
+      "type": "note_completion",
+      "title": "Nanotechnology",
+      "instructions": "Complete the notes below. Write ONE WORD ONLY for each answer.",
+      "raw_text": "Nanotechnology\nGeneral information\nExplanation: manipulation of matter on a minutes scale.\nHuge investment in research.\nThe reason why development of Nanotechnology may be started because of a new type of (31) ………………….\nApplication\na. Daily lives\n- aids in getting (32)......... from diet\n- reduces the cost of (33).............\n- improves the (34)............. of food\nb. Agriculture\n- use of Nanotechnology has resulted in a spray which increase the efficiency of (35)............. in the soil and can be use instead of Artificial chemical.\nc. Medical area\n- Nanotechnology can help avoid food poisoing.\n- Nanotechnology can kill foods’ (36)............... and make them safe to eat.\n- Nanoparticles are injected into the body and allow (37)............. to enter the veins.\n- Some certain nanoparticles are able to sterilise more than 650 types of bacteria.\n- (38)..........has the greatest antibacterial qualities.\n- Splifferenes help (39) ……………. loss programmes.\nd. Cosmetics\n- Preventing (40)............... from entering the body avoids skin cancer.",
+      "layout_blocks": [
+        {
+          "type": "heading",
+          "text": "Nanotechnology"
+        },
+        {
+          "type": "group",
+          "title": "General information",
+          "items": [
+            "Explanation: manipulation of matter on a minutes scale.",
+            "Huge investment in research."
+          ]
+        },
+        {
+          "type": "inline_blank",
+          "text": "The reason why development of Nanotechnology may be started because of a new type of [31]",
+          "question_number": 31
+        },
+        {
+          "type": "group",
+          "title": "Application",
+          "items": [
+            "a. Daily lives"
+          ]
+        },
+        {
+          "type": "inline_blank",
+          "text": "- aids in getting [32] from diet",
+          "question_number": 32
+        },
+        {
+          "type": "inline_blank",
+          "text": "- reduces the cost of [33]",
+          "question_number": 33
+        },
+        {
+          "type": "inline_blank",
+          "text": "- improves the [34] of food",
+          "question_number": 34
+        },
+        {
+          "type": "group",
+          "title": "b. Agriculture",
+          "items": []
+        },
+        {
+          "type": "inline_blank",
+          "text": "- use of Nanotechnology has resulted in a spray which increase the efficiency of [35] in the soil and can be use instead of Artificial chemical.",
+          "question_number": 35
+        },
+        {
+          "type": "group",
+          "title": "c. Medical area",
+          "items": [
+            "Nanotechnology can help avoid food poisoning."
+          ]
+        },
+        {
+          "type": "inline_blank",
+          "text": "- Nanotechnology can kill foods’ [36] and make them safe to eat.",
+          "question_number": 36
+        },
+        {
+          "type": "inline_blank",
+          "text": "- Nanoparticles are injected into the body and allow [37] to enter the veins.",
+          "question_number": 37
+        },
+        {
+          "type": "group",
+          "title": "Antibacterial qualities",
+          "items": [
+            "Some certain nanoparticles are able to sterilise more than 650 types of bacteria."
+          ]
+        },
+        {
+          "type": "inline_blank",
+          "text": "- [38] has the greatest antibacterial qualities.",
+          "question_number": 38
+        },
+        {
+          "type": "inline_blank",
+          "text": "- Splifferenes help [39] loss programmes.",
+          "question_number": 39
+        },
+        {
+          "type": "group",
+          "title": "d. Cosmetics",
+          "items": []
+        },
+        {
+          "type": "inline_blank",
+          "text": "- Preventing [40] from entering the body avoids skin cancer.",
+          "question_number": 40
+        }
+      ],
+      "questions": [
+        {
+          "number": 31,
+          "answer": "microscope",
+          "accepted_answers": ["microscope"],
+          "type": "text"
+        },
+        {
+          "number": 32,
+          "answer": "iron",
+          "accepted_answers": ["iron"],
+          "type": "text"
+        },
+        {
+          "number": 33,
+          "answer": "chocolates",
+          "accepted_answers": ["chocolates", "chocolate"],
+          "type": "text"
+        },
+        {
+          "number": 34,
+          "answer": "flavour",
+          "accepted_answers": ["flavour", "flavor", "flavours", "flavors"],
+          "type": "text"
+        },
+        {
+          "number": 35,
+          "answer": "fertilisers",
+          "accepted_answers": ["fertilisers", "fertilizers", "fertiliser", "fertilizer"],
+          "type": "text"
+        },
+        {
+          "number": 36,
+          "answer": "bacteria",
+          "accepted_answers": ["bacteria"],
+          "type": "text"
+        },
+        {
+          "number": 37,
+          "answer": "drugs",
+          "accepted_answers": ["drugs", "drug"],
+          "type": "text"
+        },
+        {
+          "number": 38,
+          "answer": "silver",
+          "accepted_answers": ["silver"],
+          "type": "text"
+        },
+        {
+          "number": 39,
+          "answer": "weight",
+          "accepted_answers": ["weight"],
+          "type": "text"
+        },
+        {
+          "number": 40,
+          "answer": "radiation",
+          "accepted_answers": ["radiation"],
+          "type": "text"
+        }
+      ]
+    }
+  ]
+}
