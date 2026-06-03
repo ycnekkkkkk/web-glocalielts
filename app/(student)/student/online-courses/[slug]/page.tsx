@@ -10,6 +10,7 @@ import BackButton from "@/components/ui/BackButton";
 import Image from "next/image";
 import Link from "next/link";
 import { use, useCallback, useEffect, useMemo, useState } from "react";
+import { Phone } from "lucide-react";
 import toast from "react-hot-toast";
 
 function toYoutubeEmbedUrl(url: string) {
