@@ -1,3 +1,5 @@
+"use client";
+
 import PublicPageShell from "@/components/layout/PublicPageShell";
 import SupportRegisterFormSection from "@/components/support/SupportRegisterFormSection";
 import {
