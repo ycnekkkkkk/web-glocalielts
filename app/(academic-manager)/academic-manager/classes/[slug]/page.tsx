@@ -98,7 +98,8 @@ function formatVND(amount: number) {
 }
 
 export default function AcademicManagerClassDetailPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug: classSlug } = use(params);
+  const { slug } = use(params);
+  const classSlug = decodeURIComponent(slug);
   const { setTitle } = usePageTitle();
   const setTitleRef = useRef(setTitle);
   setTitleRef.current = setTitle;
@@ -169,6 +170,7 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
   const [showWordModal, setShowWordModal] = useState(false);
   const [exportWordMonth, setExportWordMonth] = useState("");
   const [exportWordStudentId, setExportWordStudentId] = useState("all");
+  const [exportWordCourseName, setExportWordCourseName] = useState("");
 
   // Enrolled students state
   const [enrolledStudents, setEnrolledStudents] = useState<EnrolledStudent[]>([]);
@@ -2822,6 +2824,23 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
                   ))}
                 </select>
               </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+                  Tên khóa học
+                  <span className="font-normal normal-case text-gray-400 ml-1">(Xuất hiện trong báo cáo BCHL)</span>
+                </label>
+                <input
+                  type="text"
+                  value={exportWordCourseName}
+                  onChange={e => setExportWordCourseName(e.target.value)}
+                  placeholder="VD: IELTS Rocket, TOEIC 500,..."
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 font-medium placeholder:text-gray-300"
+                />
+                <p className="text-xs text-gray-400 italic mt-1">
+                  Để trống sẽ giữ nguyên giá trị mặc định trong file mẫu.
+                </p>
+              </div>
             </div>
 
             <div className="flex gap-3 pt-3 border-t border-gray-100">
@@ -2840,8 +2859,9 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
                     toast.error("Vui lòng chọn tháng báo cáo");
                     return;
                   }
+                  const courseNameParam = exportWordCourseName ? `&courseName=${encodeURIComponent(exportWordCourseName)}` : "";
                   setShowWordModal(false);
-                  const downloadUrl = `/api/export-docx?classId=${classIdRef.current}&month=${exportWordMonth}&studentId=${exportWordStudentId}`;
+                  const downloadUrl = `/api/export-docx?classId=${classIdRef.current}&month=${exportWordMonth}&studentId=${exportWordStudentId}${courseNameParam}`;
                   window.open(downloadUrl, "_blank");
                   toast.success("Bắt đầu tải báo cáo!");
                 }}

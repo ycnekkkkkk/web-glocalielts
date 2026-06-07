@@ -139,15 +139,117 @@ export async function getDriveFileContent(fileId: string): Promise<{ buffer: Buf
   const drive = getDriveClient();
   if (!drive) throw new Error("Drive client not configured");
 
-  // Get metadata for mimeType
   const meta = await drive.files.get({ fileId, fields: "mimeType", supportsAllDrives: true });
   const mimeType = meta.data.mimeType || "application/octet-stream";
 
-  // Download content
   const res = await drive.files.get(
     { fileId, alt: "media", supportsAllDrives: true },
     { responseType: "arraybuffer" }
   );
   const buffer = Buffer.from(res.data as ArrayBuffer);
   return { buffer, mimeType };
+}
+
+/**
+ * Find a BCHL Word template in a Google Drive folder by class name.
+ * Searches for files matching the class name (optionally with "BCHL" prefix/suffix).
+ * Returns the Drive file ID of the first matching .docx file.
+ */
+export async function findBchlTemplateOnDrive(
+  className: string,
+  folderId: string
+): Promise<{ fileId: string; fileName: string } | null> {
+  const drive = getDriveClient();
+  if (!drive) return null;
+
+  try {
+    const normalized = className.trim();
+
+    // Try exact name match first (file is named exactly "20052026Y.docx")
+    const exactQuery = [
+      `'${folderId}' in parents`,
+      "mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'",
+      `name = '${normalized.replace(/'/g, "\\'")}.docx'`,
+    ].join(" and ");
+
+    let res = await drive.files.list({
+      q: exactQuery,
+      fields: "files(id, name)",
+      includeItemsFromAllDrives: true,
+      supportsAllDrives: true,
+      pageSize: 5,
+    });
+
+    if (res.data.files && res.data.files.length > 0) {
+      return {
+        fileId: res.data.files[0].id!,
+        fileName: res.data.files[0].name!,
+      };
+    }
+
+    // Fallback: list all .docx files in the folder (no MIME filter — some uploaded .docx
+    // may have generic mimeType on Drive; match any .docx extension instead)
+    const extQuery = [
+      `'${folderId}' in parents`,
+      `name contains '.docx'`,
+    ].join(" and ");
+
+    res = await drive.files.list({
+      q: extQuery,
+      fields: "files(id, name)",
+      includeItemsFromAllDrives: true,
+      supportsAllDrives: true,
+      pageSize: 50,
+    });
+
+    console.log("[drive] findBchlTemplateOnDrive debug:", {
+      className: normalized,
+      folderId,
+      extQuery,
+      foundFiles: res.data.files,
+    });
+
+    if (res.data.files && res.data.files.length > 0) {
+      return {
+        fileId: res.data.files[0].id!,
+        fileName: res.data.files[0].name!,
+      };
+    }
+  } catch (e) {
+    console.warn("[drive] findBchlTemplateOnDrive search failed:", e);
+  }
+
+  return null;
+}
+
+/**
+ * List all BCHL .docx templates in a Google Drive folder.
+ * Returns file IDs and names.
+ */
+export async function listBchlTemplatesOnDrive(folderId: string): Promise<Array<{ fileId: string; fileName: string }>> {
+  const drive = getDriveClient();
+  if (!drive) return [];
+
+  try {
+    const query = [
+      `'${folderId}' in parents`,
+      "mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'",
+    ].join(" and ");
+
+    const res = await drive.files.list({
+      q: query,
+      fields: "files(id, name)",
+      includeItemsFromAllDrives: true,
+      supportsAllDrives: true,
+      pageSize: 100,
+    });
+
+    return (res.data.files || []).map(f => ({
+      fileId: f.id!,
+      fileName: f.name!,
+    }));
+  } catch (e) {
+    console.warn("[drive] listBchlTemplatesOnDrive failed:", e);
+    return [];
+  }
 }

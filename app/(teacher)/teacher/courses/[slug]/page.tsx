@@ -124,7 +124,8 @@ const STATUS_MAP: Record<string, { label: string; variant: "success" | "info" | 
 
 // ── Page ───────────────────────────────────────────────────────
 export default function TeacherCourseDetailPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug: classSlug } = use(params);
+  const { slug } = use(params);
+  const classSlug = decodeURIComponent(slug);
   const classIdRef = useRef<string>("");
   const { setTitle } = usePageTitle();
   const setTitleRef = useRef(setTitle);
