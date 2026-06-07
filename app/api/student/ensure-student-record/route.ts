@@ -76,8 +76,9 @@ export async function POST() {
     if (insErr) throw insErr;
     return NextResponse.json({ ok: true, created: true });
   } catch (error) {
+    console.error("[/api/student/ensure-student-record]", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Server error" },
+      { error: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }

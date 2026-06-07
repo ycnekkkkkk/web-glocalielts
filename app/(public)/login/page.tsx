@@ -13,23 +13,53 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState(false);
   const [remember, setRemember] = useState(false);
+  const [particles, setParticles] = useState<Array<{ x: string; y: string; s: number; op: number }>>([]);
 
-  // Handle OAuth callback — runs once on mount when URL has ?code=...
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get("code");
-    if (!code) return;
+    setParticles(
+      [
+        { x: "8%", y: "12%", s: 1.5 },
+        { x: "22%", y: "8%", s: 1 },
+        { x: "35%", y: "18%", s: 2 },
+        { x: "55%", y: "6%", s: 1 },
+        { x: "70%", y: "15%", s: 1.5 },
+        { x: "85%", y: "10%", s: 1 },
+        { x: "15%", y: "30%", s: 1 },
+        { x: "45%", y: "28%", s: 1.5 },
+        { x: "80%", y: "25%", s: 1 },
+        { x: "60%", y: "35%", s: 2 },
+        { x: "25%", y: "42%", s: 1 },
+        { x: "75%", y: "40%", s: 1.5 },
+        { x: "10%", y: "55%", s: 1 },
+        { x: "50%", y: "50%", s: 1 },
+        { x: "90%", y: "55%", s: 1.5 },
+        { x: "30%", y: "65%", s: 1 },
+        { x: "65%", y: "60%", s: 2 },
+        { x: "5%", y: "75%", s: 1 },
+        { x: "40%", y: "72%", s: 1.5 },
+        { x: "88%", y: "70%", s: 1 },
+      ].map((p) => ({ ...p, op: 0.15 + Math.random() * 0.2 }))
+    );
+  }, []);
 
-    const supabase = createBrowserClient();
-    supabase.auth.exchangeCodeForSession(code).then((result: any) => {
-      const { data: _sessionData, error } = result;
-      if (error) {
-        toast.error(error.message || "Đăng nhập thất bại");
-        return;
+  // After OAuth redirect, middleware exchanges the code for a session.
+  // Check if user is now authenticated and redirect to dashboard.
+  useEffect(() => {
+    async function checkAuth() {
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get("code");
+      if (!code) return;
+
+      const supabase = createBrowserClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) {
+        toast.success("Đăng nhập thành công!");
+        window.location.href = "/student/dashboard";
       }
-      toast.success("Đăng nhập thành công!");
-      window.location.href = "/student/dashboard";
-    });
+    }
+    checkAuth();
   }, []);
 
   async function handleLogin(e: React.FormEvent) {
@@ -85,28 +115,7 @@ function LoginForm() {
       >
         {/* Star particles */}
         <div className="absolute inset-0 pointer-events-none">
-          {[
-            { x: "8%", y: "12%", s: 1.5 },
-            { x: "22%", y: "8%", s: 1 },
-            { x: "35%", y: "18%", s: 2 },
-            { x: "55%", y: "6%", s: 1 },
-            { x: "70%", y: "15%", s: 1.5 },
-            { x: "85%", y: "10%", s: 1 },
-            { x: "15%", y: "30%", s: 1 },
-            { x: "45%", y: "28%", s: 1.5 },
-            { x: "80%", y: "25%", s: 1 },
-            { x: "60%", y: "35%", s: 2 },
-            { x: "25%", y: "42%", s: 1 },
-            { x: "75%", y: "40%", s: 1.5 },
-            { x: "10%", y: "55%", s: 1 },
-            { x: "50%", y: "50%", s: 1 },
-            { x: "90%", y: "55%", s: 1.5 },
-            { x: "30%", y: "65%", s: 1 },
-            { x: "65%", y: "60%", s: 2 },
-            { x: "5%", y: "75%", s: 1 },
-            { x: "40%", y: "72%", s: 1.5 },
-            { x: "88%", y: "70%", s: 1 },
-          ].map((p, i) => (
+          {particles.map((p, i) => (
             <div
               key={i}
               className="absolute rounded-full bg-white"
@@ -115,7 +124,7 @@ function LoginForm() {
                 top: p.y,
                 width: p.s,
                 height: p.s,
-                opacity: 0.15 + Math.random() * 0.2,
+                opacity: p.op,
               }}
             />
           ))}
