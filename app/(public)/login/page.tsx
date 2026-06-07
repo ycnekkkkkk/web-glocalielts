@@ -3,16 +3,33 @@
 import { createBrowserClient } from "@/lib/supabase/client";
 import { getOAuthRedirectToUrl } from "@/lib/auth/oauth-redirect";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
 import toast from "react-hot-toast";
 
-export default function LoginPage() {
+function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState(false);
   const [remember, setRemember] = useState(false);
+
+  // Handle OAuth callback — runs once on mount when URL has ?code=...
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+    if (!code) return;
+
+    const supabase = createBrowserClient();
+    supabase.auth.exchangeCodeForSession(code).then(({ data, error }) => {
+      if (error) {
+        toast.error(error.message || "Đăng nhập thất bại");
+        return;
+      }
+      toast.success("Đăng nhập thành công!");
+      window.location.href = "/student/dashboard";
+    });
+  }, []);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -423,5 +440,13 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   );
 }
