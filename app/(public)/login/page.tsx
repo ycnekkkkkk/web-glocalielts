@@ -21,7 +21,8 @@ function LoginForm() {
     if (!code) return;
 
     const supabase = createBrowserClient();
-    supabase.auth.exchangeCodeForSession(code).then(({ data, error }) => {
+    supabase.auth.exchangeCodeForSession(code).then((result: any) => {
+      const { data: _sessionData, error } = result;
       if (error) {
         toast.error(error.message || "Đăng nhập thất bại");
         return;
