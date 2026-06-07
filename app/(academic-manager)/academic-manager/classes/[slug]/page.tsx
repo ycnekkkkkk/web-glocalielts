@@ -1305,7 +1305,7 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
               setShowWordModal(true);
             }}
           >
-            Xuất báo cáo Học lực (.docx)
+            Xuất báo cáo Học lực
           </Button>
         </div>
       </div>
