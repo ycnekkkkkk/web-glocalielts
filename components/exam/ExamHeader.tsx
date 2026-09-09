@@ -24,6 +24,8 @@ interface ExamHeaderProps {
   isFullscreen?: boolean;
   onToggleFullscreen?: () => void;
   onSaveExit?: () => void;
+  saveStatus?: "saving" | "saved" | "idle";
+  lastSavedTime?: string;
 }
 
 function formatTime(ms: number): string {
@@ -46,6 +48,8 @@ export function ExamHeader({
   isFullscreen = false,
   onToggleFullscreen,
   onSaveExit,
+  saveStatus = "idle",
+  lastSavedTime,
 }: ExamHeaderProps) {
   const [remainingMs, setRemainingMs] = useState<number | null>(
     totalTimeMs && startTimeMs ? totalTimeMs - (Date.now() - startTimeMs) : null
@@ -128,8 +132,21 @@ export function ExamHeader({
           </span>
         )}
 
-        {/* Actions */}
-        <div className="flex items-center gap-1">
+        {/* Actions & Auto-save indicator */}
+        <div className="flex items-center gap-2">
+          {saveStatus === "saving" && (
+            <span className="hidden md:inline-flex items-center gap-1 text-[11px] font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded-md animate-pulse">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+              Đang lưu...
+            </span>
+          )}
+          {saveStatus === "saved" && lastSavedTime && (
+            <span className="hidden md:inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-1 rounded-md">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+              Đã lưu {lastSavedTime}
+            </span>
+          )}
+
           {onToggleFullscreen && (
             <button
               type="button"
@@ -144,9 +161,9 @@ export function ExamHeader({
             <button
               type="button"
               onClick={onSaveExit}
-              className="hidden sm:flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-100 transition-all"
+              className="hidden sm:flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition-all"
             >
-              <Save className="w-3.5 h-3.5" />
+              <Save className="w-3.5 h-3.5 text-gray-500" />
               Lưu & Thoát
             </button>
           )}

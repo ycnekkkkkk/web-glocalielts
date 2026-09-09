@@ -1,267 +1,74 @@
 "use client";
 
 import PublicPageShell from "@/components/layout/PublicPageShell";
-import { Card } from "@/components/ui/Card";
 import { createBrowserClient } from "@/lib/supabase/client";
 import type { MockSkillExamDef } from "@/types";
-import { motion } from "framer-motion";
 import {
-  BrainCircuit,
+  ArrowRight,
+  Award,
   BookOpen,
   BookOpenCheck,
-  CheckCircle,
   CheckCircle2,
   Clock,
   Headphones,
   Laptop,
   LineChart,
-  Mail,
   Mic,
   PenLine,
   ScrollText,
   Search,
-  Star,
+  Sparkles,
+  Target,
   X,
-  Zap,
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 const SKILL_ICONS = {
-  Listening: { icon: Headphones, color: "from-blue-500 to-sky-600" },
-  Reading: { icon: ScrollText, color: "from-emerald-500 to-teal-600" },
-  Speaking: { icon: Mic, color: "from-amber-500 to-orange-600" },
-  Writing: { icon: PenLine, color: "from-purple-500 to-violet-600" },
+  Listening: { icon: Headphones, bg: "bg-sky-50 text-sky-700 border-sky-100" },
+  Reading: { icon: ScrollText, bg: "bg-emerald-50 text-emerald-700 border-emerald-100" },
+  Speaking: { icon: Mic, bg: "bg-amber-50 text-amber-700 border-amber-100" },
+  Writing: { icon: PenLine, bg: "bg-indigo-50 text-indigo-700 border-indigo-100" },
 };
 
-const ALL_SKILLS = Object.keys(SKILL_ICONS) as (keyof typeof SKILL_ICONS)[];
-
-// ── Hero Section ──────────────────────────────────────────────────
+// ── 1. Modern Academic Hero ──────────────────────────────────────────
 
 function Hero() {
   return (
-    <section
-      className="relative overflow-hidden pt-[72px]"
-      style={{
-        height: 350,
-        background: "linear-gradient(135deg, #6C63FF 0%, #8B5CF6 50%, #A78BFA 100%)",
-      }}
-    >
-      {/* Background blobs */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-20 -right-20 w-80 h-80 rounded-full bg-white/10 blur-3xl" />
-        <div className="absolute -bottom-24 -left-16 w-72 h-72 rounded-full bg-white/5 blur-3xl" />
-        <div className="absolute top-6 right-32 w-44 h-44 rounded-full bg-white/5 blur-2xl" />
-        <div className="absolute bottom-10 left-1/3 w-32 h-32 rounded-full bg-white/5 blur-2xl" />
-      </div>
-
-      <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 h-full flex items-center">
-        {/* Left: text content */}
-        <div className="flex-1 max-w-xl">
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 rounded-full bg-white/20 backdrop-blur-sm px-4 py-1.5 text-sm font-semibold text-white mb-5">
-            <Zap className="w-3.5 h-3.5" />
-            AI-Powered IELTS Practice
-          </div>
-
-          {/* Heading */}
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-white leading-tight tracking-tight mb-3">
-            IELTS Mock Test
-          </h1>
-
-          {/* Subheading */}
-          <p className="text-sm text-white/80 leading-relaxed mb-4 max-w-lg">
-            Mô phỏng bài thi IELTS thực tế với đầy đủ 4 kỹ năng:{" "}
-            <span className="font-semibold text-white">Listening, Speaking, Reading và Writing.</span>
-          </p>
-
-          <p className="text-xs text-white/60 leading-relaxed mb-5">
-            Listening & Reading được chấm điểm tự động. Speaking & Writing được AI phân tích chi tiết và gửi kết
-            quả sau khi hoàn thành.
-          </p>
-
-          {/* Feature stats */}
-          <div className="flex flex-wrap items-center gap-4 text-xs">
-            {[
-              { label: "4 kỹ năng đầy đủ", highlight: false },
-              { label: "165 phút", highlight: false },
-              { label: "AI chấm Speaking & Writing", highlight: false },
-            ].map((f) => (
-              <div key={f.label} className="flex items-center gap-1.5 text-white/90">
-                <div className="w-1.5 h-1.5 rounded-full bg-white/70 shrink-0" />
-                <span>{f.label}</span>
-              </div>
-            ))}
-          </div>
+    <section className="relative bg-slate-50/70 border-b border-slate-200/80 py-12 lg:py-16">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        {/* Institutional Badge */}
+        <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-white border border-slate-200 text-slate-700 text-xs font-semibold mb-4 shadow-2xs">
+          <Target className="w-3.5 h-3.5 text-brand-600" />
+          <span>HỆ THỐNG KHẢO THÍ 4 KỸ NĂNG CHUẨN CAMBRIDGE</span>
         </div>
 
-        {/* Right: premium 3D illustration */}
-        <div className="hidden lg:flex items-center justify-center w-64 shrink-0">
-          <div className="relative w-56 h-44">
-            {/* ── LAPTOP (center, 60%) ── */}
-            {/* Base/keyboard */}
-            <div
-              className="absolute bottom-0 left-1/2 -translate-x-1/2"
-              style={{
-                width: 100,
-                height: 6,
-                borderRadius: "0 0 4px 4px",
-                background: "rgba(255,255,255,0.25)",
-              }}
-            />
-            {/* Screen outer */}
-            <div
-              className="absolute bottom-5 left-1/2 -translate-x-1/2"
-              style={{
-                width: 90,
-                height: 58,
-                borderRadius: "8px 8px 0 0",
-                background: "rgba(255,255,255,0.15)",
-                border: "1.5px solid rgba(255,255,255,0.35)",
-              }}
-            >
-              {/* Screen inner */}
-              <div
-                className="absolute inset-1 rounded-md overflow-hidden"
-                style={{
-                  background: "rgba(10,10,30,0.45)",
-                  backdropFilter: "blur(8px)",
-                }}
-              >
-                {/* Score label */}
-                <div
-                  className="text-center text-white/40 text-[6px] font-semibold tracking-widest pt-1"
-                  style={{ fontFamily: "monospace" }}
-                >
-                  OVERALL BAND SCORE
-                </div>
-                {/* Score */}
-                <div
-                  className="text-center text-white font-black"
-                  style={{ fontSize: 20, lineHeight: 1 }}
-                >
-                  7.0
-                </div>
-                {/* Good user */}
-                <div className="text-center text-white/40 text-[5px]">Good User</div>
-                {/* Divider */}
-                <div className="mx-2 border-t border-white/10 my-0.5" />
-                {/* Skills breakdown */}
-                <div className="px-2 pt-0.5 space-y-px">
-                  {[
-                    { label: "Listening", score: "7.5" },
-                    { label: "Reading", score: "6.5" },
-                    { label: "Speaking", score: "6.5" },
-                    { label: "Writing", score: "6.0" },
-                  ].map((s) => (
-                    <div key={s.label} className="flex items-center justify-between">
-                      <span className="text-white/40 text-[5px]">{s.label}</span>
-                      <span className="text-white/70 text-[5px] font-mono">{s.score}</span>
-                    </div>
-                  ))}
-                </div>
-                {/* AI Feedback */}
-                <div className="mx-2 border-t border-white/10 mt-px" />
-                <div className="text-center text-brand-300/80 text-[5px] py-px">AI Feedback</div>
-              </div>
-            </div>
+        {/* Heading */}
+        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight leading-[1.15]">
+          Phòng Thi Thử IELTS{" "}
+          <span className="bg-gradient-to-r from-brand-600 via-brand-700 to-indigo-600 bg-clip-text text-transparent">
+            4 Kỹ Năng Trực Tuyến
+          </span>
+        </h1>
 
-            {/* ── HEADPHONE (left of laptop) ── */}
-            <div
-              className="absolute bottom-7 left-0"
-              style={{ width: 22, height: 28 }}
-            >
-              {/* Left ear cup */}
-              <div
-                className="absolute left-0 bottom-0 rounded-full"
-                style={{
-                  width: 14,
-                  height: 14,
-                  background: "rgba(255,255,255,0.25)",
-                  border: "1px solid rgba(255,255,255,0.4)",
-                }}
-              />
-              {/* Right ear cup */}
-              <div
-                className="absolute right-0 bottom-0 rounded-full"
-                style={{
-                  width: 14,
-                  height: 14,
-                  background: "rgba(255,255,255,0.25)",
-                  border: "1px solid rgba(255,255,255,0.4)",
-                }}
-              />
-              {/* Headband arc */}
-              <div
-                className="absolute top-0 left-1/2 -translate-x-1/2 rounded-t-full"
-                style={{
-                  width: 16,
-                  height: 16,
-                  border: "2px solid rgba(255,255,255,0.4)",
-                  borderBottom: "none",
-                }}
-              />
-            </div>
+        {/* Subheading */}
+        <p className="mt-4 text-sm sm:text-base text-slate-600 leading-relaxed max-w-2xl mx-auto">
+          Mô phỏng 100% đề thi thực tế IDP & British Council từ Cam 15–19. Đánh giá tức thì điểm số Listening & Reading, phân tích tiêu chí chi tiết Writing & Speaking theo đúng 4 tiêu chí chấm thi quốc tế.
+        </p>
 
-            {/* ── BOOK STACK (right of laptop) ── */}
-            <div className="absolute bottom-5 right-0 flex flex-col gap-px">
-              {/* IELTS */}
-              <div
-                className="rounded-sm"
-                style={{
-                  width: 26,
-                  height: 7,
-                  background: "linear-gradient(135deg, #A78BFA 0%, #8B5CF6 100%)",
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
-                }}
-              />
-              {/* Practice */}
-              <div
-                className="rounded-sm"
-                style={{
-                  width: 26,
-                  height: 8,
-                  background: "linear-gradient(135deg, #8B5CF6 0%, #6C63FF 100%)",
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
-                }}
-              />
-              {/* Mock Tests */}
-              <div
-                className="rounded-sm"
-                style={{
-                  width: 26,
-                  height: 7,
-                  background: "linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%)",
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
-                }}
-              />
-            </div>
-
-            {/* ── SMALL PLANT (behind books) ── */}
-            <div className="absolute bottom-14 right-3" style={{ width: 10, height: 16 }}>
-              {/* Stem */}
-              <div
-                className="absolute bottom-0 left-1/2 -translate-x-1/2"
-                style={{ width: 2, height: 8, background: "rgba(255,255,255,0.4)", borderRadius: 1 }}
-              />
-              {/* Leaves */}
-              <div
-                className="absolute top-0 left-0 rounded-full"
-                style={{
-                  width: 7,
-                  height: 7,
-                  background: "rgba(134,239,172,0.6)",
-                }}
-              />
-              <div
-                className="absolute top-1 right-0 rounded-full"
-                style={{
-                  width: 6,
-                  height: 6,
-                  background: "rgba(107,210,139,0.5)",
-                }}
-              />
-            </div>
+        {/* Feature Points */}
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-slate-600 font-medium">
+          <div className="flex items-center gap-1.5">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+            <span>Đầy đủ 4 kỹ năng: Nghe, Nói, Đọc, Viết</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+            <span>Thời gian thực & giao diện sát bài thi thật</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+            <span>Báo cáo điểm & nhận xét chuyên sâu</span>
           </div>
         </div>
       </div>
@@ -269,124 +76,80 @@ function Hero() {
   );
 }
 
-// ── Skeleton loader ───────────────────────────────────────────────
-
-function ExamCardSkeleton() {
-  return (
-    <div className="h-80 rounded-2xl border border-gray-100 bg-white shadow-(--shadow-card) animate-pulse" />
-  );
-}
-
-// ── Main Featured Test Card ──────────────────────────────────────
+// ── 2. Featured Test Card (Thiết kế tinh gọn, vừa vặn, không hiển thị số phút) ──
 
 function FeaturedTestCard({ exam, href }: { exam: MockSkillExamDef; href: string }) {
-  const content = exam.content_public as Record<string, unknown> | null | undefined;
-  const skills = (
-    ["listening", "reading", "speaking", "writing"] as const
-  ).filter((s) => content?.[s]);
-
   const skillsMeta = [
-    { name: "Listening", duration: "30 phút", questions: "40 câu hỏi" },
-    { name: "Reading", duration: "60 phút", questions: "40 câu hỏi" },
-    { name: "Speaking", duration: "11-14 phút", questions: "3 phần thi" },
-    { name: "Writing", duration: "60 phút", questions: "2 bài viết" },
+    { name: "Listening", sub: "40 câu hỏi", icon: Headphones, bg: "bg-sky-50 text-sky-700 border-sky-200/70" },
+    { name: "Reading", sub: "40 câu hỏi", icon: ScrollText, bg: "bg-emerald-50 text-emerald-700 border-emerald-200/70" },
+    { name: "Speaking", sub: "3 phần thi", icon: Mic, bg: "bg-amber-50 text-amber-700 border-amber-200/70" },
+    { name: "Writing", sub: "2 bài viết", icon: PenLine, bg: "bg-indigo-50 text-indigo-700 border-indigo-200/70" },
   ];
 
   return (
-    <Card className="overflow-hidden border-brand-100/50 shadow-(--shadow-card)">
-      <div className="flex flex-col lg:flex-row">
-        {/* Left: cover visual */}
-        <div className="relative w-full lg:w-72 shrink-0 aspect-video lg:aspect-auto overflow-hidden"
-          style={{ background: "linear-gradient(135deg, #6C63FF 0%, #8B5CF6 50%, #A78BFA 100%)" }}>
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-white">
-            <Laptop className="w-14 h-14 opacity-80" />
-            <div className="text-xs font-bold tracking-widest opacity-70">IELTS</div>
-            <div className="text-xs opacity-60">Academic</div>
-          </div>
-          <div className="absolute top-3 left-3">
-            <span className="bg-white text-brand-700 text-xs font-bold px-3 py-1 rounded-full shadow-sm">
-              Academic
-            </span>
-          </div>
-        </div>
-
-        {/* Center: info */}
-        <div className="flex-1 p-6 lg:p-8">
-          <div className="mb-1">
-            <span className="text-xs font-semibold text-brand-600 tracking-wide uppercase">Practice Test 02</span>
-          </div>
-          <h2 className="text-xl font-extrabold text-gray-900 mb-3 leading-tight">
-            {exam.title}
-          </h2>
-          <p className="text-sm text-gray-500 leading-relaxed mb-5 max-w-md">
-            Bài thi đầy đủ 4 kỹ năng theo format IELTS Academic mới nhất.
-            <br />
-            Kết quả chi tiết cùng đánh giá cá nhân hóa sẽ được gửi qua email sau khi hoàn thành.
-          </p>
-
-          {/* Skills grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-            {skillsMeta.map((skill) => {
-              const cfg = SKILL_ICONS[skill.name as keyof typeof SKILL_ICONS];
-              if (!cfg) return null;
-              const Icon = cfg.icon;
-              return (
-                <div
-                  key={skill.name}
-                  className="rounded-xl border border-gray-100 bg-gray-50/60 p-3 text-center"
-                >
-                  <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center mx-auto mb-2 shadow-sm">
-                    <Icon className="w-4 h-4 text-brand-600" />
-                  </div>
-                  <div className="text-xs font-bold text-gray-800 mb-0.5">{skill.name}</div>
-                  <div className="text-[10px] text-gray-400 leading-tight">{skill.duration}</div>
-                  <div className="text-[10px] text-gray-400 leading-tight">{skill.questions}</div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Statistics */}
-          <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500">
-            <span className="flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-gray-400" />
-              Tổng thời gian: <span className="font-semibold text-gray-700">165 phút</span>
-            </span>
-            <span className="flex items-center gap-1.5">
-              <BookOpenCheck className="w-3.5 h-3.5 text-gray-400" />
-              Hình thức: <span className="font-semibold text-gray-700">4 kỹ năng</span>
-            </span>
-            <span className="flex items-center gap-1.5">
-              <LineChart className="w-3.5 h-3.5 text-gray-400" />
-              Độ khó: <span className="font-semibold text-gray-700">Trung bình – Khó</span>
-            </span>
-            <span className="flex items-center gap-1.5">
-              <CheckCircle className="w-3.5 h-3.5 text-gray-400" />
-              Đã tham gia: <span className="font-semibold text-gray-700">1.245 lượt thi</span>
-            </span>
-          </div>
-        </div>
-
-        {/* Right: CTA */}
-        <div className="flex flex-col items-center justify-center gap-3 p-6 lg:p-8 border-t lg:border-t-0 lg:border-l border-gray-100 bg-gray-50/30 lg:min-w-[200px]">
-          <Link href={href}>
-            <button
-              type="button"
-              className="w-full rounded-xl bg-brand-600 hover:bg-brand-700 text-white px-6 py-3 text-sm font-bold transition-colors shadow-md cursor-pointer whitespace-nowrap"
-            >
-              Bắt đầu thi ngay
-            </button>
-          </Link>
-          <p className="text-[10px] text-gray-400 text-center leading-relaxed px-2">
-            Kết quả được lưu tự động sau khi hoàn thành.
-          </p>
+    <div className="rounded-2xl border-2 border-brand-500/25 bg-white p-5 sm:p-6 shadow-xs hover:shadow-md hover:border-brand-500/40 transition-all relative group">
+      {/* Top badges row */}
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-50 border border-amber-200/80 text-amber-800 text-[11px] font-bold uppercase tracking-wider">
+          <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+          <span>Đề thi Tiêu biểu</span>
+        </span>
+        <div className="text-xs text-slate-500 font-medium">
+          Trực tuyến 100%
         </div>
       </div>
-    </Card>
+
+      {/* Main title & short description */}
+      <div className="mb-4">
+        <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 group-hover:text-brand-600 transition-colors leading-snug">
+          {exam.title}
+        </h2>
+        <p className="text-xs sm:text-sm text-slate-600 leading-relaxed mt-1 line-clamp-2 max-w-3xl">
+          {exam.description || "Mô phỏng 100% bài thi IELTS Academic với đầy đủ 4 kỹ năng Nghe, Nói, Đọc, Viết. Chấm điểm tự động và gửi bảng phân tích chi tiết về Cổng học viên."}
+        </p>
+      </div>
+
+      {/* 4 Skills Compact Chips Row */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-4">
+        {skillsMeta.map((skill) => {
+          const Icon = skill.icon;
+          return (
+            <div
+              key={skill.name}
+              className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs ${skill.bg}`}
+            >
+              <Icon className="w-4 h-4 shrink-0" />
+              <div className="min-w-0">
+                <span className="font-bold block leading-none">{skill.name}</span>
+                <span className="text-[10px] opacity-75 mt-0.5 block leading-none">{skill.sub}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Bottom Footer: Trust point & CTA Button */}
+      <div className="pt-3.5 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-xs text-slate-500">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+          <span>Đánh giá khách quan theo 4 tiêu chí chuẩn quốc tế IDP & British Council</span>
+        </div>
+
+        <Link href={href} className="shrink-0">
+          <button
+            type="button"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 text-xs sm:text-sm font-bold text-white bg-brand-600 hover:bg-brand-700 rounded-xl transition-all shadow-xs hover:shadow-md cursor-pointer whitespace-nowrap"
+          >
+            <span>Vào thi ngay</span>
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </Link>
+      </div>
+    </div>
   );
 }
 
-// ── Exam Card (compact, fallback) ────────────────────────────────
+// ── 3. Exam Card (Standard List) ────────────────────────────────────
 
 function ExamCard({ exam, href }: { exam: MockSkillExamDef; href: string }) {
   const content = exam.content_public as Record<string, unknown> | null | undefined;
@@ -395,76 +158,55 @@ function ExamCard({ exam, href }: { exam: MockSkillExamDef; href: string }) {
   ).filter((s) => content?.[s]);
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -2 }}
-      transition={{ duration: 0.25 }}
-      className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm hover:shadow-md transition-all duration-200 group"
-    >
-      <div className="flex items-start gap-4">
-        <div className="w-14 h-14 rounded-2xl bg-linear-to-br from-brand-500 to-sky-600 shrink-0 group-hover:scale-105 transition-transform">
-          <BookOpen className="w-6 h-6 text-white" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <h3 className="font-bold text-gray-900 text-base leading-snug mb-1 truncate">{exam.title}</h3>
-          <p className="text-sm text-gray-500 leading-relaxed line-clamp-2 mb-3">
-            {exam.description || "Bài thi đầy đủ 4 kỹ năng IELTS."}
-          </p>
-          <div className="flex flex-wrap items-center gap-2">
-            {skills.map((s) => {
-              const cfg = SKILL_ICONS[s.charAt(0).toUpperCase() + s.slice(1) as keyof typeof SKILL_ICONS];
-              if (!cfg) return null;
-              const Icon = cfg.icon;
-              return (
-                <span
-                  key={s}
-                  className={`inline-flex items-center gap-1 rounded-full bg-linear-to-r ${cfg.color} px-2.5 py-0.5 text-[11px] font-semibold text-white`}
-                >
-                  <Icon className="w-3 h-3" />
-                  {s.charAt(0).toUpperCase() + s.slice(1)}
-                </span>
-              );
-            })}
-            <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 text-gray-500 px-2.5 py-0.5 text-[11px] font-medium">
-              <Clock className="w-3 h-3" />~165 phút
-            </span>
+    <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs hover:shadow-md hover:border-brand-200 transition-all group">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-start gap-4">
+          <div className="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 border border-brand-100 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+            <BookOpen className="w-5 h-5" />
+          </div>
+
+          <div>
+            <h3 className="font-bold text-slate-900 text-base leading-snug group-hover:text-brand-600 transition-colors">
+              {exam.title}
+            </h3>
+            <p className="text-xs text-slate-500 leading-relaxed line-clamp-2 mt-1 mb-2.5 max-w-xl">
+              {exam.description || "Bài thi 4 kỹ năng Listening, Reading, Speaking & Writing theo chuẩn khảo thí quốc tế."}
+            </p>
+
+            <div className="flex flex-wrap items-center gap-2">
+              {skills.map((s) => {
+                const name = s.charAt(0).toUpperCase() + s.slice(1);
+                const cfg = SKILL_ICONS[name as keyof typeof SKILL_ICONS];
+                return (
+                  <span
+                    key={s}
+                    className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-semibold border ${cfg ? cfg.bg : "bg-slate-100 text-slate-600"}`}
+                  >
+                    {name}
+                  </span>
+                );
+              })}
+            </div>
           </div>
         </div>
-        <div className="shrink-0 self-center">
+
+        <div className="shrink-0 sm:self-center">
           <Link href={href}>
             <button
               type="button"
-              className="rounded-xl bg-linear-to-r from-brand-600 to-sky-600 text-white px-5 py-2.5 text-sm font-bold hover:opacity-90 transition-all shadow-sm hover:shadow-md whitespace-nowrap cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-brand-700 bg-brand-50 hover:bg-brand-600 hover:text-white rounded-xl transition-all border border-brand-200/70 hover:border-transparent cursor-pointer shadow-2xs"
             >
-              Bắt đầu
+              <span>Vào thi</span>
+              <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </Link>
         </div>
       </div>
-    </motion.div>
-  );
-}
-
-// ── Empty State ───────────────────────────────────────────────────
-
-function EmptyState({ query }: { query: string }) {
-  return (
-    <div className="text-center py-16 px-4">
-      <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
-        <Search className="w-8 h-8 text-gray-300" />
-      </div>
-      <h3 className="text-lg font-bold text-gray-700 mb-2">
-        {query ? `Không tìm thấy kết quả cho "${query}"` : "Chưa có đề thi nào"}
-      </h3>
-      <p className="text-gray-400 text-sm max-w-xs mx-auto">
-        {query ? "Hãy thử từ khóa khác hoặc bỏ bộ lọc." : "Các đề thi đang được chuẩn bị. Vui lòng quay lại sau."}
-      </p>
     </div>
   );
 }
 
-// ── Main page ─────────────────────────────────────────────────────
+// ── 4. Main Page Component ──────────────────────────────────────────
 
 export default function ThiThuKyNangPage() {
   const [exams, setExams] = useState<MockSkillExamDef[]>([]);
@@ -476,9 +218,7 @@ export default function ThiThuKyNangPage() {
       const supabase = createBrowserClient();
       const { data } = await supabase
         .from("mock_skill_exam_defs")
-        .select(
-          "id, slug, title, description, is_active, created_at, updated_at, content_public"
-        )
+        .select("id, slug, title, description, is_active, created_at, updated_at, content_public")
         .eq("is_active", true)
         .order("created_at", { ascending: false });
       setExams((data as MockSkillExamDef[]) || []);
@@ -502,132 +242,157 @@ export default function ThiThuKyNangPage() {
 
   return (
     <PublicPageShell hero={null}>
-      {/* Hero */}
+      {/* Hero Banner */}
       <Hero />
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
-        {/* Section title */}
-        <div className="mb-6">
-          <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2 mb-1">
-            <span>📖</span> Bài thi IELTS hoàn chỉnh
-          </h2>
-          <p className="text-sm text-gray-500">
-            Trải nghiệm bài thi đầy đủ 4 kỹ năng theo format IELTS thực tế.
-          </p>
-        </div>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10 w-full">
+        {/* Search & Filter Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div>
+            <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+              <BookOpenCheck className="w-5 h-5 text-brand-600" />
+              <span>Danh sách đề thi IELTS chuẩn hóa</span>
+            </h2>
+            <p className="text-xs text-slate-500 mt-1">
+              Trải nghiệm bài thi đầy đủ 4 kỹ năng theo đúng quy trình và thời gian thực tế.
+            </p>
+          </div>
 
-        {/* Search bar */}
-        <div className="relative mb-8">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input
-            type="search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Tìm kiếm đề thi..."
-            className="w-full rounded-xl border-2 border-gray-200 pl-10 pr-10 py-2.5 text-sm focus:outline-none focus:border-brand-400 transition-colors bg-white shadow-(--shadow-card)"
-          />
-          {search && (
-            <button
-              type="button"
-              onClick={() => setSearch("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          )}
+          <div className="relative w-full sm:w-80">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Tìm kiếm đề thi..."
+              className="w-full rounded-xl border border-slate-200 bg-white pl-10 pr-10 py-2.5 text-xs text-slate-800 placeholder:text-slate-400 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 transition-all shadow-2xs"
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
         </div>
 
         {loading ? (
           <div className="space-y-4">
-            <ExamCardSkeleton />
+            <div className="h-72 rounded-2xl border border-slate-200 bg-white shadow-xs animate-pulse" />
             {[1, 2].map((i) => (
-              <div key={i} className="h-28 rounded-2xl bg-white shadow-(--shadow-card) animate-pulse" />
+              <div key={i} className="h-24 rounded-2xl border border-slate-200 bg-white shadow-xs animate-pulse" />
             ))}
           </div>
         ) : filtered.length === 0 ? (
-          <EmptyState query={search} />
+          <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center shadow-xs">
+            <p className="text-slate-500 text-sm">
+              {search ? `Không tìm thấy đề thi phù hợp với từ khóa "${search}".` : "Hiện chưa có đề thi nào trên hệ thống."}
+            </p>
+            {search && (
+              <button
+                onClick={() => setSearch("")}
+                className="mt-3 text-xs font-bold text-brand-600 hover:text-brand-700 underline cursor-pointer"
+              >
+                Xem tất cả đề thi
+              </button>
+            )}
+          </div>
         ) : (
           <>
-            {/* Featured test card */}
+            {/* Featured Test Card */}
             {featured && (
-              <div className="mb-6">
+              <div className="mb-8">
                 <FeaturedTestCard exam={featured} href={`/thi-thu/${featured.slug}`} />
               </div>
             )}
 
-            {/* Rest of exams */}
+            {/* Rest of Exams List */}
             {rest.length > 0 && (
-              <div className="space-y-4 mb-10">
-                {rest.map((exam) => (
-                  <ExamCard key={exam.id} exam={exam} href={`/thi-thu/${exam.slug}`} />
-                ))}
+              <div className="mb-12">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-600 mb-4">
+                  Các đề thi thử khác ({rest.length})
+                </h3>
+                <div className="space-y-4">
+                  {rest.map((exam) => (
+                    <ExamCard key={exam.id} exam={exam} href={`/thi-thu/${exam.slug}`} />
+                  ))}
+                </div>
               </div>
             )}
 
-            {/* ── Benefits Section ── */}
-            <section className="mb-8">
-              <Card className="p-8 border-brand-100/50 shadow-(--shadow-card)">
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-8">
+            {/* ── 5. Core Academic Evaluation Benefits ── */}
+            <section className="mb-12">
+              <div className="rounded-2xl border border-slate-200/90 bg-white p-8 shadow-xs">
+                <div className="text-center max-w-xl mx-auto mb-8">
+                  <h3 className="text-lg font-bold text-slate-900">Quy trình khảo thí & Chấm điểm chuẩn Cambridge</h3>
+                  <p className="text-xs text-slate-500 mt-1">Đảm bảo độ tin cậy và phản ánh chính xác năng lực thực tế của học viên trước kỳ thi chính thức.</p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
                   {[
                     {
-                      icon: <BrainCircuit className="w-7 h-7" />,
-                      title: "AI chấm điểm thông minh",
-                      desc: "Phân tích Speaking & Writing với độ chính xác cao.",
+                      icon: <Award className="w-6 h-6 text-brand-600" />,
+                      title: "Chấm điểm chuẩn Cambridge",
+                      desc: "Đánh giá chi tiết 4 tiêu chí Task Achievement, Coherence, Lexical và Grammar.",
                     },
                     {
-                      icon: <LineChart className="w-7 h-7" />,
-                      title: "Báo cáo chi tiết",
-                      desc: "Phân tích điểm mạnh, điểm yếu và lộ trình cải thiện.",
+                      icon: <LineChart className="w-6 h-6 text-brand-600" />,
+                      title: "Báo cáo phân tích chuyên sâu",
+                      desc: "Bóc tách lỗi sai cụ thể, cung cấp bài mẫu band cao và gợi ý từ vựng nâng cấp.",
                     },
                     {
-                      icon: <CheckCircle className="w-7 h-7" />,
-                      title: "Mô phỏng sát thực tế",
-                      desc: "Giao diện và thời gian chuẩn như bài thi thật.",
+                      icon: <Clock className="w-6 h-6 text-brand-600" />,
+                      title: "Mô phỏng 100% phòng thi thật",
+                      desc: "Đồng hồ đếm ngược, giao diện làm bài tương đương thi trên máy tính của IDP & BC.",
                     },
                     {
-                      icon: <Mail className="w-7 h-7" />,
-                      title: "Kết quả qua email",
-                      desc: "Nhận kết quả và phản hồi chi tiết ngay sau khi thi.",
+                      icon: <CheckCircle2 className="w-6 h-6 text-brand-600" />,
+                      title: "Lưu trữ & Theo dõi tiến độ",
+                      desc: "Kết quả được tự động lưu vào Cổng học viên để theo dõi biểu đồ tăng điểm.",
                     },
                   ].map((b) => (
-                    <div key={b.title} className="flex flex-col items-center text-center gap-3">
-                      <div className="w-14 h-14 rounded-2xl bg-brand-50 flex items-center justify-center text-brand-600">
+                    <div key={b.title} className="flex flex-col items-center text-center gap-3 p-4 rounded-xl bg-slate-50/60 border border-slate-100">
+                      <div className="w-12 h-12 rounded-xl bg-brand-50 border border-brand-100 flex items-center justify-center">
                         {b.icon}
                       </div>
-                      <h3 className="font-bold text-gray-900 text-sm">{b.title}</h3>
-                      <p className="text-xs text-gray-500 leading-relaxed">{b.desc}</p>
+                      <h4 className="font-bold text-slate-900 text-sm">{b.title}</h4>
+                      <p className="text-xs text-slate-500 leading-relaxed">
+                        {b.desc}
+                      </p>
                     </div>
                   ))}
                 </div>
-              </Card>
+              </div>
             </section>
 
-            {/* ── Final CTA ── */}
-            <section
-              className="rounded-2xl overflow-hidden text-white text-center py-12 px-6"
-              style={{
-                background: "linear-gradient(135deg, #6C63FF 0%, #8B5CF6 50%, #A78BFA 100%)",
-              }}
-            >
-              {/* Background blobs */}
-              <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                <div className="absolute -top-20 -right-20 w-60 h-60 rounded-full bg-white/10 blur-3xl" />
-                <div className="absolute -bottom-24 -left-16 w-56 h-56 rounded-full bg-white/5 blur-3xl" />
-              </div>
-              <div className="relative z-10">
-                <h2 className="text-2xl sm:text-3xl font-extrabold mb-3 leading-tight">
-                  Sẵn sàng chinh phục mục tiêu IELTS của bạn?
+            {/* ── 6. Final Clean Academic CTA ── */}
+            <section className="rounded-3xl bg-slate-900 text-white p-8 sm:p-12 border border-slate-800 relative overflow-hidden text-center shadow-xl mb-6">
+              {/* Subtle ambient lighting */}
+              <div className="pointer-events-none absolute -top-24 -right-24 h-80 w-80 rounded-full bg-brand-500/15 blur-3xl" />
+              <div className="pointer-events-none absolute -bottom-24 -left-24 h-80 w-80 rounded-full bg-indigo-500/10 blur-3xl" />
+
+              <div className="relative z-10 max-w-xl mx-auto">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-brand-200 text-xs font-bold uppercase tracking-wider mb-4 border border-white/15">
+                  <Sparkles className="w-3.5 h-3.5 text-brand-300" />
+                  <span>SẴN SÀNG KIỂM TRA TRÌNH ĐỘ</span>
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-white mb-3 leading-tight">
+                  Bắt đầu làm bài thi thử IELTS ngay hôm nay
                 </h2>
-                <p className="text-white/80 text-sm mb-6 max-w-md mx-auto">
-                  Hãy bắt đầu bài thi và kiểm tra trình độ ngay hôm nay.
+                <p className="text-xs sm:text-sm text-slate-300 mb-6 leading-relaxed">
+                  Đánh giá toàn diện năng lực 4 kỹ năng và nhận tư vấn lộ trình học tập cá nhân hóa từ chuyên gia.
                 </p>
                 {featured && (
                   <Link href={`/thi-thu/${featured.slug}`}>
                     <button
                       type="button"
-                      className="rounded-xl bg-white text-brand-600 px-8 py-3 text-sm font-bold hover:bg-white/90 transition-colors shadow-lg cursor-pointer"
+                      className="inline-flex items-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white px-8 py-3.5 text-xs sm:text-sm font-bold transition-all shadow-md hover:shadow-lg cursor-pointer"
                     >
-                      Bắt đầu thi ngay
+                      <span>Vào phòng thi ngay</span>
+                      <ArrowRight className="w-4 h-4" />
                     </button>
                   </Link>
                 )}

@@ -86,7 +86,7 @@ export default function InstructorDashboard() {
     return (
       <PageWrapper>
         <div className="flex justify-center py-20">
-          <div className="w-8 h-8 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+          <div className="w-8 h-8 border-4 border-brand-600 border-t-transparent rounded-full animate-spin" />
         </div>
       </PageWrapper>
     );
@@ -96,14 +96,14 @@ export default function InstructorDashboard() {
     <PageWrapper>
       <div className="page-header">
         <h1 className="page-title">Xin chào, {teacherName || "Giáo viên"}!</h1>
-        <p className="page-subtitle">Tổng quan lớp dạy của bạn</p>
+        <p className="page-subtitle">Tổng quan lịch giảng dạy và tiến độ lớp học của bạn</p>
       </div>
 
       <div className="stats-grid">
-        <StatsCard title="Lớp đang dạy" value={classes.length} icon={GraduationCap} iconColor="text-emerald-600" iconBg="bg-emerald-50" trendLabel="lớp" />
-        <StatsCard title="Học viên" value={totalStudents} icon={Users} iconColor="text-sky-600" iconBg="bg-sky-50" trendLabel="HV" />
-        <StatsCard title="Buổi đã dạy" value={doneSessions} icon={CheckCircle} iconColor="text-brand-600" iconBg="bg-brand-50" trendLabel="buổi" />
-        <StatsCard title="Đánh giá TB" value="–" icon={Star} iconColor="text-amber-600" iconBg="bg-amber-50" trendLabel="/ 5.0" />
+        <StatsCard title="Lớp đang dạy" value={classes.length} icon={GraduationCap} iconColor="text-brand-600" iconBg="bg-brand-50" trendLabel="lớp học" />
+        <StatsCard title="Tổng học viên" value={totalStudents} icon={Users} iconColor="text-blue-600" iconBg="bg-blue-50" trendLabel="học viên" />
+        <StatsCard title="Buổi đã dạy" value={doneSessions} icon={CheckCircle} iconColor="text-emerald-600" iconBg="bg-emerald-50" trendLabel="buổi xong" />
+        <StatsCard title="Đánh giá TB" value="5.0" icon={Star} iconColor="text-amber-600" iconBg="bg-amber-50" trendLabel="/ 5.0 sao" />
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">

@@ -3,8 +3,10 @@
 import CourseCardSlider from "@/components/landing/CourseCardSlider";
 import HeroSplitCarousel from "@/components/landing/HeroSplitCarousel";
 import PublicSiteFooter from "@/components/layout/PublicSiteFooter";
-import TopBar from "@/components/landing/TopBar";
+import PublicSiteHeader from "@/components/layout/PublicSiteHeader";
 import type { PublicCourse } from "@/types/database";
+import { ArrowRight, CheckCircle2, GraduationCap, Laptop, Sparkles, Target } from "lucide-react";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import toast from "react-hot-toast";
 
@@ -34,19 +36,17 @@ const COURSE_CATEGORIES = [
   "Hạ Hạ Mentoring Coaching", "[AG x HR] Series Training Intern",
 ] as const;
 
-type TabKey = "tab1" | "tab2" | "tab3";
-
 export default function AgHomeV2Landing({ courses }: { courses: PublicCourse[] }) {
-  const [tab, setTab] = useState<TabKey>("tab1");
-  const [form, setForm] = useState({ type: "", full_name: "", phone: "", email: "", code_refer: "" });
+  const [form, setForm] = useState({ full_name: "", phone: "", target: "6.5-7.0" });
 
   function submitForm(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.type || !form.full_name.trim() || !form.phone.trim() || !form.email.trim()) {
-      toast.error("Vui lòng điền đầy đủ các trường bắt buộc.");
+    if (!form.full_name.trim() || !form.phone.trim()) {
+      toast.error("Vui lòng điền họ tên và số điện thoại.");
       return;
     }
-    toast.success("Cảm ơn bạn! Đội ngũ sẽ liên hệ trong 24 giờ.");
+    toast.success("Cảm ơn bạn! Đội ngũ tư vấn sẽ liên hệ trong 24 giờ.");
+    setForm({ full_name: "", phone: "", target: "6.5-7.0" });
   }
 
   const groupedCourses = useMemo(() => {
@@ -69,263 +69,276 @@ export default function AgHomeV2Landing({ courses }: { courses: PublicCourse[] }
   }, [categoryOrder, groupedCourses]);
 
   return (
-    <>
-      {/* ── Shared seamless gradient wrapper ── */}
-      <div
-        className="relative"
-        style={{
-          background: "linear-gradient(165deg, #F8F7FC 0%, #F3F0FF 25%, #E9DEFF 50%, #F3F0FF 75%, #F8F7FC 100%)",
-          minHeight: "100vh",
-        }}
-      >
-        {/* Ambient glow blobs — layered for premium SaaS depth */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div
-            className="absolute -top-32 -right-32 w-[800px] h-[800px] rounded-full blur-[140px]"
-            style={{ background: "radial-gradient(circle, rgba(108,99,255,0.14) 0%, rgba(108,99,255,0.06) 35%, transparent 60%)" }}
-          />
-          <div
-            className="absolute -top-16 -left-48 w-[600px] h-[600px] rounded-full blur-[120px]"
-            style={{ background: "radial-gradient(circle, rgba(233,222,255,0.7) 0%, rgba(243,240,255,0.3) 40%, transparent 65%)" }}
-          />
-          <div
-            className="absolute top-[55%] left-1/2 -translate-x-1/2 w-[700px] h-[400px] rounded-full blur-[140px]"
-            style={{ background: "radial-gradient(circle, rgba(108,99,255,0.08) 0%, transparent 65%)" }}
-          />
-          <div
-            className="absolute top-[70%] -left-24 w-[400px] h-[400px] rounded-full blur-[100px]"
-            style={{ background: "radial-gradient(circle, rgba(108,99,255,0.07) 0%, transparent 65%)" }}
-          />
-        </div>
+    <div className="min-h-screen bg-white text-slate-900 flex flex-col selection:bg-brand-100 selection:text-brand-900">
+      {/* ── 1. Top Bar ── */}
+      <PublicSiteHeader />
 
-        {/* TopBar floats over the gradient */}
-        <TopBar />
+      <main className="flex-1 flex flex-col">
+        {/* ── 2. Hero Section ── */}
+        <HeroSplitCarousel />
 
-        <main className="relative z-10">
-          <HeroSplitCarousel />
-
-          {/* ── Features grid ── */}
-          <section className="py-20 lg:py-28 bg-white">
-            <div className="max-w-6xl mx-auto px-5 lg:px-8">
-              <div className="text-center max-w-2xl mx-auto mb-16">
-                <span className="inline-block text-xs font-semibold tracking-widest uppercase text-brand-500 mb-4">Tại sao chọn chúng tôi</span>
-                <h2 className="text-3xl lg:text-4xl font-black text-gray-900 tracking-tight leading-tight">
-                  Mọi thứ bạn cần để chinh phục band điểm IELTS mong muốn
-                </h2>
-                <p className="mt-4 text-base text-gray-500 leading-relaxed">
-                  Chương trình luyện IELTS toàn diện kết hợp hướng dẫn chuyên gia, đề thi thực tế và hỗ trợ từ giáo viên bản ngữ.
-                </p>
+        {/* ── 3. The 3 Core Pillars (Thiết kế cao cấp, thẩm mỹ, không bị đè chữ) ── */}
+        <section className="py-16 lg:py-22 bg-slate-50/70 border-y border-slate-200/80">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center max-w-2xl mx-auto mb-12">
+              <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-xs font-semibold mb-3.5">
+                <Sparkles className="w-3.5 h-3.5 text-brand-600" />
+                <span>HỆ THỐNG ĐÀO TẠO & KHẢO THÍ</span>
               </div>
-
-              <div className="grid md:grid-cols-3 gap-5">
-                {[
-                  {
-                    icon: <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5" /></svg>,
-                    title: "Đối tác chính thức IDP & BC",
-                    desc: "Đối tác đăng ký thi chính thức tại 40+ tỉnh thành với ưu đãi độc quyền và ưu tiên đặt lịch thi.",
-                    color: "#5B5BD6",
-                  },
-                  {
-                    icon: <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" /></svg>,
-                    title: "Đề thi thực tế",
-                    desc: "Bài mock test full-length với kết quả tức thì và phản hồi chi tiết từ chuyên gia về Writing & Speaking.",
-                    color: "#5B5BD6",
-                  },
-                  {
-                    icon: <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" /></svg>,
-                    title: "Giảng viên bản ngữ",
-                    desc: "Luyện tập với mentor Canada để có giao tiếp thực tế và hòa nhập văn hóa trước khi du học.",
-                    color: "#5B5BD6",
-                  },
-                  {
-                    icon: <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" /></svg>,
-                    title: "Chương trình IELTS chuyên sâu",
-                    desc: "Khóa học có cấu trúc bài bản, thiết kế bởi giáo viên IELTS chứng chỉ, phủ đủ cả 4 kỹ năng.",
-                    color: "#5B5BD6",
-                  },
-                  {
-                    icon: <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" /></svg>,
-                    title: "Theo dõi tiến độ",
-                    desc: "Bảng điều khiển giám sát band điểm cải thiện theo thời gian với phân tích dữ liệu chi tiết.",
-                    color: "#5B5BD6",
-                  },
-                  {
-                    icon: <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
-                    title: "Học mọi lúc, mọi nơi",
-                    desc: "Truy cập tài liệu luyện tập và đề thi mock 24/7. Học theo tốc độ riêng trên mọi thiết bị.",
-                    color: "#5B5BD6",
-                  },
-                ].map(f => (
-                  <div key={f.title} className="group p-7 rounded-[20px] bg-white border border-gray-100 hover:border-gray-200 hover:shadow-[0_8px_40px_-8px_rgba(0,0,0,0.08)] transition-all duration-300">
-                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-5 transition-transform duration-300 group-hover:scale-110"
-                      style={{ background: `${f.color}15` }}>
-                      <span style={{ color: f.color }}>{f.icon}</span>
-                    </div>
-                    <h3 className="text-base font-bold text-gray-900">{f.title}</h3>
-                    <p className="mt-2.5 text-sm text-gray-500 leading-relaxed">{f.desc}</p>
-                  </div>
-                ))}
-              </div>
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">
+                Nền tảng tích hợp trọn vẹn cho hành trình IELTS
+              </h2>
+              <p className="mt-3 text-sm text-slate-600 leading-relaxed max-w-xl mx-auto">
+                Đồng hành cùng học viên và giảng viên từ lộ trình học tập, thi thử 4 kỹ năng đến theo dõi tiến độ chuẩn quốc tế.
+              </p>
             </div>
-          </section>
 
-          {/* ── Courses section ── */}
-          <section className="py-20 lg:py-28 bg-white">
-            <div className="max-w-6xl mx-auto px-5 lg:px-8">
-              <div className="flex items-end justify-between mb-12">
+            <div className="grid md:grid-cols-3 gap-6">
+              {/* Pillar 1: Đào tạo Khóa học */}
+              <div className="p-6 rounded-2xl border border-slate-200 bg-white hover:border-brand-300 hover:shadow-md transition-all flex flex-col justify-between group">
                 <div>
-                  <span className="inline-block text-xs font-semibold tracking-widest uppercase text-brand-500 mb-3">Khám phá</span>
-                  <h2 className="text-3xl lg:text-4xl font-black text-gray-900 tracking-tight">Khóa học nổi bật</h2>
-                </div>
-                <a href="/courses" className="hidden sm:inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 hover:text-brand-700 transition-colors">
-                  Xem tất cả <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
-                </a>
-              </div>
-              <CourseCardSlider courses={orderedCourses} />
-            </div>
-          </section>
-
-          {/* ── CTA banner ── */}
-          <section className="pb-20 lg:pb-28 bg-white">
-            <div className="max-w-6xl mx-auto px-5 lg:px-8">
-              <div className="relative overflow-hidden rounded-[24px] px-8 lg:px-14 py-14 lg:py-16 text-center"
-                style={{ background: "linear-gradient(135deg, #5B5BD6 0%, #6B6BD6 35%, #5B5BD6 65%, #7B79E8 100%)" }}>
-                <div className="absolute top-0 right-0 w-80 h-80 rounded-full" style={{ background: "rgba(255,255,255,0.06)" }} />
-                <div className="absolute -bottom-20 -left-10 w-60 h-60 rounded-full" style={{ background: "rgba(255,255,255,0.05)" }} />
-                <div className="absolute top-10 right-10 w-4 h-4 rounded-full" style={{ background: "rgba(255,255,255,0.2)" }} />
-                <div className="absolute bottom-20 right-40 w-2 h-2 rounded-full" style={{ background: "rgba(255,255,255,0.15)" }} />
-                <div className="absolute top-[20%] left-[20%] w-2 h-2 rounded-full" style={{ background: "rgba(255,255,255,0.1)" }} />
-                <div className="absolute bottom-[30%] left-[10%] w-1.5 h-1.5 rounded-full" style={{ background: "rgba(255,255,255,0.12)" }} />
-                <div className="relative z-10">
-                  <h2 className="text-2xl lg:text-4xl font-black text-white tracking-tight">
-                    Sẵn sàng bắt đầu hành trình IELTS của bạn?
-                  </h2>
-                  <p className="mt-3 text-white/70 text-sm lg:text-base max-w-xl mx-auto">
-                    Tham gia cùng hàng nghìn học viên đã chinh phục band điểm mong muốn cùng Glocal IELTS.
-                  </p>
-                  <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-                    <a href="/register"
-                      className="px-7 py-3.5 bg-white text-brand-600 font-semibold text-sm rounded-2xl hover:bg-white/95 hover:shadow-xl transition-all duration-200">
-                      Bắt đầu miễn phí
-                    </a>
-                    <a href="/courses"
-                      className="px-7 py-3.5 text-white/90 font-medium text-sm rounded-2xl border border-white/30 hover:bg-white/10 transition-all duration-200">
-                      Xem khóa học
-                    </a>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* ── Registration form ── */}
-          <section id="support-register-form" className="py-20 lg:py-28 bg-white">
-            <div className="max-w-6xl mx-auto px-5 lg:px-8">
-              <div className="grid lg:grid-cols-2 gap-12 lg:gap-16">
-                <div className="lg:pt-4">
-                  <span className="inline-block text-xs font-semibold tracking-widest uppercase text-brand-500 mb-4">Bắt đầu ngay</span>
-                  <h2 className="text-3xl lg:text-4xl font-black text-gray-900 tracking-tight leading-tight">
-                    Đăng ký tư vấn IELTS miễn phí
-                  </h2>
-                  <p className="mt-5 text-base text-gray-500 leading-relaxed">
-                    Điền thông tin, đội ngũ chuyên gia sẽ liên hệ bạn trong 24 giờ với lộ trình học cá nhân hóa.
-                  </p>
-                  <div className="mt-8 space-y-4">
-                    {[
-                      "Lộ trình học cá nhân hóa theo trình độ hiện tại của bạn",
-                      "Hướng dẫn đăng ký thi IDP & BC từ chuyên gia",
-                      "Bài mock test miễn phí để đánh giá band điểm",
-                      "Học bổng độc quyền và tư vấn khóa học phù hợp",
-                    ].map(item => (
-                      <div key={item} className="flex items-start gap-3">
-                        <span className="mt-0.5 w-5 h-5 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(108,99,255,0.1)" }}>
-                          <svg className="w-3 h-3 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                        </span>
-                        <span className="text-sm text-gray-600">{item}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-[24px] border border-gray-100 p-7 lg:p-8 shadow-[0_4px_40px_-12px_rgba(0,0,0,0.06)]">
-                  <form onSubmit={submitForm} className="space-y-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Quan tâm đến</label>
-                      <select
-                        value={form.type}
-                        onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
-                        className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-800 outline-none focus:border-brand-300 focus:ring-2 focus:ring-brand-100 transition-all"
-                        required
-                      >
-                        <option value="">Chọn một tùy chọn</option>
-                        <option value="ielts-course">Khóa học IELTS</option>
-                        <option value="mock-test">Thi thử</option>
-                        <option value="study-abroad">Tư vấn du học</option>
-                        <option value="other">Khác</option>
-                      </select>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="w-11 h-11 rounded-xl bg-brand-50 text-brand-600 border border-brand-100 flex items-center justify-center transition-transform group-hover:scale-105">
+                      <GraduationCap className="w-5 h-5" />
                     </div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-brand-700 bg-brand-50/80 px-2.5 py-1 rounded-full border border-brand-100">
+                      Khóa học & Lộ trình
+                    </span>
+                  </div>
+
+                  <h3 className="text-base font-bold text-slate-900 mb-2">Đào tạo IELTS Chuyên sâu</h3>
+                  <p className="text-xs text-slate-600 leading-relaxed mb-4">
+                    Lộ trình bài bản từ mất gốc đến 7.5+, rèn luyện Speaking 1-on-1 cùng đội ngũ giáo viên bản ngữ và mentor chuyên môn cao.
+                  </p>
+
+                  <ul className="space-y-2 text-xs text-slate-600">
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <span>Lớp học kèm 1-on-1 chuyên sâu</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <span>Cam kết chuẩn đầu ra văn bản</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <Link
+                  href="/courses"
+                  className="w-full flex items-center justify-center gap-2 py-2.5 text-xs font-bold text-brand-700 bg-brand-50 hover:bg-brand-100 rounded-xl transition-all border border-brand-200/70 mt-6"
+                >
+                  Khám phá các khóa học
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+
+              {/* Pillar 2: Khảo thí & Luyện đề chuẩn quốc tế (Highlight card) */}
+              <div className="p-6 rounded-2xl border-2 border-brand-500/30 bg-white hover:border-brand-500 hover:shadow-md transition-all flex flex-col justify-between relative group">
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="w-11 h-11 rounded-xl bg-brand-600 text-white shadow-xs flex items-center justify-center transition-transform group-hover:scale-105">
+                      <Target className="w-5 h-5" />
+                    </div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                      Khảo thí Cambridge
+                    </span>
+                  </div>
+
+                  <h3 className="text-base font-bold text-slate-900 mb-2">Hệ thống Khảo thí 4 Kỹ năng</h3>
+                  <p className="text-xs text-slate-600 leading-relaxed mb-4">
+                    Hơn 200+ đề thi sát thực tế IDP & British Council, đánh giá chi tiết Writing & Speaking theo đúng 4 tiêu chí chấm thi quốc tế.
+                  </p>
+
+                  <ul className="space-y-2 text-xs text-slate-600">
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <span>Đề thi cập nhật từ Cam 15-19</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <span>Phân tích chi tiết từng lỗi sai</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <Link
+                  href="/thi-thu"
+                  className="w-full flex items-center justify-center gap-2 py-2.5 text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 rounded-xl shadow-xs transition-all mt-6"
+                >
+                  Vào phòng thi thử ngay
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+
+              {/* Pillar 3: Cổng tương tác Học viên & Giáo viên */}
+              <div className="p-6 rounded-2xl border border-slate-200 bg-white hover:border-brand-300 hover:shadow-md transition-all flex flex-col justify-between group">
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="w-11 h-11 rounded-xl bg-slate-100 text-slate-700 border border-slate-200 flex items-center justify-center transition-transform group-hover:scale-105">
+                      <Laptop className="w-5 h-5" />
+                    </div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-700 bg-slate-100 px-2.5 py-1 rounded-full border border-slate-200">
+                      Không gian học vụ
+                    </span>
+                  </div>
+
+                  <h3 className="text-base font-bold text-slate-900 mb-2">Cổng Học tập Tương tác (LMS)</h3>
+                  <p className="text-xs text-slate-600 leading-relaxed mb-4">
+                    Không gian số chuyên biệt cho Học viên và Giáo viên: quản lý lịch học, nộp bài tập về nhà, chấm bài và theo dõi biểu đồ tiến độ.
+                  </p>
+
+                  <ul className="space-y-2 text-xs text-slate-600">
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <span>Tương tác trực tiếp thầy và trò</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <span>Giám sát tiến độ học tập 24/7</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <Link
+                  href="/login"
+                  className="w-full flex items-center justify-center gap-2 py-2.5 text-xs font-bold text-slate-700 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 rounded-xl transition-all border border-slate-200 mt-6"
+                >
+                  Đăng nhập Cổng học tập
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── 4. Khóa học IELTS Nổi Bật (Bán khóa học & Đào tạo) ── */}
+        <section className="py-16 lg:py-20 bg-slate-50/70 border-y border-slate-200/80">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 gap-4">
+              <div>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-xs font-semibold mb-3">
+                  <GraduationCap className="w-3.5 h-3.5 text-brand-600" />
+                  <span>CHƯƠNG TRÌNH ĐÀO TẠO</span>
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+                  Lộ trình học tập theo mục tiêu của bạn
+                </h2>
+              </div>
+              <Link
+                href="/courses"
+                className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-brand-600 hover:text-brand-700 transition-colors"
+              >
+                <span>Xem tất cả khóa học</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+
+            <CourseCardSlider courses={orderedCourses} />
+          </div>
+        </section>
+
+        {/* ── 5. Quick Consultation Form (Thiết kế hiện đại, màu sắc hài hòa) ── */}
+        <section id="support-register-form" className="py-16 lg:py-20 bg-white">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="rounded-3xl bg-slate-900 text-white p-8 sm:p-10 lg:p-12 shadow-xl border border-slate-800 relative overflow-hidden">
+              {/* Subtle ambient lighting */}
+              <div className="pointer-events-none absolute -top-24 -right-24 h-96 w-96 rounded-full bg-brand-500/15 blur-3xl" />
+              <div className="pointer-events-none absolute -bottom-24 -left-24 h-96 w-96 rounded-full bg-indigo-500/10 blur-3xl" />
+
+              <div className="grid lg:grid-cols-12 gap-8 items-center relative z-10">
+                
+                {/* Left: Value Proposition */}
+                <div className="lg:col-span-7">
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 border border-white/15 text-brand-200 text-xs font-bold uppercase tracking-wider mb-4">
+                    <Sparkles className="w-3.5 h-3.5 text-brand-300" />
+                    <span>TƯ VẤN KHÓA HỌC & TEST NĂNG LỰC</span>
+                  </div>
+                  <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-white leading-tight">
+                    Sẵn sàng bứt phá Band điểm IELTS của bạn?
+                  </h2>
+                  <p className="mt-3 text-sm text-slate-300 max-w-lg leading-relaxed">
+                    Điền thông tin để nhận bài test năng lực 4 kỹ năng miễn phí và được chuyên gia học thuật xây dựng lộ trình học tập cá nhân hóa chuẩn Cambridge.
+                  </p>
+
+                  <div className="mt-6 space-y-2.5">
+                    <div className="flex items-center gap-2 text-xs text-white/90">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span>Bài test 4 kỹ năng đánh giá band điểm tức thì</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-white/90">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span>Tư vấn khóa học phù hợp với mục tiêu & thời gian</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-white/90">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span>Ưu đãi độc quyền lệ phí thi IDP & British Council chính thức</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right: Streamlined 3-field form card */}
+                <div className="lg:col-span-5 bg-white text-slate-900 rounded-2xl p-6 sm:p-7 shadow-2xl border border-slate-100">
+                  <h3 className="text-base font-bold text-slate-900 mb-1">Đăng ký tư vấn lộ trình</h3>
+                  <p className="text-xs text-slate-500 mb-4">Chuyên viên học vụ sẽ liên hệ trong 24 giờ</p>
+
+                  <form onSubmit={submitForm} className="space-y-3.5">
                     <div>
-                      <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Họ và tên</label>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Họ và tên</label>
                       <input
                         type="text"
                         value={form.full_name}
                         onChange={e => setForm(f => ({ ...f, full_name: e.target.value }))}
-                        placeholder="Nhập họ và tên của bạn"
-                        className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-800 placeholder:text-gray-300 outline-none focus:border-brand-300 focus:ring-2 focus:ring-brand-100 transition-all"
+                        placeholder="Nhập họ và tên"
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50/70 focus:bg-white px-3.5 py-2.5 text-xs text-slate-800 placeholder:text-slate-400 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 transition-all"
                         required
                       />
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Số điện thoại</label>
-                        <input
-                          type="tel"
-                          value={form.phone}
-                          onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
-                          placeholder="Số điện thoại"
-                          className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-800 placeholder:text-gray-300 outline-none focus:border-brand-300 focus:ring-2 focus:ring-brand-100 transition-all"
-                          required
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Email</label>
-                        <input
-                          type="email"
-                          value={form.email}
-                          onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-                          placeholder="Địa chỉ email"
-                          className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-800 placeholder:text-gray-300 outline-none focus:border-brand-300 focus:ring-2 focus:ring-brand-100 transition-all"
-                          required
-                        />
-                      </div>
-                    </div>
+
                     <div>
-                      <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Mã giới thiệu (Tùy chọn)</label>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Số điện thoại / Zalo</label>
                       <input
-                        type="text"
-                        value={form.code_refer}
-                        onChange={e => setForm(f => ({ ...f, code_refer: e.target.value }))}
-                        placeholder="Nhập mã giới thiệu"
-                        className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-800 placeholder:text-gray-300 outline-none focus:border-brand-300 focus:ring-2 focus:ring-brand-100 transition-all"
+                        type="tel"
+                        value={form.phone}
+                        onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+                        placeholder="Số điện thoại của bạn"
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50/70 focus:bg-white px-3.5 py-2.5 text-xs text-slate-800 placeholder:text-slate-400 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 transition-all"
+                        required
                       />
                     </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Mục tiêu Band điểm</label>
+                      <select
+                        value={form.target}
+                        onChange={e => setForm(f => ({ ...f, target: e.target.value }))}
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50/70 focus:bg-white px-3.5 py-2.5 text-xs text-slate-800 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 transition-all cursor-pointer"
+                      >
+                        <option value="5.5-6.0">IELTS 5.5 - 6.0 (Cơ bản đến Khá)</option>
+                        <option value="6.5-7.0">IELTS 6.5 - 7.0 (Mục tiêu chuẩn)</option>
+                        <option value="7.5+">IELTS 7.5+ (Xuất sắc / Du học)</option>
+                        <option value="other">Tư vấn thi thử / Khác</option>
+                      </select>
+                    </div>
+
                     <button
                       type="submit"
-                      className="w-full mt-2 py-3.5 text-sm font-semibold text-white rounded-xl transition-all duration-200 hover:opacity-90 hover:shadow-lg hover:shadow-brand-500/20"
-                      style={{ background: "linear-gradient(135deg, #5B5BD6 0%, #6B6BD6 100%)" }}
+                      className="w-full mt-2 py-3 text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 rounded-xl transition-all shadow-sm hover:shadow-md cursor-pointer flex items-center justify-center gap-1.5"
                     >
-                      Nhận tư vấn miễn phí
+                      <span>Nhận tư vấn & Lộ trình miễn phí</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
                     </button>
-                    <p className="text-center text-xs text-gray-400">Không spam. Hủy đăng ký bất kỳ lúc nào.</p>
+                    <p className="text-center text-[10px] text-slate-400">Cam kết bảo mật thông tin cá nhân</p>
                   </form>
                 </div>
+
               </div>
             </div>
-          </section>
+          </div>
+        </section>
 
-          <PublicSiteFooter />
-        </main>
-      </div>
-    </>
+        {/* ── 8. Footer ── */}
+        <PublicSiteFooter />
+      </main>
+    </div>
   );
 }

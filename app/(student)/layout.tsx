@@ -1,8 +1,9 @@
 "use client";
 import Header from "@/components/layouts/Header";
 import { SidebarInner } from "@/components/layouts/Sidebar";
-import { SidebarProvider } from "@/components/layouts/SidebarContext";
+import { SidebarProvider, useSidebarContext } from "@/components/layouts/SidebarContext";
 import { PageTitleProvider } from "@/components/layouts/PageTitleContext";
+import Link from "next/link";
 import Avatar from "@/components/ui/Avatar";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -27,7 +28,6 @@ const navGroups: NavGroup[] = [
     label: "Học tập",
     items: [
       { label: "Khóa học của tôi", href: "/student/my-courses", icon: GraduationCap },
-      { label: "Khám phá", href: "/student/browse", icon: Search },
       { label: "Khóa online đã mua", href: "/student/my-online-courses", icon: BookOpen },
       { label: "Khám phá khóa online", href: "/student/online-courses", icon: Search },
       { label: "Lịch học", href: "/student/schedule", icon: Calendar },
@@ -43,6 +43,49 @@ const navGroups: NavGroup[] = [
     ],
   },
 ];
+
+function StudentSidebarFooter({ user }: { user: { name: string; avatar_url?: string; email?: string } }) {
+  const { collapsed } = useSidebarContext();
+
+  if (collapsed) {
+    return (
+      <Link
+        href="/student/account"
+        title={`${user.name} (Học viên) - Cài đặt tài khoản`}
+        className="flex items-center justify-center p-1 rounded-xl hover:bg-brand-50 transition-colors group"
+      >
+        <Avatar name={user.name} src={user.avatar_url} size="sm" />
+      </Link>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2.5 p-2 rounded-2xl bg-white border border-slate-200/80 shadow-xs hover:border-brand-300 hover:shadow-sm transition-all group">
+      <Link href="/student/account" className="shrink-0">
+        <Avatar name={user.name} src={user.avatar_url} size="sm" />
+      </Link>
+      <div className="flex-1 min-w-0">
+        <Link
+          href="/student/account"
+          className="block text-xs font-bold text-slate-900 truncate hover:text-brand-600 transition-colors"
+        >
+          {user.name}
+        </Link>
+        <div className="flex items-center gap-1 mt-0.5">
+          <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+          <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Học viên</span>
+        </div>
+      </div>
+      <Link
+        href="/student/account"
+        className="p-1.5 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-brand-50 transition-colors"
+        title="Cài đặt tài khoản"
+      >
+        <Settings className="w-3.5 h-3.5" />
+      </Link>
+    </div>
+  );
+}
 
 export default function StudentLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useRoleGuard("student", "/login");
@@ -172,25 +215,19 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
     }
   }
 
-  if (!mounted || loading || checkingProfile) return <div className="flex items-center justify-center min-h-screen bg-gray-50">
-    <div className="w-8 h-8 border-4 border-sky-600 border-t-transparent rounded-full animate-spin" />
+  if (!mounted || loading || checkingProfile) return <div className="flex items-center justify-center min-h-screen bg-slate-50">
+    <div className="w-8 h-8 border-4 border-brand-600 border-t-transparent rounded-full animate-spin" />
   </div>;
-
-  const footerContent = user && (
-    <div className="flex items-center gap-2 px-1 py-1">
-      <Avatar name={user.name} size="sm" />
-      <div className="flex-1 min-w-0">
-        <p className="text-[12px] font-semibold text-[#1F2937] truncate">{user.name}</p>
-        <p className="text-[11px] text-[#9CA3AF]">Học viên</p>
-      </div>
-    </div>
-  );
 
   return (
     <SidebarProvider>
       <PageTitleProvider>
         <div className="flex min-h-screen bg-gray-50">
-          <SidebarInner groups={navGroups} theme="purple" footerContent={footerContent} />
+          <SidebarInner
+            groups={navGroups}
+            theme="purple"
+            footerContent={user ? <StudentSidebarFooter user={user} /> : null}
+          />
           <div className="flex-1 flex flex-col min-w-0">
             <Header user={user} />
             {children}

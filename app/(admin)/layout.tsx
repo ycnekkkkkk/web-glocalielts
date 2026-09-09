@@ -68,8 +68,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <div className="flex items-center gap-2 px-1 py-1">
       <Avatar name={user.name} size="sm" />
       <div className="flex-1 min-w-0">
-        <p className="text-[12px] font-semibold text-[#1F2937] truncate">{user.name}</p>
-        <p className="text-[11px] text-[#9CA3AF]">Quản trị viên</p>
+        <p className="text-xs font-bold text-slate-800 truncate">{user.name}</p>
+        <p className="text-[10px] text-slate-400 font-medium">Quản trị viên</p>
       </div>
     </div>
   );

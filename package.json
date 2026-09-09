@@ -17,6 +17,7 @@
     "sync:thi-thu:json": "node ./scripts/sync-thi-thu-json-to-exam.mjs"
   },
   "dependencies": {
+    "@google-cloud/vertexai": "^1.12.0",
     "@supabase/ssr": "^0.9.0",
     "@supabase/supabase-js": "^2.100.1",
     "clsx": "^2.1.1",

@@ -2,20 +2,21 @@ import Link from "next/link";
 
 const COLUMNS = [
   {
-    title: "Sản phẩm",
+    title: "Sản phẩm & Khảo thí",
     links: [
       { label: "Khóa học IELTS", href: "/courses" },
-      { label: "Luyện kỹ năng", href: "/courses" },
-      { label: "Luyện đề thi thử", href: "/thi-thu" },
-      { label: "Tư vấn đăng ký thi", href: "/consult" },
-      { label: "Bảng giá", href: "/courses" },
+      { label: "Luyện Speaking 1-on-1", href: "/courses" },
+      { label: "Phòng thi thử 4 kỹ năng", href: "/thi-thu" },
+      { label: "Đăng ký thi IDP / BC", href: "/consult" },
+      { label: "Lộ trình học cá nhân", href: "/courses" },
     ],
   },
   {
-    title: "Hỗ trợ",
+    title: "Hỗ trợ học thuật",
     links: [
-      { label: "Câu hỏi thường gặp", href: "#" },
-      { label: "Hướng dẫn sử dụng", href: "#" },
+      { label: "Hướng dẫn làm bài thi", href: "#" },
+      { label: "Cổng học tập học viên", href: "/student/dashboard" },
+      { label: "Cổng dành cho giảng viên", href: "/teacher/classes" },
       { label: "Chính sách bảo mật", href: "#" },
       { label: "Điều khoản sử dụng", href: "#" },
     ],
@@ -23,44 +24,45 @@ const COLUMNS = [
   {
     title: "Về chúng tôi",
     links: [
-      { label: "Giới thiệu", href: "#" },
+      { label: "Giới thiệu Glocal IELTS", href: "#" },
       { label: "Đội ngũ giảng viên", href: "#" },
-      { label: "Tin tức & Sự kiện", href: "#" },
+      { label: "Đối tác khảo thí quốc tế", href: "#" },
+      { label: "Tin tức & Hoạt động", href: "#" },
       { label: "Liên hệ hợp tác", href: "/contact" },
     ],
   },
   {
-    title: "Liên hệ",
+    title: "Liên hệ & Địa chỉ",
     links: [
       { label: "Hotline: 028 6686 0602", href: "tel:02866860602" },
       { label: "glocalielts@gmail.com", href: "mailto:glocalielts@gmail.com" },
       { label: "118/40 Bạch Đằng, P.24, Q.Bình Thạnh, TP.HCM", href: "#" },
-      { label: "T2–CN: 08:00–21:00", href: "#" },
+      { label: "Giờ làm việc: 08:00 – 21:00 (T2–CN)", href: "#" },
     ],
   },
 ];
 
 export default function PublicSiteFooter() {
   return (
-    <footer
-      className="text-white/70"
-      style={{ background: "#111827" }}
-    >
-      {/* Top accent line */}
-      <div className="h-0.5 w-full" style={{ background: "linear-gradient(90deg,#6C63FF,#8B5CF6,#A78BFA)" }} />
+    <footer className="bg-slate-950 text-slate-400 border-t border-slate-800/80">
+      {/* Subtle top accent line */}
+      <div className="h-px w-full bg-gradient-to-r from-transparent via-brand-500/30 to-transparent" />
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12">
         {/* ── TOP ROW ── */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-8 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-8 mb-10">
           {/* Brand column */}
-          <div className="lg:col-span-1">
-            <div className="flex items-center gap-2 mb-3">
-              <img src="/logo/logo-ag.svg" alt="AG" className="w-7 h-7 object-contain" />
-              <img src="/logo/logo-gi.svg" alt="Glocal IELTS" className="w-7 h-7 object-contain" />
-              <span className="text-sm font-bold text-white">Glocal IELTS</span>
+          <div className="col-span-2 sm:col-span-4 lg:col-span-1">
+            <div className="flex items-center gap-2.5 mb-3">
+              <img src="/logo/logo-ag.svg" alt="AG" className="w-6 h-6 object-contain" />
+              <img src="/logo/logo-gi.svg" alt="Glocal IELTS" className="w-6 h-6 object-contain" />
+              <div className="flex flex-col">
+                <span className="text-xs font-bold text-white tracking-tight leading-none">Glocal IELTS</span>
+                <span className="text-[9px] font-medium text-slate-400 leading-none mt-0.5">Amazing Group</span>
+              </div>
             </div>
-            <p className="text-xs text-white/40 leading-relaxed mb-3">
-              Nền tảng luyện thi IELTS chính thức, đồng hành cùng bạn từ học tập đến chinh phục mục tiêu.
+            <p className="text-xs text-slate-400 leading-relaxed mb-4 max-w-xs">
+              Hệ thống đào tạo và khảo thí IELTS chuẩn quốc tế, đồng hành cùng học viên và giảng viên bứt phá mục tiêu.
             </p>
             {/* Social */}
             <div className="flex items-center gap-2">
@@ -108,7 +110,7 @@ export default function PublicSiteFooter() {
                   target="_blank"
                   rel="noreferrer"
                   aria-label={s.label}
-                  className="w-7 h-7 rounded-lg bg-white/8 flex items-center justify-center hover:bg-white/15 hover:text-white transition-all"
+                  className="w-8 h-8 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-white flex items-center justify-center transition-all cursor-pointer"
                 >
                   {s.icon}
                 </a>
@@ -119,13 +121,13 @@ export default function PublicSiteFooter() {
           {/* Link columns */}
           {COLUMNS.map((col) => (
             <div key={col.title}>
-              <h3 className="text-xs font-semibold text-white mb-3">{col.title}</h3>
-              <div className="flex flex-col gap-2">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200 mb-3.5">{col.title}</h3>
+              <div className="flex flex-col gap-2.5">
                 {col.links.map((link) => (
                   <Link
                     key={link.label}
                     href={link.href}
-                    className="text-xs text-white/50 hover:text-white transition-colors"
+                    className="text-xs text-slate-400 hover:text-white transition-colors"
                   >
                     {link.label}
                   </Link>
@@ -135,20 +137,18 @@ export default function PublicSiteFooter() {
           ))}
         </div>
 
-        {/* Divider */}
-        <div className="border-t border-white/8 pt-5 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-xs text-white/30">
-            © 2026 Glocal IELTS | Amazing Group. All rights reserved.
-          </p>
+        {/* Divider & Copyright */}
+        <div className="border-t border-slate-900 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
+          <p>© 2026 Glocal IELTS | Amazing Group. Bảo lưu mọi quyền.</p>
           <div className="flex items-center gap-4">
-            <a href="#" className="text-xs text-white/30 hover:text-white/60 transition-colors">Chính sách bảo mật</a>
-            <a href="#" className="text-xs text-white/30 hover:text-white/60 transition-colors">Điều khoản</a>
+            <Link href="#" className="hover:text-slate-300 transition-colors">Chính sách bảo mật</Link>
+            <Link href="#" className="hover:text-slate-300 transition-colors">Điều khoản dịch vụ</Link>
             <button
               type="button"
               onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-              className="text-xs text-white/30 hover:text-white/60 transition-colors cursor-pointer"
+              className="hover:text-slate-300 transition-colors cursor-pointer"
             >
-              Quay lên trên ↑
+              Về đầu trang ↑
             </button>
           </div>
         </div>

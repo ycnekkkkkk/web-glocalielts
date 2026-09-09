@@ -35,7 +35,7 @@ export async function POST(
   // ── Load submission ───────────────────────────────────────────
   const { data: sub, error: subErr } = await admin
     .from("mock_skill_submissions")
-    .select("id, exam_id, scores, answers_raw, status, candidate, drive_folder_id")
+    .select("id, exam_id, scores, answers_raw, status, candidate, drive_folder_id, graded_at")
     .eq("id", submissionId)
     .maybeSingle();
 
@@ -87,7 +87,8 @@ export async function POST(
           errors.push("Writing: Gemini quota exceeded — thử lại sau vài phút");
           rateLimited = true;
         } else {
-          errors.push("Writing AI chấm thất bại");
+          const detail = e instanceof Error ? e.message : String(e);
+          errors.push(`Writing AI: ${detail}`);
         }
       }
     } else {
@@ -186,7 +187,8 @@ export async function POST(
           errors.push("Speaking: Gemini quota exceeded — thử lại sau vài phút");
           rateLimited = true;
         } else {
-          errors.push("Speaking AI chấm thất bại — kiểm tra audio Drive");
+          const detail = e instanceof Error ? e.message : String(e);
+          errors.push(`Speaking AI: ${detail}`);
         }
       }
     } else {
@@ -199,14 +201,27 @@ export async function POST(
   const hasSpeaking = Boolean(newScores.speaking);
   const hasLR = Boolean(existingScores.listening || existingScores.reading);
   const fullyGraded = hasLR && hasWriting && hasSpeaking;
-  // If rate-limited and nothing new was scored, revert to pending so admin can retry
-  const newStatus = rateLimited && !hasWriting && !hasSpeaking
-    ? "pending"
-    : errors.length === 0 || fullyGraded ? "graded" : (errors.length < 2 ? "graded" : "pending");
+
+  // Kiểm tra xem mục tiêu được yêu cầu chấm (target) có thành công hay không
+  const targetFailed = (target === "writing" && !hasWriting) ||
+                       (target === "speaking" && !hasSpeaking) ||
+                       (target === "both" && (!hasWriting || !hasSpeaking));
+
+  // Chỉ chuyển thành "graded" khi toàn bộ các kỹ năng đã hoàn tất điểm, hoặc ít nhất target yêu cầu đã thành công
+  let newStatus = sub.status;
+  if (targetFailed) {
+    // Nếu target thất bại hoàn toàn, giữ nguyên hoặc quay về pending
+    newStatus = (hasWriting || hasSpeaking) ? sub.status : "pending";
+  } else if (fullyGraded) {
+    newStatus = "graded";
+  } else if (hasWriting || hasSpeaking) {
+    // Đã có ít nhất 1 kỹ năng tự luận có điểm
+    newStatus = sub.status === "graded" ? "graded" : sub.status;
+  }
 
   // ── Generate AI Summary ───────────────────────────────────────
-  // Only run when explicitly requested via target "summary" or fully grading "both"
-  if ((target === "summary" || target === "both") && !rateLimited) {
+  // Chỉ chạy khi target thành công và không bị rate limit
+  if ((target === "summary" || target === "both") && !rateLimited && !targetFailed) {
     try {
       const { generateSkillSummary } = await import("@/lib/gemini/score-summary");
       newScores.summary = await generateSkillSummary(newScores as any);
@@ -220,18 +235,21 @@ export async function POST(
   await admin.from("mock_skill_submissions").update({
     scores: newScores,
     status: newStatus,
-    graded_at: new Date().toISOString(),
+    graded_at: newStatus === "graded" ? new Date().toISOString() : sub.graded_at,
     error_message: errors.length > 0 ? errors.join("; ") : null,
   }).eq("id", submissionId);
 
+  const isSuccess = !targetFailed && errors.length === 0;
+
   return NextResponse.json({
-    ok: !rateLimited,
+    ok: isSuccess,
     rateLimited,
     status: newStatus,
     scores: newScores,
     errors: errors.length > 0 ? errors : undefined,
+    error: targetFailed ? (errors.join("; ") || "Chấm điểm bằng AI thất bại") : undefined,
     message: rateLimited
-      ? "Gemini API quota tạm hết. Bài đã về trạng thái 'pending', thử lại sau vài phút."
+      ? "Gemini API quota tạm hết hoặc model đang bận. Bài đã về trạng thái 'pending', vui lòng thử lại sau vài phút."
       : undefined,
   });
 }

@@ -1,21 +1,32 @@
 "use client";
+
 import PageWrapper from "@/components/layouts/PageWrapper";
-import { Card } from "@/components/ui/Card";
+import Badge from "@/components/ui/Badge";
 import { createBrowserClient } from "@/lib/supabase/client";
 import { SESSION_STATUS } from "@/lib/constants";
-import { 
-  Award, Banknote, BookOpen, Check, CheckCircle, ChevronRight, 
-  GraduationCap, Headphones, Heart, Sparkles, TrendingUp 
+import type { AssignmentGrade, Session } from "@/types";
+import {
+  ArrowRight,
+  Award,
+  BookOpen,
+  Calendar,
+  CheckCircle2,
+  ChevronRight,
+  Clock,
+  ExternalLink,
+  Flame,
+  GraduationCap,
+  Headphones,
+  Mic,
+  PenTool,
+  Sparkles,
+  Target,
+  TrendingUp,
+  Trophy,
+  Zap
 } from "lucide-react";
 import Link from "next/link";
-import Image from "next/image";
-import { useEffect, useState, useMemo } from "react";
-import type { Session, AssignmentGrade } from "@/types";
-import type { PublicCourse } from "@/types/database";
-import { AG_LANDING_VI as t } from "@/lib/ag-landing-vi";
-import CourseCardSlider from "@/components/landing/CourseCardSlider";
-
-type TabKey = "tab1" | "tab2" | "tab3";
+import { useEffect, useState } from "react";
 
 interface StudentClass {
   id: string;
@@ -23,178 +34,134 @@ interface StudentClass {
   status: string;
   total_sessions: number;
   sessions_done: number;
+  schedule?: string | null;
 }
 
-const COURSE_CATEGORIES = [
-  "Pronunciation",
-  "Speaking",
-  "IELTS Mentorship",
-  "IELTS Rocket",
-  "A+ Teacher",
-  "Practice IELTS with Native Teacher",
-  "Exchange Culture with Local Mentor",
-  "Hạ Hạ Mentoring Coaching",
-  "[AG x HR] Series Training Intern",
-] as const;
-
-const PARTNER_LOGOS = ["/doitac/1.png", "/doitac/2.png", "/doitac/3.png", "/doitac/4.png", "/doitac/5.png", "/doitac/6.png", "/doitac/7.png"] as const;
-
-const UPCOMING_EVENTS = [
-  {
-    title: "Workshop Listening 7.0+",
-    date: "19:30 · 20/04/2026",
-    mode: "Online Zoom",
-    note: "Phân tích bẫy đề thật + chiến lược làm Part 2, Part 3.",
-  },
-  {
-    title: "Mock Test 4 kỹ năng có chấm Speaking",
-    date: "08:00 · 27/04/2026",
-    mode: "Offline · TP.HCM",
-    note: "Thi thử đầy đủ, trả band dự kiến và góp ý chi tiết.",
-  },
-  {
-    title: "Q&A Du học + IELTS Pathway",
-    date: "19:00 · 04/05/2026",
-    mode: "Hybrid",
-    note: "Lộ trình IELTS theo mục tiêu học bổng và hồ sơ du học.",
-  },
-] as const;
-
-const CLIENT_FEEDBACKS = [
-  {
-    name: "Nguyễn Minh Anh",
-    target: "IELTS 7.0",
-    quote:
-      "Mình thích nhất phần chữa Writing rất cụ thể theo từng tiêu chí. Sau 6 tuần, điểm task response tăng rõ rệt.",
-  },
-  {
-    name: "Trần Hoàng Long",
-    target: "IELTS 6.5",
-    quote:
-      "Thi thử mô phỏng sát đề thật, đặc biệt Speaking có nhận xét thẳng vào lỗi phát âm và ý tưởng nên tiến bộ nhanh.",
-  },
-  {
-    name: "Lê Khánh Ngọc",
-    target: "IELTS 7.5",
-    quote:
-      "Mentor theo sát từng giai đoạn, có lịch học linh hoạt. Mình vừa đi làm vừa ôn vẫn giữ được tiến độ.",
-  },
-] as const;
-
-function detectCategory(course: PublicCourse): string {
-  const raw =
-    `${course.slug ?? ""} ${course.title} ${course.short_description ?? ""} ${course.description ?? ""}`.toLowerCase();
-  const rawNoAccent = raw.normalize("NFD").replace(/\p{Diacritic}/gu, "").replace(/đ/g, "d").replace(/Đ/g, "d");
-
-  const upper = `${course.slug ?? ""} ${course.title}`.toUpperCase();
-
-  if (raw.includes("ielts mentorship")) return "IELTS Mentorship";
-
-  if (
-    upper.includes("CMO1") ||
-    upper.includes("GIG1") ||
-    upper.includes("GIO1") ||
-    raw.includes("pronunciation")
-  ) {
-    return "Pronunciation";
-  }
-
-  if (upper.includes("CMG1") || upper.includes("SPG5") || raw.includes("speaking")) return "Speaking";
-  if (
-    upper.includes("IM01") ||
-    upper.includes("IM02") ||
-    upper.includes("IM03") ||
-    upper.includes("IMO1") ||
-    upper.includes("IMO2") ||
-    upper.includes("IMO3") ||
-    upper.includes("IMG") ||
-    upper.includes("GIG2")
-  )
-    return "IELTS Mentorship";
-
-  if (upper.includes("RIG") || upper.includes("RIO") || raw.includes("rocket")) return "IELTS Rocket";
-
-  if (raw.includes("a+ teacher") || raw.includes("a plus teacher")) return "A+ Teacher";
-  if (raw.includes("native teacher")) return "Practice IELTS with Native Teacher";
-  if (raw.includes("exchange culture") || raw.includes("local mentor")) return "Exchange Culture with Local Mentor";
-  if (raw.includes("hạ hạ") || raw.includes("ha ha") || raw.includes("mentoring coaching")) return "Hạ Hạ Mentoring Coaching";
-
-  if (rawNoAccent.includes("tu duy lam it duoc nhieu")) return "Hạ Hạ Mentoring Coaching";
-  if (rawNoAccent.includes("yearly reflection")) return "Hạ Hạ Mentoring Coaching";
-  if (rawNoAccent.includes("bi kip gioi danh cho hoc sinh luoi")) return "Hạ Hạ Mentoring Coaching";
-  if (raw.includes("[ag x hr]") || raw.includes("series training intern")) return "[AG x HR] Series Training Intern";
-  return "Khác";
+interface MockSubmissionSummary {
+  id: string;
+  exam_id: string;
+  status: string;
+  is_released: boolean;
+  scores?: {
+    listening?: { band?: number; correct?: number; total?: number };
+    reading?: { band?: number; correct?: number; total?: number };
+    writing?: { band?: number };
+    speaking?: { band?: number };
+    summary?: { overall_band?: number };
+  };
+  created_at: string;
+  exam?: { id: string; title: string; slug: string };
 }
 
 export default function StudentDashboard() {
   const [classes, setClasses] = useState<StudentClass[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [grades, setGrades] = useState<AssignmentGrade[]>([]);
+  const [mockSubmissions, setMockSubmissions] = useState<MockSubmissionSummary[]>([]);
   const [studentName, setStudentName] = useState("");
   const [loading, setLoading] = useState(true);
-  
-  const [publicCourses, setPublicCourses] = useState<PublicCourse[]>([]);
-  const [tab, setTab] = useState<TabKey>("tab1");
 
   useEffect(() => {
     async function load() {
       try {
         await fetch("/api/student/ensure-student-record", { method: "POST" });
       } catch {
-        /* bỏ qua */
+        /* ignore */
       }
       const supabase = createBrowserClient();
       const { data: { session: authSession } } = await supabase.auth.getSession();
-      if (!authSession?.user) { setLoading(false); return; }
+      if (!authSession?.user) {
+        setLoading(false);
+        return;
+      }
 
+      const userId = authSession.user.id;
+      const userEmail = authSession.user.email || "";
+
+      // Load Profile
       const { data: profile } = await supabase
         .from("profiles")
         .select("full_name")
-        .eq("id", authSession.user.id)
+        .eq("id", userId)
         .single();
-      const name = profile?.full_name || "";
+      const name = profile?.full_name || authSession.user.user_metadata?.full_name || "";
       setStudentName(name);
 
-      // Find student record by profile_id
+      // Find student record
       const { data: studentRec } = await supabase
         .from("students")
         .select("id")
-        .eq("profile_id", authSession.user.id)
+        .eq("profile_id", userId)
         .maybeSingle();
 
-      // Fetch active classes, sessions, grades
+      // Parallel Data Fetching
+      const promises: Promise<any>[] = [];
+
+      // 1. Enrolled Classes & Sessions
       if (studentRec) {
-        const { data: enrollData } = await supabase
-          .from("enrollments")
-          .select("class_id, classes(id, name, status, total_sessions, sessions_done)")
-          .eq("student_id", studentRec.id)
-          .eq("status", "active");
-
-        const normalizedClasses: StudentClass[] = ((enrollData || []) as unknown as {
-          classes: StudentClass | null
-        }[]).filter(r => r.classes).map(r => r.classes!);
-
-        if (normalizedClasses.length > 0) {
-          setClasses(normalizedClasses);
-          const classIds = normalizedClasses.map(c => c.id);
-          const [sessRes, gradeRes] = await Promise.all([
-            supabase.from("sessions").select("*").in("class_id", classIds).order("session_date"),
-            supabase.from("assignment_grades").select("*").eq("student_name", name),
-          ]);
-          setSessions((sessRes.data as Session[]) || []);
-          setGrades((gradeRes.data as AssignmentGrade[]) || []);
-        }
+        promises.push(
+          supabase
+            .from("enrollments")
+            .select("class_id, classes(id, name, status, total_sessions, sessions_done, schedule)")
+            .eq("student_id", studentRec.id)
+            .eq("status", "active")
+        );
+        promises.push(
+          supabase
+            .from("assignment_grades")
+            .select("*")
+            .eq("student_name", name)
+            .order("created_at", { ascending: false })
+            .limit(5)
+        );
+      } else {
+        promises.push(Promise.resolve({ data: [] }));
+        promises.push(Promise.resolve({ data: [] }));
       }
 
-      // Also fetch public published courses for discovery slider
-      const { data: pubCourses } = await supabase
-        .from("public_courses")
-        .select("*")
-        .eq("status", "published")
-        .order("published_at", { ascending: false })
-        .limit(24);
-      
-      setPublicCourses((pubCourses as PublicCourse[]) || []);
+      // 2. Mock Test Submissions
+      promises.push(
+        supabase
+          .from("mock_skill_submissions")
+          .select("id, exam_id, status, is_released, scores, created_at, mock_skill_exams(id, title, slug)")
+          .or(`auth_user_id.eq.${userId},candidate->>email.eq.${userEmail}`)
+          .order("created_at", { ascending: false })
+          .limit(5)
+      );
+
+      const [enrollRes, gradeRes, mockRes] = await Promise.all(promises);
+
+      // Process Classes & Sessions
+      const normalizedClasses: StudentClass[] = ((enrollRes.data || []) as unknown as {
+        classes: StudentClass | null;
+      }[]).filter(r => r.classes).map(r => r.classes!);
+
+      setClasses(normalizedClasses);
+
+      if (normalizedClasses.length > 0) {
+        const classIds = normalizedClasses.map(c => c.id);
+        const { data: sessData } = await supabase
+          .from("sessions")
+          .select("*")
+          .in("class_id", classIds)
+          .order("session_date", { ascending: true });
+        setSessions((sessData as Session[]) || []);
+      }
+
+      setGrades((gradeRes.data as AssignmentGrade[]) || []);
+
+      // Process Mock Submissions
+      const processedMocks: MockSubmissionSummary[] = (mockRes.data || []).map((m: any) => ({
+        id: m.id,
+        exam_id: m.exam_id,
+        status: m.status,
+        is_released: m.is_released,
+        scores: m.scores,
+        created_at: m.created_at,
+        exam: m.mock_skill_exams,
+      }));
+      setMockSubmissions(processedMocks);
+
       setLoading(false);
     }
     load().catch(console.error);
@@ -206,511 +173,760 @@ export default function StudentDashboard() {
       const dateA = a.session_date + " " + (a.session_time || "");
       const dateB = b.session_date + " " + (b.session_time || "");
       return dateA.localeCompare(dateB);
-    })
-    .slice(0, 4);
+    });
+
+  const nextSession = upcomingSessions[0] || null;
   const completedSessions = sessions.filter(s => s.status === SESSION_STATUS.DONE).length;
   const gradedCount = grades.filter(g => g.status === "graded").length;
   const avgScore = gradedCount > 0
     ? Math.round(grades.filter(g => g.score).reduce((s, g) => s + (g.score || 0), 0) / gradedCount)
     : 0;
 
-  const groupedCourses = useMemo(() => {
-    const map = new Map<string, PublicCourse[]>();
-    for (const c of publicCourses) {
-      const cat = detectCategory(c);
-      const existing = map.get(cat) ?? [];
-      existing.push(c);
-      map.set(cat, existing);
+  // Latest mock band calculation
+  const latestMock = mockSubmissions[0] || null;
+  const latestOverallBand = (() => {
+    if (!latestMock?.scores) return null;
+    if (latestMock.scores.summary?.overall_band != null) return latestMock.scores.summary.overall_band;
+    const bands = [
+      latestMock.scores.listening?.band,
+      latestMock.scores.reading?.band,
+      latestMock.scores.writing?.band,
+      latestMock.scores.speaking?.band,
+    ].filter((b): b is number => typeof b === "number" && b > 0);
+    if (bands.length === 0) return null;
+    return Math.round((bands.reduce((a, b) => a + b, 0) / bands.length) * 2) / 2;
+  })();
+
+  // Skills breakdown
+  const skillsMap = (() => {
+    let listeningBand: number | null = null;
+    let readingBand: number | null = null;
+    let writingBand: number | null = null;
+    let speakingBand: number | null = null;
+
+    for (const m of mockSubmissions) {
+      if (!m.scores) continue;
+      if (listeningBand === null && m.scores.listening?.band != null) listeningBand = m.scores.listening.band;
+      if (readingBand === null && m.scores.reading?.band != null) readingBand = m.scores.reading.band;
+      if (writingBand === null && m.scores.writing?.band != null) writingBand = m.scores.writing.band;
+      if (speakingBand === null && m.scores.speaking?.band != null) speakingBand = m.scores.speaking.band;
     }
-    return map;
-  }, [publicCourses]);
 
-  const categoryOrder = useMemo(() => {
-    const ordered = COURSE_CATEGORIES.filter((c) => (groupedCourses.get(c) ?? []).length > 0);
-    return ordered;
-  }, [groupedCourses]);
+    return {
+      listening: listeningBand ?? 6.5,
+      reading: readingBand ?? 6.5,
+      writing: writingBand ?? 6.0,
+      speaking: speakingBand ?? 6.0,
+      hasRealData: listeningBand !== null || readingBand !== null || writingBand !== null || speakingBand !== null,
+    };
+  })();
 
-  const orderedCourses = useMemo(() => {
-    return categoryOrder.flatMap((cat) => groupedCourses.get(cat) ?? []);
-  }, [categoryOrder, groupedCourses]);
+  const greeting = (() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Chào buổi sáng";
+    if (hour < 18) return "Chào buổi chiều";
+    return "Chào buổi tối";
+  })();
 
   if (loading) {
     return (
       <PageWrapper>
-        <div className="flex justify-center py-32">
-          <div className="w-10 h-10 border-4 border-slate-900 border-t-transparent rounded-full animate-spin" />
+        <div className="flex flex-col items-center justify-center py-32 space-y-4">
+          <div className="w-10 h-10 border-4 border-brand-600 border-t-transparent rounded-full animate-spin" />
+          <p className="text-xs font-bold text-slate-500">Đang đồng bộ dữ liệu học tập cá nhân hóa...</p>
         </div>
       </PageWrapper>
     );
   }
 
+  const targetBand = 7.0;
+  const currentBandDisplay = latestOverallBand ?? 6.5;
+  const bandProgressPct = Math.min(100, Math.round((currentBandDisplay / 9.0) * 100));
+
   return (
     <PageWrapper>
-      {/* 🚀 Welcome Hero Banner (Executive Warm-Light Style) */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-50 via-sky-50/20 to-slate-50 border border-slate-200/80 p-6 sm:p-8 shadow-sm mb-6">
-        {/* Soft elegant radial blur */}
-        <div className="absolute right-0 top-0 w-72 h-72 rounded-full bg-sky-500/5 blur-3xl pointer-events-none" />
-        <div className="absolute left-1/3 bottom-0 w-72 h-72 rounded-full bg-amber-500/5 blur-3xl pointer-events-none" />
-        
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-          <div className="space-y-2.5">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-sky-100/50 text-sky-700 border border-sky-200/30">
-              <Sparkles className="w-3.5 h-3.5 text-sky-600" />
-              Chương trình học thuật cá nhân hóa
-            </span>
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-slate-900">
-              Xin chào, {studentName || "Học viên"}!
-            </h1>
-            <p className="text-slate-600 text-xs sm:text-sm max-w-xl leading-relaxed font-semibold">
-              Chúc bạn một ngày học tập hiệu quả. Hãy cùng xem qua tiến trình học tập hôm nay để tiếp tục hành trình nâng cao band điểm IELTS của mình nhé!
-            </p>
-          </div>
-          
-          <div className="flex gap-5 bg-white border border-slate-200/60 rounded-2xl p-4 shrink-0 shadow-sm">
-            <div className="text-center min-w-16">
-              <p className="text-[9px] text-slate-400 uppercase tracking-widest font-extrabold">Buổi đã xong</p>
-              <p className="text-xl font-black text-sky-650 mt-0.5">{completedSessions}/{sessions.length || 0}</p>
-              <p className="text-[9px] text-slate-500 font-semibold mt-0.5">buổi học lớp</p>
+      {/* 🌟 Top Academic Hero Command Banner */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-900 via-brand-800 to-slate-900 text-white p-6 sm:p-8 shadow-xl shadow-brand-950/10 mb-8">
+        {/* Subtle Decorative Ambient Glows */}
+        <div className="absolute -top-24 -right-24 w-80 h-80 rounded-full bg-brand-500/20 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-24 -left-24 w-80 h-80 rounded-full bg-indigo-500/15 blur-3xl pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+          <div className="space-y-3 max-w-2xl">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-white/10 text-brand-200 backdrop-blur-md border border-white/15">
+              <Sparkles className="w-3.5 h-3.5 text-brand-300" />
+              <span>Lộ trình IELTS 7.0+ Chuẩn Cambridge</span>
             </div>
-            <div className="w-px bg-slate-200 self-stretch" />
-            <div className="text-center min-w-16">
-              <p className="text-[9px] text-slate-400 uppercase tracking-widest font-extrabold">Điểm TB</p>
-              <p className="text-xl font-black text-emerald-600 mt-0.5">{avgScore || "–"}</p>
-              <p className="text-[9px] text-slate-500 font-semibold mt-0.5">bài tập về nhà</p>
+
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-white">
+              {greeting}, {studentName || "Học viên"}! 👋
+            </h1>
+
+            <p className="text-slate-300 text-xs sm:text-sm leading-relaxed font-normal">
+              Duy trì thói quen luyện đề 30 phút mỗi ngày là chìa khóa đạt Target. Bạn đã sẵn sàng chinh phục mục tiêu hôm nay chưa?
+            </p>
+
+            {/* Action Buttons */}
+            <div className="flex flex-wrap items-center gap-3 pt-2">
+              <Link
+                href="/student/thi-thu"
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-brand-50 text-brand-900 text-xs font-extrabold shadow-md transition-all hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <Headphones className="w-4 h-4 text-brand-700" />
+                <span>Thi thử 4 kỹ năng AI</span>
+                <ArrowRight className="w-3.5 h-3.5 text-brand-700 ml-0.5" />
+              </Link>
+              <Link
+                href="/student/schedule"
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-bold border border-white/15 backdrop-blur-sm transition-all"
+              >
+                <Calendar className="w-4 h-4 text-slate-300" />
+                <span>Xem lịch học tuần này</span>
+              </Link>
+            </div>
+          </div>
+
+          {/* Right Bento Box: Target Band Milestone Roadmap */}
+          <div className="bg-white/10 border border-white/15 backdrop-blur-md rounded-2xl p-5 min-w-[280px] sm:min-w-[320px] shrink-0 space-y-4 shadow-inner">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Target className="w-4 h-4 text-amber-300" />
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-200">Mục tiêu IELTS</span>
+              </div>
+              <span className="px-2 py-0.5 rounded-md text-xs font-black bg-amber-400/20 text-amber-300 border border-amber-400/30">
+                Target {targetBand.toFixed(1)}
+              </span>
+            </div>
+
+            {/* Band Compare Widget */}
+            <div className="flex items-baseline justify-between pt-1">
+              <div>
+                <p className="text-[10px] uppercase font-bold text-slate-300 tracking-wider">Band hiện tại (ước tính)</p>
+                <p className="text-2xl font-black text-white mt-0.5">
+                  {latestOverallBand != null ? latestOverallBand.toFixed(1) : "6.5*"}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] uppercase font-bold text-slate-300 tracking-wider">Khoảng cách tới đích</p>
+                <p className="text-sm font-extrabold text-emerald-300 mt-0.5 flex items-center justify-end gap-1">
+                  <Flame className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                  <span>
+                    {latestOverallBand != null && latestOverallBand >= targetBand
+                      ? "Đã đạt mục tiêu!"
+                      : `Còn ${(targetBand - (latestOverallBand ?? 6.5)).toFixed(1)} Band`}
+                  </span>
+                </p>
+              </div>
+            </div>
+
+            {/* Target Milestone Progress Bar */}
+            <div className="space-y-1.5">
+              <div className="w-full h-2 rounded-full bg-white/20 overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-brand-400 via-amber-300 to-emerald-400 rounded-full transition-all duration-700"
+                  style={{ width: `${bandProgressPct}%` }}
+                />
+              </div>
+              <div className="flex justify-between text-[10px] font-bold text-slate-300">
+                <span>Band 5.0</span>
+                <span>Band 6.5</span>
+                <span className="text-amber-300 font-extrabold">Band 7.0 🎯</span>
+                <span>Band 9.0</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* 📊 Premium Stats Cards Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      {/* 📊 4 Core Academic Metric Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {[
           {
             title: "Khóa học đang học",
             value: classes.length,
+            unit: classes.length > 0 ? `${completedSessions}/${sessions.length || 0} buổi đã xong` : "Chưa đăng ký lớp",
             icon: GraduationCap,
-            iconColor: "text-sky-600",
-            iconBg: "bg-sky-50 border-sky-100",
-            label: "chương trình hoạt động",
+            iconColor: "text-brand-600",
+            iconBg: "bg-brand-50 border-brand-100",
+            link: "/student/my-courses",
           },
           {
-            title: "Buổi hoàn thành",
+            title: "Buổi học hoàn thành",
             value: completedSessions,
-            icon: CheckCircle,
+            unit: sessions.length > 0 ? `${Math.round((completedSessions / sessions.length) * 100)}% toàn khóa` : "Theo lộ trình",
+            icon: CheckCircle2,
             iconColor: "text-emerald-600",
             iconBg: "bg-emerald-50 border-emerald-100",
-            label: "buổi học trực tiếp",
+            link: "/student/schedule",
           },
           {
             title: "Điểm TB Bài tập",
-            value: avgScore || "–",
+            value: avgScore ? `${avgScore}/100` : "—",
+            unit: gradedCount > 0 ? `${gradedCount} bài đã chấm` : "Chưa có bài chấm",
             icon: TrendingUp,
-            iconColor: "text-sky-600",
-            iconBg: "bg-sky-50 border-sky-100",
-            label: "trên thang điểm 100",
+            iconColor: "text-blue-600",
+            iconBg: "bg-blue-50 border-blue-100",
+            link: "/student/exams",
           },
           {
-            title: "Bài tập đã chấm",
-            value: gradedCount,
-            icon: Award,
+            title: "IELTS Mock Test",
+            value: latestOverallBand != null ? `Band ${latestOverallBand.toFixed(1)}` : `${mockSubmissions.length} đề`,
+            unit: mockSubmissions.length > 0 ? `${mockSubmissions.length} lần thi gần nhất` : "Chưa làm bài thi",
+            icon: Trophy,
             iconColor: "text-amber-600",
             iconBg: "bg-amber-50 border-amber-100",
-            label: "bài đã đánh giá",
+            link: "/student/thi-thu",
           },
         ].map((item, idx) => {
           const Icon = item.icon;
           return (
-            <div
+            <Link
               key={idx}
-              className="group relative overflow-hidden rounded-2xl bg-white border border-slate-200/70 p-4 shadow-sm hover:shadow-md transition-all duration-300"
+              href={item.link}
+              className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs hover:border-brand-300 hover:shadow-md transition-all group block"
             >
-              <div className="flex items-start justify-between relative z-10">
-                <div className="flex-1 min-w-0">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">{item.title}</p>
-                  <p className="text-xl sm:text-2xl font-black text-slate-900 leading-none">{item.value}</p>
-                  <p className="text-[10px] text-slate-500 mt-2.5 font-bold flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                    {item.label}
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
+                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                    {item.title}
+                  </p>
+                  <p className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                    {item.value}
+                  </p>
+                  <p className="text-xs text-slate-500 font-medium flex items-center gap-1 group-hover:text-brand-600 transition-colors pt-1">
+                    <span>{item.unit}</span>
+                    <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
                   </p>
                 </div>
-                <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${item.iconBg}`}>
-                  <Icon className={`w-4 h-4 ${item.iconColor} group-hover:scale-105 transition-transform duration-300`} />
+                <div className={`w-11 h-11 rounded-xl flex items-center justify-center border shrink-0 ${item.iconBg}`}>
+                  <Icon className={`w-5 h-5 ${item.iconColor}`} />
                 </div>
               </div>
-            </div>
+            </Link>
           );
         })}
       </div>
 
-      {/* 📚 Student Learning Hub Sections */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        
-        {/* Left Column: My Courses (spanning 2 cols on wide screen) */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="relative overflow-hidden rounded-3xl bg-white border border-slate-200/70 p-5 shadow-sm">
-            <div className="flex items-center justify-between mb-5">
-              <div>
-                <h3 className="text-sm font-bold text-slate-900">Khóa Học Của Tôi</h3>
-                <p className="text-[11px] text-slate-500 mt-0.5">Danh sách các lớp học bạn đang tham gia trực tiếp</p>
-              </div>
-              <Link 
-                href="/student/my-courses" 
-                className="inline-flex items-center gap-1 text-[10px] text-brand-600 hover:text-brand-700 font-extrabold transition-all bg-brand-50 hover:bg-brand-100 px-3 py-1.5 rounded-xl border border-brand-100/50"
-              >
-                Xem tất cả
-                <ChevronRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
-            
-            <div className="space-y-3">
-              {classes.slice(0, 4).map(c => {
-                const progress = c.total_sessions > 0
-                  ? Math.min(100, (c.sessions_done / c.total_sessions) * 100) : 0;
-                return (
-                  <Link key={c.id} href={`/student/my-courses/${encodeURIComponent(c.id)}`} className="block">
-                    <div className="group relative flex items-center gap-4 p-3 rounded-2xl bg-slate-50/50 hover:bg-white border border-transparent hover:border-slate-200/60 shadow-[0_2px_8px_rgb(0,0,0,0.01)] hover:shadow-md transition-all duration-300 cursor-pointer">
-                      <div className="w-10 h-10 bg-sky-500/10 border border-sky-500/20 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform duration-300">
-                        <GraduationCap className="w-5 h-5 text-sky-600" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-brand-600 transition-colors truncate">{c.name}</p>
-                        <div className="flex items-center gap-3 mt-1.5">
-                          <div className="flex-1 bg-slate-200/70 rounded-full h-1.5 max-w-[200px] overflow-hidden">
-                            <div className="bg-gradient-to-r from-sky-400 to-sky-500 h-1.5 rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
-                          </div>
-                          <span className="text-[9px] font-bold text-slate-500">{c.sessions_done}/{c.total_sessions} buổi</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className="inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                          Đang học
-                        </span>
-                      </div>
-                    </div>
-                  </Link>
-                );
-              })}
-              {classes.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-10 text-center bg-slate-50/30 rounded-2xl border border-dashed border-slate-200">
-                  <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-2">
-                    <GraduationCap className="w-5 h-5" />
-                  </div>
-                  <p className="text-xs text-slate-400 font-semibold">Bạn chưa có khóa học trực tiếp nào</p>
-                  <Link href="/student/browse" className="text-[10px] text-brand-600 font-extrabold hover:underline mt-1">Khám phá khóa học ngay</Link>
-                </div>
-              )}
-            </div>
+      {/* 🎯 IELTS 4-Skills Mastery Radar Grid */}
+      <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-7 shadow-xs mb-8 space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-100">
+          <div>
+            <h2 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+              <span className="w-2 h-4 bg-brand-600 rounded-full" />
+              Năng lực 4 Kỹ năng IELTS (Target 7.0+)
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Đánh giá chi tiết từng kỹ năng dựa trên kết quả thi thử Cambridge và bài tập gần nhất.
+            </p>
           </div>
+          <Link
+            href="/student/thi-thu"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-brand-50 hover:bg-brand-100 text-brand-700 text-xs font-bold transition-colors shrink-0 self-start sm:self-auto"
+          >
+            <span>Thi thử đầy đủ 4 kỹ năng</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </Link>
         </div>
-        
-        {/* Right Column: AI Mock Test & Upcoming Session */}
-        <div className="space-y-6">
-          
-          {/* AI Mock Test premium card (Executive Light Amber Style) */}
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-50/70 via-white to-amber-50/30 p-5 text-slate-900 shadow-sm border border-amber-200/70">
-            <div className="absolute right-0 bottom-0 w-32 h-32 rounded-full bg-amber-200/10 blur-2xl" />
-            <div className="relative z-10 space-y-4">
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[8px] font-bold uppercase bg-amber-100 text-amber-800 border border-amber-200 tracking-wider">
-                Hỗ trợ học thuật nâng cao
-              </span>
-              <div>
-                <h4 className="text-sm font-extrabold text-slate-900 tracking-tight">Thi Thử IELTS 4 Kỹ Năng</h4>
-                <p className="text-[11px] text-slate-600 mt-1 leading-relaxed">
-                  Luyện tập với hệ thống thi thử mô phỏng sát đề thi thật, chấm điểm tự động tích hợp công nghệ trí tuệ nhân tạo (AI) độc quyền của Glocal.
-                </p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Listening */}
+          <div className="rounded-2xl border border-slate-200/80 bg-slate-50/50 p-4 space-y-3 hover:border-brand-300 hover:bg-white transition-all group">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                  <Headphones className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-bold text-slate-900">Listening</h3>
+                  <p className="text-[10px] text-slate-400">Section 1 - 4</p>
+                </div>
               </div>
-              <div className="pt-1">
-                <Link href="/student/thi-thu" className="inline-flex items-center justify-center w-full gap-1.5 rounded-xl bg-slate-900 hover:bg-slate-950 text-white text-xs font-bold py-2.5 shadow-sm transition-all duration-300">
-                  <Headphones className="w-3.5 h-3.5" />
-                  Bắt đầu làm bài thi
-                </Link>
+              <span className="px-2 py-0.5 rounded-lg text-xs font-black bg-indigo-100 text-indigo-800">
+                Band {skillsMap.listening.toFixed(1)}
+              </span>
+            </div>
+            <div className="space-y-1">
+              <div className="flex justify-between text-[10px] font-semibold text-slate-500">
+                <span>Mục tiêu 7.5</span>
+                <span>{(skillsMap.listening / 9.0 * 100).toFixed(0)}%</span>
+              </div>
+              <div className="w-full h-1.5 rounded-full bg-slate-200 overflow-hidden">
+                <div
+                  className="h-full bg-indigo-600 rounded-full"
+                  style={{ width: `${(skillsMap.listening / 9.0) * 100}%` }}
+                />
               </div>
             </div>
+            <Link
+              href="/student/thi-thu"
+              className="block text-center text-xs font-bold text-indigo-600 hover:text-indigo-800 pt-1 group-hover:underline"
+            >
+              Luyện đề Nghe →
+            </Link>
           </div>
-          
-          {/* Upcoming Session */}
-          <div className="relative overflow-hidden rounded-3xl bg-white border border-slate-200/70 p-5 shadow-sm">
-            <h3 className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest mb-3.5">Buổi học kế tiếp</h3>
-            {upcomingSessions.slice(0, 1).map(s => (
-              <div key={s.id} className="space-y-3.5">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 bg-sky-500/10 border-sky-500/20 rounded-xl flex items-center justify-center shrink-0">
-                    <BookOpen className="w-4 h-4 text-sky-600" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold text-slate-900 truncate">{s.class_name}</p>
-                    <p className="text-[10px] text-slate-500 font-semibold">Buổi #{s.session_no} · {s.topic || "–"}</p>
-                  </div>
+
+          {/* Reading */}
+          <div className="rounded-2xl border border-slate-200/80 bg-slate-50/50 p-4 space-y-3 hover:border-brand-300 hover:bg-white transition-all group">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center">
+                  <BookOpen className="w-4 h-4" />
                 </div>
-                <div className="bg-slate-50 rounded-2xl p-3 border border-slate-100 flex items-center justify-between text-xs">
-                  <div>
-                    <p className="text-[9px] text-slate-400 uppercase tracking-wider font-bold">Ngày học</p>
-                    <p className="font-bold text-slate-700 mt-0.5 text-[11px]">{s.session_date}</p>
-                  </div>
-                  <div className="w-px bg-slate-200 self-stretch" />
-                  <div className="text-right">
-                    <p className="text-[9px] text-slate-400 uppercase tracking-wider font-bold">Thời gian</p>
-                    <p className="font-bold text-brand-600 mt-0.5 text-[11px]">{s.session_time}</p>
-                  </div>
+                <div>
+                  <h3 className="text-xs font-bold text-slate-900">Reading</h3>
+                  <p className="text-[10px] text-slate-400">Passage 1 - 3</p>
                 </div>
               </div>
-            ))}
-            {upcomingSessions.length === 0 && (
-              <p className="text-xs text-slate-400 text-center py-6 font-semibold">Không có buổi học sắp tới</p>
-            )}
+              <span className="px-2 py-0.5 rounded-lg text-xs font-black bg-sky-100 text-sky-800">
+                Band {skillsMap.reading.toFixed(1)}
+              </span>
+            </div>
+            <div className="space-y-1">
+              <div className="flex justify-between text-[10px] font-semibold text-slate-500">
+                <span>Mục tiêu 7.5</span>
+                <span>{(skillsMap.reading / 9.0 * 100).toFixed(0)}%</span>
+              </div>
+              <div className="w-full h-1.5 rounded-full bg-slate-200 overflow-hidden">
+                <div
+                  className="h-full bg-sky-600 rounded-full"
+                  style={{ width: `${(skillsMap.reading / 9.0) * 100}%` }}
+                />
+              </div>
+            </div>
+            <Link
+              href="/student/thi-thu"
+              className="block text-center text-xs font-bold text-sky-600 hover:text-sky-800 pt-1 group-hover:underline"
+            >
+              Luyện đề Đọc →
+            </Link>
           </div>
-          
+
+          {/* Writing */}
+          <div className="rounded-2xl border border-slate-200/80 bg-slate-50/50 p-4 space-y-3 hover:border-brand-300 hover:bg-white transition-all group">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
+                  <PenTool className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-bold text-slate-900">Writing</h3>
+                  <p className="text-[10px] text-slate-400">Task 1 & Task 2</p>
+                </div>
+              </div>
+              <span className="px-2 py-0.5 rounded-lg text-xs font-black bg-purple-100 text-purple-800">
+                Band {skillsMap.writing.toFixed(1)}
+              </span>
+            </div>
+            <div className="space-y-1">
+              <div className="flex justify-between text-[10px] font-semibold text-slate-500">
+                <span>Mục tiêu 6.5</span>
+                <span>{(skillsMap.writing / 9.0 * 100).toFixed(0)}%</span>
+              </div>
+              <div className="w-full h-1.5 rounded-full bg-slate-200 overflow-hidden">
+                <div
+                  className="h-full bg-purple-600 rounded-full"
+                  style={{ width: `${(skillsMap.writing / 9.0) * 100}%` }}
+                />
+              </div>
+            </div>
+            <Link
+              href="/student/thi-thu"
+              className="block text-center text-xs font-bold text-purple-600 hover:text-purple-800 pt-1 group-hover:underline"
+            >
+              Luyện đề Viết →
+            </Link>
+          </div>
+
+          {/* Speaking */}
+          <div className="rounded-2xl border border-slate-200/80 bg-slate-50/50 p-4 space-y-3 hover:border-brand-300 hover:bg-white transition-all group">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                  <Mic className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-bold text-slate-900">Speaking</h3>
+                  <p className="text-[10px] text-slate-400">Part 1 - 3 (AI Audio)</p>
+                </div>
+              </div>
+              <span className="px-2 py-0.5 rounded-lg text-xs font-black bg-amber-100 text-amber-800">
+                Band {skillsMap.speaking.toFixed(1)}
+              </span>
+            </div>
+            <div className="space-y-1">
+              <div className="flex justify-between text-[10px] font-semibold text-slate-500">
+                <span>Mục tiêu 6.5</span>
+                <span>{(skillsMap.speaking / 9.0 * 100).toFixed(0)}%</span>
+              </div>
+              <div className="w-full h-1.5 rounded-full bg-slate-200 overflow-hidden">
+                <div
+                  className="h-full bg-amber-500 rounded-full"
+                  style={{ width: `${(skillsMap.speaking / 9.0) * 100}%` }}
+                />
+              </div>
+            </div>
+            <Link
+              href="/student/thi-thu"
+              className="block text-center text-xs font-bold text-amber-600 hover:text-amber-800 pt-1 group-hover:underline"
+            >
+              Luyện đề Nói AI →
+            </Link>
+          </div>
         </div>
       </div>
 
-      {/* Kết quả bài tập */}
-      {grades.filter(g => g.status === "graded").length > 0 && (
-        <div className="relative overflow-hidden rounded-3xl bg-white border border-slate-200/70 p-5 shadow-sm mb-6">
-          <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-4">Kết Quả Bài Tập Gần Đây</h3>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {grades.filter(g => g.status === "graded").slice(0, 4).map(g => (
-              <div key={g.id} className="bg-slate-50/50 border border-slate-100 hover:bg-white hover:border-slate-200 hover:shadow-sm rounded-2xl p-3.5 transition-all duration-300">
-                <p className="text-[9px] font-bold text-slate-400 uppercase truncate mb-1">{g.class_name}</p>
-                <p className="text-xs font-bold text-slate-800 truncate">{g.assignment_name}</p>
-                <div className="flex items-end justify-between mt-3">
-                  <span className="text-2xl font-black text-brand-600 leading-none">{g.grade}</span>
-                  <span className="text-[10px] font-bold text-slate-400">{g.score}/100</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* KHÁM PHÁ & HỖ TRỢ HỌC TẬP (Discovery & Public Landing content integrated) */}
-      <div className="mt-8 border-t border-slate-200/60 pt-6">
-        <div className="mb-5">
-          <h2 className="text-sm font-extrabold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-            <Sparkles className="w-4 h-4 text-brand-505" />
-            <span>Khám phá & Hỗ trợ học tập</span>
-          </h2>
-          <p className="text-xs text-slate-500 mt-0.5">Các chương trình đặc quyền và lộ trình hỗ trợ học viên từ Glocal</p>
-        </div>
-
-        {/* 1. IDP/BC Registration Support - Light Professional Style */}
-        <div className="relative overflow-hidden bg-gradient-to-br from-sky-50/40 via-slate-50 to-slate-50 border border-slate-200/80 rounded-3xl p-5 sm:p-6 mb-6 shadow-sm">
-          <h3 className="text-base font-extrabold tracking-tight relative z-10 leading-snug text-slate-900">
-            <span className="text-sky-600">{t.support}</span> {t.for_ielts_exam_registration}{" "}
-            <span className="text-slate-800 font-semibold">{t.with_idp_or_british_council}</span>
-          </h3>
+      {/* 📚 2-Column Academic Learning Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        {/* Left Column (2 Cols): Next Session & Active Courses & Mock Results */}
+        <div className="lg:col-span-2 space-y-8">
           
-          <div className="grid md:grid-cols-3 gap-4 mt-5 relative z-10">
-            {[
-              { title: t.convenient, text: t.conten01, icon: Sparkles, color: "text-sky-600", bg: "bg-sky-50/50 border-sky-100" },
-              { title: t.expense, text: t.conten02, icon: Banknote, color: "text-emerald-600", bg: "bg-emerald-50/50 border-emerald-100" },
-              { title: t.tam, text: t.conten03, icon: Heart, color: "text-rose-600", bg: "bg-rose-50/50 border-rose-100" }
-            ].map((card, cidx) => {
-              const CardIcon = card.icon;
-              return (
-                <div key={cidx} className="p-4 rounded-2xl bg-white border border-slate-200/60 hover:shadow-sm transition-all duration-300 flex flex-col items-center text-center">
-                  <div className={`w-8 h-8 mb-2 rounded-lg ${card.bg} flex items-center justify-center shrink-0`}>
-                    <CardIcon className={`w-4 h-4 ${card.color}`} />
-                  </div>
-                  <h4 className="font-extrabold text-xs text-slate-800 mb-1">{card.title}</h4>
-                  <p className="text-[10px] text-slate-500 leading-relaxed font-bold">{card.text}</p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* 2. Upcoming Events & Workshops - Styled with vertical glass accents */}
-        <div className="mb-6">
-          <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-3.5 flex items-center gap-1.5">
-            <span className="w-1 h-3 bg-brand-600 rounded" />
-            Sự kiện & Workshop sắp diễn ra
-          </h3>
-          <div className="grid gap-4 md:grid-cols-3">
-            {UPCOMING_EVENTS.map((event) => (
-              <div key={event.title} className="group relative overflow-hidden rounded-2xl bg-white border border-slate-200/60 p-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
-                <div className="absolute left-0 top-0 bottom-0 w-1 bg-brand-500 rounded-l-full group-hover:w-1.5 transition-all" />
-                <div className="pl-1.5">
-                  <span className="inline-flex items-center text-[9px] font-extrabold tracking-wider text-brand-600 uppercase bg-brand-50 px-2 py-0.5 rounded-full border border-brand-100">
-                    {event.mode}
-                  </span>
-                  <h4 className="mt-2 text-xs font-bold text-slate-900 leading-snug group-hover:text-brand-600 transition-colors line-clamp-1">{event.title}</h4>
-                  <p className="mt-1 text-[10px] font-semibold text-slate-500">{event.date}</p>
-                  <p className="mt-1.5 text-[11px] text-slate-400 leading-relaxed line-clamp-2">{event.note}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* 3. Discover Courses (CourseCardSlider) */}
-        {orderedCourses.length > 0 && (
-          <div className="mb-6 bg-white rounded-3xl border border-slate-200/60 p-5 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                <span className="w-1 h-3 bg-sky-600 rounded" />
-                Khóa học IELTS mới nhất
+          {/* 1. Next Upcoming Session Widget */}
+          <div className="bg-white rounded-3xl border border-slate-200/80 p-6 space-y-4 shadow-xs">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                <span className="w-2 h-4 bg-brand-600 rounded-full" />
+                Buổi học kế tiếp
               </h3>
+              <Link
+                href="/student/schedule"
+                className="text-xs font-bold text-brand-600 hover:text-brand-700 flex items-center gap-1 transition-colors"
+              >
+                Xem toàn bộ lịch học <ChevronRight className="w-3.5 h-3.5" />
+              </Link>
             </div>
-            <CourseCardSlider courses={orderedCourses} />
-          </div>
-        )}
 
-        {/* 4. Visa & Study Abroad support tabs */}
-        <div className="bg-white border border-slate-200/60 rounded-3xl p-5 mb-6 shadow-sm">
-          <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-1.5">
-            <span className="w-1 h-3 bg-sky-600 rounded" />
-            HÀNH TRÌNH ĐỊNH HƯỚNG & DU HỌC TRỌN GÓI
-          </h3>
-          
-          <div className="grid lg:grid-cols-5 gap-6 items-stretch">
-            {/* Left Content column: Tabs & custom list cards */}
-            <div className="lg:col-span-3 flex flex-col justify-between space-y-4">
-              <div>
-                <div className="inline-flex bg-slate-100 rounded-2xl p-1 border border-slate-200/30 mb-4 shadow-inner">
-                  {(
-                    [
-                      { id: "tab1" as TabKey, label: t.tab_study_abroad_consulting },
-                      { id: "tab2" as TabKey, label: t.tab_study_abroad_support },
-                      { id: "tab3" as TabKey, label: t.tab_doVisa },
-                    ] as const
-                  ).map((x) => (
-                    <button
-                      key={x.id}
-                      type="button"
-                      onClick={() => setTab(x.id)}
-                      className={`px-3 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider transition-all duration-200 cursor-pointer ${
-                        tab === x.id
-                          ? "bg-slate-900 text-white shadow-sm"
-                          : "text-slate-500 hover:text-slate-800 hover:bg-slate-200/50"
-                      }`}
+            {nextSession ? (
+              <div className="rounded-2xl border border-brand-200 bg-gradient-to-br from-brand-50/60 via-white to-brand-50/30 p-5 space-y-4 shadow-xs">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="space-y-1.5">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-xs font-black text-brand-700 bg-brand-100/90 px-3 py-1 rounded-full">
+                        {nextSession.session_date}
+                      </span>
+                      {nextSession.session_time && (
+                        <span className="text-xs font-semibold text-slate-600 flex items-center gap-1 bg-white border border-slate-200/80 px-2.5 py-1 rounded-full">
+                          <Clock className="w-3.5 h-3.5 text-slate-400" /> {nextSession.session_time}
+                        </span>
+                      )}
+                    </div>
+                    <h4 className="text-base font-extrabold text-slate-900 pt-1">
+                      {nextSession.topic || "Buổi học theo lịch trình lớp"}
+                    </h4>
+                    {nextSession.homework && (
+                      <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                        📝 Chuẩn bị: {nextSession.homework}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="shrink-0">
+                    <Link
+                      href="/student/schedule"
+                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-extrabold shadow-md shadow-brand-600/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
                     >
-                      {x.label}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="space-y-2.5">
-                  {tab === "tab1" && (
-                    <>
-                      <h4 className="text-xs font-extrabold text-slate-850 uppercase tracking-wide mb-1 flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5 text-sky-650" />
-                        {t.tab_study_abroad_consulting}
-                      </h4>
-                      {[t.content26, t.content27, t.content28].map((text, idx) => (
-                        <div key={idx} className="flex items-start gap-3 p-3 bg-slate-50 border border-slate-150/40 rounded-xl hover:bg-white hover:border-slate-250 transition-all duration-250">
-                          <div className="w-5 h-5 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0 mt-0.5">
-                            <Check className="w-3 h-3 text-emerald-600" />
-                          </div>
-                          <span className="text-[11px] font-bold text-slate-600 leading-relaxed">{text}</span>
-                        </div>
-                      ))}
-                    </>
-                  )}
-                  {tab === "tab2" && (
-                    <>
-                      <h4 className="text-xs font-extrabold text-slate-850 uppercase tracking-wide mb-1 flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5 text-sky-650" />
-                        {t.tab_study_abroad_support}
-                      </h4>
-                      {[t.content08, t.content09, t.content10].map((text, idx) => (
-                        <div key={idx} className="flex items-start gap-3 p-3 bg-slate-50 border border-slate-150/40 rounded-xl hover:bg-white hover:border-slate-250 transition-all duration-250">
-                          <div className="w-5 h-5 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0 mt-0.5">
-                            <Check className="w-3 h-3 text-emerald-600" />
-                          </div>
-                          <span className="text-[11px] font-bold text-slate-600 leading-relaxed">{text}</span>
-                        </div>
-                      ))}
-                    </>
-                  )}
-                  {tab === "tab3" && (
-                    <>
-                      <h4 className="text-xs font-extrabold text-slate-850 uppercase tracking-wide mb-1 flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5 text-sky-650" />
-                        {t.tab_doVisa}
-                      </h4>
-                      {[t.understand_visa_law, t.well_groomed_and_professional, t.canada_usa_australia_new_zealand].map((text, idx) => (
-                        <div key={idx} className="flex items-start gap-3 p-3 bg-slate-50 border border-slate-150/40 rounded-xl hover:bg-white hover:border-slate-250 transition-all duration-250">
-                          <div className="w-5 h-5 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0 mt-0.5">
-                            <Check className="w-3 h-3 text-emerald-600" />
-                          </div>
-                          <span className="text-[11px] font-bold text-slate-600 leading-relaxed">{text}</span>
-                        </div>
-                      ))}
-                    </>
-                  )}
+                      <span>Vào phòng học</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                  </div>
                 </div>
               </div>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center bg-slate-50/60 space-y-2">
+                <div className="w-10 h-10 rounded-full bg-brand-50 text-brand-600 flex items-center justify-center mx-auto">
+                  <Calendar className="w-5 h-5" />
+                </div>
+                <h4 className="text-xs font-bold text-slate-800">Không có lịch học trực tiếp hôm nay</h4>
+                <p className="text-[11px] text-slate-500 max-w-sm mx-auto font-medium">
+                  Hãy dành 30 phút luyện một đề Cambridge Listening hoặc Reading để duy trì phản xạ tiếng Anh nhé!
+                </p>
+                <Link
+                  href="/student/thi-thu"
+                  className="inline-block mt-2 px-4 py-2 rounded-xl bg-white border border-slate-200 text-xs font-bold text-brand-700 hover:bg-brand-50 transition-colors shadow-xs"
+                >
+                  Luyện đề Cambridge ngay
+                </Link>
+              </div>
+            )}
+          </div>
+
+          {/* 2. My Enrolled Classes Progress */}
+          <div className="bg-white rounded-3xl border border-slate-200/80 p-6 space-y-4 shadow-xs">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                <span className="w-2 h-4 bg-emerald-600 rounded-full" />
+                Khóa học đang tham gia
+              </h3>
+              <Link
+                href="/student/my-courses"
+                className="text-xs font-bold text-brand-600 hover:text-brand-700 flex items-center gap-1 transition-colors"
+              >
+                Quản lý lớp học ({classes.length}) <ChevronRight className="w-3.5 h-3.5" />
+              </Link>
             </div>
 
-            {/* Right Showcase column: Framed Canvas Image */}
-            <div className="lg:col-span-2 flex items-center">
-              <div className="relative w-full group overflow-hidden rounded-3xl border border-slate-200/50 bg-white p-2.5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-500">
-                <div className="relative aspect-[16/10] overflow-hidden rounded-2xl">
-                  <Image
-                    src="https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=600&q=80"
-                    alt="Mentor hỗ trợ lộ trình học và du học"
-                    fill
-                    className="object-cover object-center group-hover:scale-103 transition-transform duration-500"
-                    sizes="(max-width: 1024px) 100vw, 40vw"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/20 to-transparent pointer-events-none" />
-                </div>
+            {classes.length > 0 ? (
+              <div className="space-y-3.5">
+                {classes.map((c) => {
+                  const pct = c.total_sessions > 0 ? Math.round((c.sessions_done / c.total_sessions) * 100) : 0;
+                  return (
+                    <div
+                      key={c.id}
+                      className="rounded-2xl border border-slate-200/80 bg-white p-5 hover:border-brand-300 hover:shadow-sm transition-all space-y-3"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="space-y-1">
+                          <h4 className="text-sm font-extrabold text-slate-900 leading-snug">{c.name}</h4>
+                          {c.schedule && (
+                            <p className="text-xs text-slate-500 flex items-center gap-1.5 font-medium">
+                              <Calendar className="w-3.5 h-3.5 text-slate-400" /> {c.schedule}
+                            </p>
+                          )}
+                        </div>
+                        <Badge variant="success">Đang học</Badge>
+                      </div>
+
+                      {/* Progress Bar */}
+                      <div className="space-y-1.5 pt-1">
+                        <div className="flex items-center justify-between text-xs font-bold">
+                          <span className="text-slate-500">Tiến độ khóa học:</span>
+                          <span className="text-brand-700 font-extrabold">{c.sessions_done} / {c.total_sessions} buổi ({pct}%)</span>
+                        </div>
+                        <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-brand-600 to-emerald-500 rounded-full transition-all duration-500"
+                            style={{ width: `${Math.min(pct, 100)}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-slate-200 p-8 text-center bg-slate-50/50 space-y-2">
+                <GraduationCap className="w-9 h-9 text-slate-300 mx-auto" />
+                <h4 className="text-xs font-bold text-slate-700">Bạn chưa ghi danh vào lớp trực tiếp nào</h4>
+                <p className="text-[11px] text-slate-500 font-medium">
+                  Tham gia các khóa học IELTS online chất lượng cao để bắt đầu lộ trình ngay.
+                </p>
+                <Link
+                  href="/student/online-courses"
+                  className="inline-block mt-2 px-4 py-2 text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 rounded-xl transition-all shadow-xs"
+                >
+                  Khám phá khóa online
+                </Link>
+              </div>
+            )}
+          </div>
+
+          {/* 3. IELTS Mock Test Scorecard Snapshot */}
+          <div className="bg-white rounded-3xl border border-slate-200/80 p-6 space-y-4 shadow-xs">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                <span className="w-2 h-4 bg-amber-600 rounded-full" />
+                Kết quả thi thử Cambridge 4 kỹ năng gần nhất
+              </h3>
+              <Link
+                href="/student/thi-thu"
+                className="text-xs font-bold text-brand-600 hover:text-brand-700 flex items-center gap-1 transition-colors"
+              >
+                Vào phòng thi thử <ChevronRight className="w-3.5 h-3.5" />
+              </Link>
             </div>
+
+            {mockSubmissions.length > 0 ? (
+              <div className="space-y-3.5">
+                {mockSubmissions.map((sub) => {
+                  const sc = sub.scores || {};
+                  const overall = sc.summary?.overall_band != null
+                    ? sc.summary.overall_band
+                    : latestOverallBand;
+
+                  return (
+                    <div
+                      key={sub.id}
+                      className="rounded-2xl border border-slate-200/80 bg-gradient-to-br from-slate-50/40 via-white to-slate-50/20 p-5 space-y-3.5 shadow-xs hover:border-brand-200 transition-all"
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div>
+                          <h4 className="text-sm font-extrabold text-slate-900 leading-snug">
+                            {sub.exam?.title || "Cambridge IELTS Mock Test"}
+                          </h4>
+                          <p className="text-xs text-slate-400 mt-0.5 font-medium">
+                            Ngày nộp bài: {new Date(sub.created_at).toLocaleDateString("vi-VN")}
+                          </p>
+                        </div>
+                        {sub.is_released ? (
+                          <Badge variant="success">Đã có kết quả chính thức</Badge>
+                        ) : (
+                          <Badge variant="warning">Đang xử lý chấm điểm</Badge>
+                        )}
+                      </div>
+
+                      {/* 4-Skill Matrix Pill Bar */}
+                      <div className="flex flex-wrap items-center gap-2 pt-1">
+                        <div className="px-3.5 py-1.5 rounded-xl bg-brand-600 text-white font-black text-xs flex items-center gap-1.5 shadow-xs">
+                          <span className="text-[10px] font-semibold opacity-85 uppercase tracking-wider">Overall</span>
+                          <span>{overall != null ? overall.toFixed(1) : "—"}</span>
+                        </div>
+                        <div className="flex items-center gap-2 bg-slate-50 border border-slate-200/80 rounded-xl px-3 py-1 text-xs font-bold text-slate-600">
+                          <span>L: <strong className={sc.listening?.band != null ? "text-brand-700 font-extrabold" : "text-slate-400"}>{sc.listening?.band != null ? sc.listening.band.toFixed(1) : "—"}</strong></span>
+                          <span className="text-slate-300">|</span>
+                          <span>R: <strong className={sc.reading?.band != null ? "text-brand-700 font-extrabold" : "text-slate-400"}>{sc.reading?.band != null ? sc.reading.band.toFixed(1) : "—"}</strong></span>
+                          <span className="text-slate-300">|</span>
+                          <span>W: <strong className={sc.writing?.band != null ? "text-brand-700 font-extrabold" : "text-slate-400"}>{sc.writing?.band != null ? sc.writing.band.toFixed(1) : "—"}</strong></span>
+                          <span className="text-slate-300">|</span>
+                          <span>S: <strong className={sc.speaking?.band != null ? "text-brand-700 font-extrabold" : "text-slate-400"}>{sc.speaking?.band != null ? sc.speaking.band.toFixed(1) : "—"}</strong></span>
+                        </div>
+
+                        <Link
+                          href={`/student/thi-thu`}
+                          className="ml-auto text-xs font-extrabold text-brand-600 hover:text-brand-800 transition-colors"
+                        >
+                          Xem chi tiết & luyện tiếp →
+                        </Link>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-amber-200 bg-amber-50/20 p-8 text-center space-y-3">
+                <Trophy className="w-9 h-9 text-amber-500 mx-auto" />
+                <h4 className="text-xs font-bold text-slate-800">Bạn chưa tham gia bài thi thử nào</h4>
+                <p className="text-xs text-slate-600 max-w-sm mx-auto font-medium">
+                  Làm thử bài thi 4 kỹ năng chuẩn đề thi thật Cambridge để AI và giảng viên phân tích điểm mạnh, điểm yếu của bạn.
+                </p>
+                <Link
+                  href="/student/thi-thu"
+                  className="inline-block mt-2 px-5 py-2.5 rounded-xl bg-brand-600 text-white text-xs font-extrabold shadow-md shadow-brand-600/20 hover:bg-brand-700 transition-all"
+                >
+                  Bắt đầu bài thi thử ngay
+                </Link>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* 5. Client Testimonials & Partner logos */}
-        <div className="grid md:grid-cols-2 gap-6 mb-6">
-          {/* Left card: Testimonials with sleek animated feedback slide style */}
-          <div className="bg-white border border-slate-200/60 rounded-3xl p-5 shadow-sm flex flex-col justify-between min-h-[280px]">
-            <h3 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-1.5">
-              <span className="w-1 h-3 bg-brand-500 rounded" />
-              {t.feeling} {t.client}
+        {/* Right Column (1 Col): Homework & Quick Action Shortcuts */}
+        <div className="space-y-8">
+          
+          {/* 1. Homework / Assignments */}
+          <div className="bg-white rounded-3xl border border-slate-200/80 p-6 space-y-4 shadow-xs">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                <span className="w-2 h-4 bg-blue-600 rounded-full" />
+                Bài tập & Nhận xét
+              </h3>
+              <Link
+                href="/student/exams"
+                className="text-xs font-bold text-brand-600 hover:text-brand-700 flex items-center gap-1 transition-colors"
+              >
+                Tất cả ({grades.length}) <ChevronRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+
+            {grades.length > 0 ? (
+              <div className="space-y-3">
+                {grades.map((g) => (
+                  <div
+                    key={g.id}
+                    className="p-3.5 rounded-2xl border border-slate-100 bg-slate-50/60 hover:bg-white hover:border-slate-200 hover:shadow-xs transition-all space-y-2"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-xs font-bold text-slate-900 line-clamp-1">{g.assignment_name}</p>
+                      {g.status === "graded" ? (
+                        <span className="text-xs font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md shrink-0 border border-emerald-100">
+                          {g.score}/100
+                        </span>
+                      ) : (
+                        <Badge variant="warning">Chờ chấm</Badge>
+                      )}
+                    </div>
+                    {g.feedback && (
+                      <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed italic bg-white/80 p-2 rounded-xl border border-slate-100">
+                        "{g.feedback}"
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center bg-slate-50/50 space-y-1.5">
+                <CheckCircle2 className="w-7 h-7 text-emerald-500 mx-auto" />
+                <p className="text-xs font-bold text-slate-700">Tất cả bài tập đã hoàn thành!</p>
+                <p className="text-[11px] text-slate-400">Bạn đang duy trì tiến độ học rất tốt.</p>
+              </div>
+            )}
+          </div>
+
+          {/* 2. Quick Navigation Shortcuts */}
+          <div className="bg-white rounded-3xl border border-slate-200/80 p-6 space-y-4 shadow-xs">
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+              <span className="w-2 h-4 bg-indigo-600 rounded-full" />
+              Lối tắt học tập
             </h3>
-            <div className="space-y-3.5 my-auto">
-              {CLIENT_FEEDBACKS.slice(0, 2).map((item, fidx) => (
-                <div key={fidx} className="p-3.5 bg-slate-50/50 border border-slate-100 hover:bg-white hover:border-slate-200 rounded-2xl transition-all duration-300 shadow-sm relative group">
-                  <div className="flex items-center gap-1 mb-2">
-                    {[...Array(5)].map((_, i) => (
-                      <Sparkles key={i} className="w-2.5 h-2.5 text-amber-500 fill-amber-500" />
-                    ))}
-                  </div>
-                  <p className="text-slate-600 text-xs italic leading-relaxed">
-                    {"“"}{item.quote}{"”"}
-                  </p>
-                  <div className="flex items-center justify-between mt-3 border-t border-slate-150/40 pt-2">
-                    <span className="text-[11px] font-extrabold text-slate-800">{item.name}</span>
-                    <span className="text-[9px] font-extrabold text-brand-600 bg-brand-50 px-2 py-0.5 rounded-full border border-brand-100/50">
-                      Mục tiêu: {item.target}
-                    </span>
-                  </div>
+            
+            <div className="space-y-2.5">
+              <Link
+                href="/student/thi-thu"
+                className="flex items-center gap-3 p-3.5 rounded-2xl border border-brand-100 bg-brand-50/40 hover:bg-brand-50 hover:border-brand-200 transition-all text-slate-800 font-bold text-xs group"
+              >
+                <div className="w-9 h-9 rounded-xl bg-brand-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                  <Headphones className="w-4 h-4" />
                 </div>
-              ))}
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-extrabold text-slate-900 group-hover:text-brand-700 transition-colors">Thi thử 4 kỹ năng</p>
+                  <p className="text-[10px] text-slate-500 font-medium">Chấm AI tức thì L, R, W, S</p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-brand-600 shrink-0" />
+              </Link>
+
+              <Link
+                href="/student/schedule"
+                className="flex items-center gap-3 p-3.5 rounded-2xl border border-slate-200/80 bg-white hover:border-brand-200 hover:shadow-xs transition-all text-slate-800 font-bold text-xs group"
+              >
+                <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                  <Calendar className="w-4 h-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-extrabold text-slate-900 group-hover:text-brand-700 transition-colors">Lịch học tuần này</p>
+                  <p className="text-[10px] text-slate-500 font-medium">Theo dõi các buổi học trực tiếp</p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-brand-600 shrink-0" />
+              </Link>
+
+              <Link
+                href="/student/my-online-courses"
+                className="flex items-center gap-3 p-3.5 rounded-2xl border border-slate-200/80 bg-white hover:border-brand-200 hover:shadow-xs transition-all text-slate-800 font-bold text-xs group"
+              >
+                <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                  <BookOpen className="w-4 h-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-extrabold text-slate-900 group-hover:text-brand-700 transition-colors">Khóa học online đã mua</p>
+                  <p className="text-[10px] text-slate-500 font-medium">Video & bài giảng trực tuyến</p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-brand-600 shrink-0" />
+              </Link>
+
+              <Link
+                href="/student/certificates"
+                className="flex items-center gap-3 p-3.5 rounded-2xl border border-slate-200/80 bg-white hover:border-brand-200 hover:shadow-xs transition-all text-slate-800 font-bold text-xs group"
+              >
+                <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                  <Award className="w-4 h-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-extrabold text-slate-900 group-hover:text-brand-700 transition-colors">Chứng chỉ của tôi</p>
+                  <p className="text-[10px] text-slate-500 font-medium">Hồ sơ hoàn thành khóa học</p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-brand-600 shrink-0" />
+              </Link>
             </div>
           </div>
 
-          {/* Right card: Partner logos with beautiful clean deck style */}
-          <div className="bg-white border border-slate-200/60 rounded-3xl p-5 shadow-sm flex flex-col justify-between min-h-[280px]">
-            <h3 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-1.5">
-              <span className="w-1 h-3 bg-sky-500 rounded" />
-              {t.partner}
-            </h3>
-            <div className="grid grid-cols-3 gap-3 my-auto">
-              {PARTNER_LOGOS.slice(0, 6).map((src, idx) => (
-                <div key={src} className="group/logo relative p-2 border border-slate-200/50 rounded-2xl flex items-center justify-center bg-white aspect-[3/2] shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-300">
-                  <Image
-                    src={src}
-                    alt={`Đối tác ${idx + 1}`}
-                    fill
-                    sizes="120px"
-                    className="object-contain p-2 group-hover/logo:scale-105 transition-transform duration-300"
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
       </div>
     </PageWrapper>

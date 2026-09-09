@@ -1,9 +1,10 @@
 "use client";
 
-import { Menu, X } from "lucide-react";
+import { Menu, X, ArrowRight, User as UserIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState, type MouseEvent } from "react";
+import { createBrowserClient } from "@/lib/supabase/client";
 
 function useRouteHash() {
   const pathname = usePathname();
@@ -41,6 +42,7 @@ export default function PublicSiteHeader() {
   const onHomeClick = useClearHomeHash(syncHash);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [user, setUser] = useState<{ name?: string; role?: string; email?: string } | null>(null);
   const closeMobileMenu = useCallback(() => setMobileOpen(false), []);
 
   useEffect(() => {
@@ -49,16 +51,38 @@ export default function PublicSiteHeader() {
     return () => window.removeEventListener("scroll", handler);
   }, []);
 
+  // Check client auth state
+  useEffect(() => {
+    async function checkAuth() {
+      try {
+        const supabase = createBrowserClient();
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          const meta = session.user.user_metadata || {};
+          setUser({
+            name: meta.full_name || session.user.email?.split("@")[0] || "Học viên",
+            role: meta.role || "student",
+            email: session.user.email,
+          });
+        }
+      } catch {
+        // Guest mode
+      }
+    }
+    checkAuth();
+  }, []);
+
   const onHome = pathname === "/";
-  const consultActive = pathname === "/consult";
   const coursesActive = pathname === "/courses" || pathname.startsWith("/courses/");
   const thiThuActive = pathname === "/thi-thu" || pathname.startsWith("/thi-thu/");
+  const consultActive = pathname === "/consult";
 
   const navItems = [
-    { href: "/", label: "Home", active: onHome },
-    { href: "/courses", label: "Courses", active: coursesActive },
-    { href: "/thi-thu", label: "Mock Tests", active: thiThuActive },
-    { href: "/consult", label: "Consult", active: consultActive },
+    { href: "/", label: "Trang chủ", active: onHome },
+    { href: "/courses", label: "Khóa học IELTS", active: coursesActive },
+    { href: "/thi-thu", label: "Thi thử trực tuyến", active: thiThuActive },
+    { href: "/login", label: "Cổng học tập", active: pathname === "/login" },
+    { href: "/consult", label: "Tư vấn lộ trình", active: consultActive },
   ];
 
   const onHomeMobileClick = useCallback((e: MouseEvent<HTMLAnchorElement>) => {
@@ -66,101 +90,152 @@ export default function PublicSiteHeader() {
     closeMobileMenu();
   }, [onHomeClick, closeMobileMenu]);
 
+  const dashboardUrl = user?.role === "admin" 
+    ? "/admin/dashboard" 
+    : user?.role === "teacher" 
+    ? "/teacher/dashboard" 
+    : "/student/dashboard";
+
   return (
     <header
-      className="sticky top-0 z-50 transition-all duration-300"
+      className="sticky top-0 z-50 transition-all duration-200 border-b"
       style={{
+        height: "56px",
         background: scrolled
-          ? "rgba(237,232,255,0.8)"
-          : "rgba(237,232,255,0.45)",
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
-        borderBottom: scrolled ? "1px solid rgba(199,183,255,0.3)" : "1px solid transparent",
-        boxShadow: scrolled ? "0 1px 24px rgba(91,91,214,0.06)" : "none",
+          ? "rgba(255, 255, 255, 0.96)"
+          : "rgba(255, 255, 255, 0.88)",
+        backdropFilter: "blur(16px)",
+        WebkitBackdropFilter: "blur(16px)",
+        borderColor: scrolled ? "rgba(226, 232, 240, 0.9)" : "rgba(226, 232, 240, 0.7)",
+        boxShadow: scrolled ? "0 4px 20px -2px rgba(0, 0, 0, 0.04)" : "none",
       }}
     >
-      <div className="max-w-6xl mx-auto px-5 lg:px-8 min-h-[68px] flex items-center justify-between gap-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between gap-4">
 
-        {/* Logo */}
-        <Link href="/" onClick={onHomeClick} className="flex items-center gap-2.5 shrink-0">
-          <img src="/logo/logo-ag.svg" alt="AG" className="w-9 h-9 object-contain" />
-          <img src="/logo/logo-gi.svg" alt="Glocal IELTS" className="w-9 h-9 object-contain" />
-          <span className="text-[15px] font-bold text-gray-900 tracking-tight hidden sm:block">Glocal IELTS</span>
-        </Link>
-
-        {/* Desktop Nav */}
-        <nav className="hidden lg:flex items-center gap-1">
-          {navItems.map(item => (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={item.href === "/" ? onHomeClick : undefined}
-              className="relative px-4 py-2 text-[0.9rem] font-medium rounded-xl transition-all duration-200"
-              style={{
-                color: item.active ? "#5B5BD6" : "#6B7280",
-                background: item.active ? "rgba(91,91,214,0.08)" : "transparent",
-              }}
-            >
-              {item.label}
-              {item.active && (
-                <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-5 h-0.5 rounded-full" style={{ background: "#5B5BD6" }} />
-              )}
-            </Link>
-          ))}
-        </nav>
-
-        {/* Desktop CTAs */}
-        <div className="hidden lg:flex items-center gap-2.5 shrink-0">
-          <Link href="/login" className="px-5 py-2.5 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors rounded-xl hover:bg-gray-100/70">
-            Sign in
+        {/* Left: Identical branding to Header.tsx */}
+        <div className="flex items-center gap-3 shrink-0">
+          <Link href="/" onClick={onHomeClick} className="flex items-center gap-1.5 shrink-0 group">
+            <img src="/logo/logo-ag.svg" alt="AG" className="h-6 w-6 object-contain" />
+            <img src="/logo/logo-gi.svg" alt="Glocal IELTS" className="h-6 w-6 object-contain" />
+            <div className="min-w-0">
+              <p className="text-xs font-bold text-slate-900 leading-none truncate">Glocal IELTS</p>
+              <p className="text-[9px] font-medium text-slate-400 leading-none mt-0.5 truncate">Amazing Group</p>
+            </div>
           </Link>
-          <Link
-            href="/register"
-            className="px-5 py-2.5 text-sm font-semibold text-white rounded-xl transition-all duration-200 hover:opacity-90 hover:shadow-lg hover:shadow-brand-500/20"
-            style={{ background: "linear-gradient(135deg, #5B5BD6 0%, #7C6CFF 100%)" }}
-          >
-            Get Started
-          </Link>
+
+          {/* Divider */}
+          <div className="w-px h-5 bg-slate-200 mx-1 hidden md:block shrink-0" />
+
+          {/* Desktop Nav */}
+          <nav className="hidden md:flex items-center gap-1">
+            {navItems.map(item => (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={item.href === "/" ? onHomeClick : undefined}
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all duration-150 ${
+                  item.active 
+                    ? "text-brand-700 bg-brand-50" 
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/70"
+                }`}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
         </div>
 
-        {/* Mobile menu toggle */}
-        <button
-          type="button"
-          onClick={() => setMobileOpen(v => !v)}
-          className="lg:hidden flex items-center justify-center w-10 h-10 rounded-xl border border-gray-200 bg-white/80 text-gray-700"
-        >
-          {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-        </button>
+        {/* Right Actions */}
+        <div className="flex items-center gap-2 shrink-0">
+          {user ? (
+            /* Logged in view */
+            <Link
+              href={dashboardUrl}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-brand-50 border border-brand-200/80 text-brand-700 hover:bg-brand-100 hover:border-brand-300 transition-all text-xs font-bold shadow-2xs"
+            >
+              <div className="w-5 h-5 rounded-full bg-brand-600 text-white flex items-center justify-center text-[10px] font-bold">
+                {user.name?.[0]?.toUpperCase() || <UserIcon className="w-3 h-3" />}
+              </div>
+              <span className="hidden sm:inline max-w-[120px] truncate">{user.name}</span>
+              <span className="text-[11px] font-semibold text-brand-600 hidden sm:inline">• Bảng điều khiển</span>
+              <ArrowRight className="w-3.5 h-3.5 text-brand-600" />
+            </Link>
+          ) : (
+            /* Guest view: Synchronized with dashboard aesthetics */
+            <div className="flex items-center gap-2">
+              <Link
+                href="/login"
+                className="px-3.5 py-1.5 text-xs font-bold text-slate-700 hover:text-slate-900 rounded-lg hover:bg-slate-100/80 transition-colors"
+              >
+                Đăng nhập
+              </Link>
+              <Link
+                href="/register"
+                className="px-3.5 py-1.5 text-xs font-bold text-white rounded-lg bg-brand-600 hover:bg-brand-700 transition-all duration-150 shadow-xs hover:shadow-sm"
+              >
+                Bắt đầu ngay
+              </Link>
+            </div>
+          )}
+
+          {/* Mobile menu toggle */}
+          <button
+            type="button"
+            onClick={() => setMobileOpen(v => !v)}
+            aria-label="Toggle menu"
+            className="md:hidden flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+          >
+            {mobileOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+          </button>
+        </div>
       </div>
 
-      {/* Mobile Menu */}
+      {/* Mobile Menu Dropdown */}
       {mobileOpen && (
-        <div className="lg:hidden border-t border-gray-100 bg-white/95 backdrop-blur-xl px-4 pb-5 pt-3">
+        <div className="md:hidden border-b border-slate-200/80 bg-white/98 backdrop-blur-xl px-4 py-3 shadow-lg animate-[var(--animate-fade-in)]">
           <div className="space-y-1">
             {navItems.map(item => (
               <Link
                 key={item.href}
                 href={item.href}
                 onClick={item.href === "/" ? onHomeMobileClick : closeMobileMenu}
-                className="flex items-center px-4 py-3 rounded-xl text-sm font-medium transition-colors"
-                style={{ color: item.active ? "#5B5BD6" : "#374151", background: item.active ? "rgba(91,91,214,0.06)" : "transparent" }}
+                className={`block px-3 py-2 text-xs font-semibold rounded-lg ${
+                  item.active ? "text-brand-700 bg-brand-50 font-bold" : "text-slate-700 hover:bg-slate-50"
+                }`}
               >
                 {item.label}
               </Link>
             ))}
           </div>
-          <div className="mt-4 flex gap-2">
-            <Link href="/login" onClick={closeMobileMenu} className="flex-1 text-center px-4 py-2.5 text-sm font-medium text-gray-700 border border-gray-200 rounded-xl hover:bg-gray-50">
-              Sign in
-            </Link>
-            <Link
-              href="/register"
-              onClick={closeMobileMenu}
-              className="flex-1 text-center px-4 py-2.5 text-sm font-semibold text-white rounded-xl"
-              style={{ background: "linear-gradient(135deg, #5B5BD6 0%, #7C6CFF 100%)" }}
-            >
-              Get Started
-            </Link>
+
+          <div className="pt-3 border-t border-slate-100 mt-2 flex flex-col gap-2">
+            {user ? (
+              <Link
+                href={dashboardUrl}
+                onClick={closeMobileMenu}
+                className="flex items-center justify-center gap-2 py-2 text-xs font-bold text-white bg-brand-600 rounded-lg shadow-xs"
+              >
+                Vào bảng điều khiển ({user.name})
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            ) : (
+              <div className="flex gap-2">
+                <Link
+                  href="/login"
+                  onClick={closeMobileMenu}
+                  className="flex-1 text-center py-2 text-xs font-bold text-slate-700 border border-slate-200 rounded-lg hover:bg-slate-50"
+                >
+                  Đăng nhập
+                </Link>
+                <Link
+                  href="/register"
+                  onClick={closeMobileMenu}
+                  className="flex-1 text-center py-2 text-xs font-bold text-white bg-brand-600 rounded-lg shadow-xs hover:bg-brand-700"
+                >
+                  Bắt đầu ngay
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       )}

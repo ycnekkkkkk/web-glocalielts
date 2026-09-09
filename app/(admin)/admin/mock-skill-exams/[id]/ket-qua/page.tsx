@@ -7,7 +7,31 @@ import { Card } from "@/components/ui/Card";
 import { createBrowserClient } from "@/lib/supabase/client";
 import type { MockSkillExamDef, MockSkillSubmission } from "@/types";
 import BackButton from "@/components/ui/BackButton";
-import { Bot, CheckCircle2, ChevronDown, ChevronUp, FolderOpen, Loader2, Trash2, X } from "lucide-react";
+import { 
+  AlertCircle,
+  Award,
+  Bot, 
+  Check, 
+  BookOpen,
+  CheckCircle2, 
+  ChevronDown, 
+  ChevronUp, 
+  Copy, 
+  ExternalLink, 
+  FileText, 
+  FolderOpen, 
+  Headphones,
+  HelpCircle, 
+  Loader2, 
+  Mic,
+  PenTool,
+  Search, 
+  Sparkles, 
+  Trash2, 
+  User,
+  X, 
+  XCircle 
+} from "lucide-react";
 import { use, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { rawScoreToBand } from "@/lib/mock-skill/band-mapping";
@@ -52,6 +76,32 @@ const STATUS_CONFIG: Record<string, { label: string; variant: "success" | "warni
   failed:     { label: "Lỗi",         variant: "danger" },
 };
 
+export function getSubmissionDisplayStatus(sub: MockSkillSubmission): { label: string; variant: "success" | "warning" | "danger" | "gray" | "info" } {
+  const sc = (sub.scores || {}) as Scores;
+  const raw = (sub.answers_raw || {}) as AnswersRaw;
+  const hasWritingContent = Boolean(raw.writingText && raw.writingText.trim().length > 10);
+  const hasSpeakingContent = Boolean((raw.speakingAudios && raw.speakingAudios.length > 0) || raw.speakingDriveUrl);
+
+  if (sub.status === "failed") return { label: "Lỗi", variant: "danger" };
+  if (sub.status === "grading") return { label: "Đang chấm", variant: "info" };
+
+  const needWriting = hasWritingContent && !sc.writing;
+  const needSpeaking = hasSpeakingContent && !sc.speaking;
+
+  if (needWriting || needSpeaking) {
+    const missing: string[] = [];
+    if (needWriting) missing.push("Writing");
+    if (needSpeaking) missing.push("Speaking");
+    return { label: `Chờ chấm ${missing.join(" + ")}`, variant: "warning" };
+  }
+
+  if (sc.writing || sc.speaking || sc.listening || sc.reading) {
+    return { label: "Đã chấm đủ", variant: "success" };
+  }
+
+  return STATUS_CONFIG[sub.status] || { label: sub.status, variant: "gray" };
+}
+
 // ── Band pill ───────────────────────────────────────────────────
 function BandPill({ label, band }: { label: string; band?: number }) {
   if (!band) return <span className="text-gray-300 text-xs">{label}:—</span>;
@@ -65,247 +115,501 @@ function BandPill({ label, band }: { label: string; band?: number }) {
 function SkillAnswerReview({
   skill,
   items,
+  band,
+  correctCount,
+  totalCount,
   updatingId,
-  onToggle
+  onToggle,
 }: {
   skill: "listening" | "reading";
   items: Array<{ id: string; expected: string; actual: string; ok: boolean }>;
+  band?: number;
+  correctCount?: number;
+  totalCount?: number;
   updatingId: string | null;
   onToggle: (skill: "listening" | "reading", id: string) => void;
 }) {
-  if (!items || !items.length) return <p className="text-gray-400 text-sm">Không có dữ liệu đáp án.</p>;
-  return (
-    <div className="space-y-1.5 max-h-80 overflow-y-auto pr-1">
-      {items.map((x) => (
-        <div key={x.id} 
-             onClick={() => onToggle(skill, x.id)}
-             className={`flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 rounded-lg px-3 py-2 text-xs cursor-pointer transition-opacity border ${updatingId === x.id ? 'opacity-50' : 'hover:opacity-80'} ${x.ok ? "bg-emerald-50 border-emerald-100 hover:bg-emerald-100" : "bg-red-50 border-red-100 hover:bg-red-100"}`}>
-          
-          <div className="flex items-center gap-2 sm:w-16 shrink-0">
-            <input 
-              type="checkbox" 
-              checked={x.ok} 
-              readOnly
-              className="w-3.5 h-3.5 text-brand-600 rounded border-gray-300 focus:ring-brand-500 cursor-pointer"
-            />
-            <span className={`font-bold ${x.ok ? "text-emerald-700" : "text-red-700"}`}>
-              #{x.id}
-            </span>
-          </div>
+  const [filter, setFilter] = useState<"all" | "incorrect" | "correct">("all");
+  const [search, setSearch] = useState("");
 
-          <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-1.5 sm:gap-4">
-            <div className="flex items-start gap-1">
-              <span className="text-gray-500 shrink-0">HV:</span>
-              <span className="text-gray-900 font-semibold break-all">{x.actual || "∅"}</span>
-            </div>
-            <div className="flex items-start gap-1">
-              <span className="text-gray-500 shrink-0">Key:</span>
-              <span className="text-brand-700 font-semibold break-all">{x.expected}</span>
-            </div>
+  if (!items || !items.length) {
+    return (
+      <div className="rounded-2xl border border-dashed border-gray-200 p-8 text-center bg-gray-50/50">
+        <p className="text-gray-400 text-sm">Chưa có dữ liệu câu trả lời cho phần thi này.</p>
+      </div>
+    );
+  }
+
+  const correct = correctCount ?? items.filter((x) => x.ok).length;
+  const total = totalCount ?? items.length;
+  const incorrect = total - correct;
+  const pct = Math.round((correct / (total || 1)) * 100);
+
+  const filtered = items.filter((x) => {
+    if (filter === "incorrect" && x.ok) return false;
+    if (filter === "correct" && !x.ok) return false;
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      const idMatches = x.id.toLowerCase().includes(q);
+      const actualMatches = (x.actual || "").toLowerCase().includes(q);
+      const expectedMatches = (x.expected || "").toLowerCase().includes(q);
+      if (!idMatches && !actualMatches && !expectedMatches) return false;
+    }
+    return true;
+  });
+
+  return (
+    <div className="space-y-4">
+      {/* Performance Scorecard */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 rounded-2xl bg-gradient-to-br from-gray-50 to-white border border-gray-200/80 shadow-xs">
+        {/* Band */}
+        <div className="flex items-center gap-3.5 border-b sm:border-b-0 sm:border-r border-gray-100 pb-3 sm:pb-0 sm:pr-4">
+          <div className="w-12 h-12 rounded-2xl bg-brand-600 text-white flex items-center justify-center font-black text-xl shadow-md shadow-brand-500/20 shrink-0">
+            {band != null ? band.toFixed(1) : "—"}
+          </div>
+          <div>
+            <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">IELTS Band</p>
+            <p className="text-sm font-extrabold text-gray-900 capitalize">{skill === "listening" ? "Listening Score" : "Reading Score"}</p>
           </div>
         </div>
-      ))}
+
+        {/* Accuracy Progress */}
+        <div className="flex flex-col justify-center border-b sm:border-b-0 sm:border-r border-gray-100 pb-3 sm:pb-0 sm:pr-4">
+          <div className="flex items-center justify-between text-xs font-bold mb-1.5">
+            <span className="text-gray-600">Độ chính xác:</span>
+            <span className="text-brand-700">{correct} / {total} câu ({pct}%)</span>
+          </div>
+          <div className="w-full h-2 rounded-full bg-gray-100 overflow-hidden">
+            <div className="h-full bg-gradient-to-r from-brand-500 to-emerald-500 rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+          </div>
+        </div>
+
+        {/* Metric Badges */}
+        <div className="flex items-center gap-2">
+          <div className="flex-1 rounded-xl bg-emerald-50 border border-emerald-100 p-2 text-center">
+            <p className="text-[11px] font-semibold text-emerald-600">Đúng</p>
+            <p className="text-base font-black text-emerald-700">{correct}</p>
+          </div>
+          <div className="flex-1 rounded-xl bg-rose-50 border border-rose-100 p-2 text-center">
+            <p className="text-[11px] font-semibold text-rose-600">Sai / Bỏ</p>
+            <p className="text-base font-black text-rose-700">{incorrect}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Filter and Search Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-2.5">
+        <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl">
+          <button
+            type="button"
+            onClick={() => setFilter("all")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              filter === "all" ? "bg-white text-gray-900 shadow-xs" : "text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            Tất cả ({total})
+          </button>
+          <button
+            type="button"
+            onClick={() => setFilter("incorrect")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              filter === "incorrect" ? "bg-rose-600 text-white shadow-xs" : "text-gray-500 hover:text-rose-600"
+            }`}
+          >
+            ❌ Câu sai ({incorrect})
+          </button>
+          <button
+            type="button"
+            onClick={() => setFilter("correct")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              filter === "correct" ? "bg-emerald-600 text-white shadow-xs" : "text-gray-500 hover:text-emerald-600"
+            }`}
+          >
+            ✅ Câu đúng ({correct})
+          </button>
+        </div>
+
+        <div className="relative">
+          <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            placeholder="Lọc câu, đáp án..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="text-xs pl-8 pr-3 py-1.5 rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 w-44"
+          />
+        </div>
+      </div>
+
+      <p className="text-[11px] text-gray-400 italic">
+        💡 Bạn có thể bấm vào thẻ câu bất kỳ bên dưới để đổi kết quả Đúng ↔ Sai nếu cần điều chỉnh điểm thủ công.
+      </p>
+
+      {/* Answers Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[400px] overflow-y-auto pr-1">
+        {filtered.map((x) => {
+          const cleanNumber = x.id.replace(/^[lr]/i, "");
+          return (
+            <div
+              key={x.id}
+              onClick={() => onToggle(skill, x.id)}
+              className={`group relative rounded-2xl p-3 border transition-all cursor-pointer select-none ${
+                updatingId === x.id ? "opacity-50 pointer-events-none" : ""
+              } ${
+                x.ok
+                  ? "bg-emerald-50/40 border-emerald-200 hover:bg-emerald-50 hover:border-emerald-300"
+                  : "bg-rose-50/40 border-rose-200 hover:bg-rose-50 hover:border-rose-300"
+              }`}
+            >
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`w-6 h-6 rounded-lg flex items-center justify-center font-black text-xs ${
+                      x.ok ? "bg-emerald-600 text-white" : "bg-rose-600 text-white"
+                    }`}
+                  >
+                    {cleanNumber || x.id}
+                  </span>
+                  <span className="text-xs font-bold text-gray-700">Câu #{cleanNumber || x.id}</span>
+                </div>
+                <span
+                  className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                    x.ok ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"
+                  }`}
+                >
+                  {x.ok ? "✓ ĐÚNG" : "✗ SAI"}
+                </span>
+              </div>
+
+              <div className="space-y-1.5 text-xs">
+                <div className="flex items-start justify-between bg-white/90 rounded-xl px-2.5 py-1.5 border border-gray-100">
+                  <span className="text-gray-400 text-[11px] shrink-0 font-medium">Học viên:</span>
+                  <span className={`font-bold ml-2 text-right break-all ${
+                    x.actual ? (x.ok ? "text-emerald-700 font-extrabold" : "text-rose-700") : "text-gray-400 italic font-normal"
+                  }`}>
+                    {x.actual ? x.actual : "∅ (Bỏ trống)"}
+                  </span>
+                </div>
+                <div className="flex items-start justify-between bg-white/90 rounded-xl px-2.5 py-1.5 border border-gray-100">
+                  <span className="text-gray-400 text-[11px] shrink-0 font-medium">Đáp án chuẩn:</span>
+                  <span className="font-bold text-brand-700 ml-2 text-right break-all">{x.expected}</span>
+                </div>
+              </div>
+
+              <div className="mt-2 text-center border-t border-dashed border-gray-200/50 pt-1.5">
+                <span className="text-[10px] text-gray-400 group-hover:text-brand-600 font-medium transition-colors">
+                  Bấm để chuyển thành: <strong className={x.ok ? "text-rose-600" : "text-emerald-600"}>{x.ok ? "Sai" : "Đúng"}</strong>
+                </span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      {filtered.length === 0 && (
+        <p className="text-center text-gray-400 text-xs py-8">Không tìm thấy câu hỏi nào phù hợp bộ lọc.</p>
+      )}
     </div>
   );
 }
 
 // ── AI Score Display ────────────────────────────────────────────
 function AIScoreDisplay({ skill, score }: { skill: "writing" | "speaking"; score?: AIScore }) {
+  const [copiedSample, setCopiedSample] = useState(false);
+
   if (!score) return null;
-  const criteriaLabels: Record<string, string> = {
-    task_achievement: "Task Achievement", coherence_cohesion: "Coherence & Cohesion",
-    lexical_resource: "Lexical Resource", grammatical_range_accuracy: "Grammar",
-    fluency_coherence: "Fluency & Coherence", pronunciation: "Pronunciation",
+
+  const criteriaLabels: Record<string, { label: string; desc: string }> = {
+    task_achievement: { label: "Task Achievement / Response", desc: "Mức độ hoàn thành đề bài & phát triển luận điểm" },
+    coherence_cohesion: { label: "Coherence & Cohesion", desc: "Tính liên kết, bố cục đoạn & logic lập luận" },
+    lexical_resource: { label: "Lexical Resource", desc: "Vốn từ vựng, độ phong phú & chính xác ngữ cảnh" },
+    grammatical_range_accuracy: { label: "Grammar Range & Accuracy", desc: "Độ đa dạng cấu trúc & độ chuẩn ngữ pháp" },
+    fluency_coherence: { label: "Fluency & Coherence", desc: "Độ trôi chảy, nhịp điệu & mạch lạc nói" },
+    pronunciation: { label: "Pronunciation", desc: "Phát âm, trọng âm, ngữ điệu & nối âm" },
   };
+
+  const band = score.band ?? 0;
+  const levelText = band >= 8 ? "Very Good User (C2)" : band >= 7 ? "Good User (C1)" : band >= 6 ? "Competent User (B2)" : band >= 5 ? "Modest User (B1)" : "Limited User";
+
+  function copySample() {
+    if (score?.feedback?.improved_sample) {
+      navigator.clipboard.writeText(score.feedback.improved_sample);
+      setCopiedSample(true);
+      toast.success("Đã sao chép bài viết mẫu!");
+      setTimeout(() => setCopiedSample(false), 2000);
+    }
+  }
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-3">
-        <span className="text-3xl font-black text-brand-700">{score.band?.toFixed(1) ?? "—"}</span>
-        <span className="text-sm font-semibold text-gray-500">Band Score</span>
+    <div className="space-y-5">
+      {/* Hero Band Banner */}
+      <div className="rounded-2xl bg-gradient-to-br from-brand-50/80 via-white to-brand-50/30 border border-brand-100 p-5 shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-600 to-brand-700 text-white flex flex-col items-center justify-center shadow-lg shadow-brand-600/20 shrink-0">
+              <span className="text-2xl font-black leading-none">{band ? band.toFixed(1) : "—"}</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider mt-0.5 opacity-80">Band</span>
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-base font-black text-gray-900 uppercase tracking-wide">
+                  {skill === "writing" ? "IELTS Writing" : "IELTS Speaking"}
+                </span>
+                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-brand-100 text-brand-800">
+                  {levelText}
+                </span>
+              </div>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Chấm điểm theo tiêu chuẩn chính thống Cambridge / IDP Band Descriptors
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* 4 Criteria Grid */}
+        {score.criteria && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-4 pt-4 border-t border-brand-100/60">
+            {Object.entries(score.criteria).map(([k, v]) => {
+              const info = criteriaLabels[k] || { label: k, desc: "" };
+              const val = Number(v) || 0;
+              const barWidth = Math.min(100, Math.round((val / 9) * 100));
+              return (
+                <div key={k} className="rounded-xl border border-gray-100 bg-white p-3 shadow-xs">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-xs font-bold text-gray-700 truncate" title={info.label}>{info.label}</p>
+                    <span className="text-sm font-black text-brand-700 shrink-0">{val.toFixed(1)}</span>
+                  </div>
+                  <div className="w-full h-1.5 rounded-full bg-gray-100 mt-2 overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-500 ${
+                        val >= 7 ? "bg-emerald-500" : val >= 6 ? "bg-blue-500" : val >= 5 ? "bg-amber-500" : "bg-rose-500"
+                      }`}
+                      style={{ width: `${barWidth}%` }}
+                    />
+                  </div>
+                  {info.desc && <p className="text-[10px] text-gray-400 mt-1 truncate">{info.desc}</p>}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      {score.criteria && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-          {Object.entries(score.criteria).map(([k, v]) => (
-            <div key={k} className="rounded-xl border border-gray-100 bg-gray-50/50 p-2.5 shadow-sm">
-              <p className="text-xs text-gray-500 font-medium truncate">{criteriaLabels[k] || k}</p>
-              <p className="text-lg font-black text-gray-800 mt-0.5">{Number(v).toFixed(1)}</p>
-            </div>
-          ))}
-        </div>
-      )}
-
+      {/* Strengths & Weaknesses */}
       {score.feedback && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {(score.feedback.strengths || []).length > 0 && (
-              <div className="rounded-xl border border-emerald-100 bg-emerald-50/20 p-4">
-                <p className="text-sm font-bold text-emerald-800 mb-2 flex items-center gap-1.5">✅ Điểm mạnh</p>
-                <ul className="space-y-1.5">
-                  {score.feedback.strengths!.map((s, i) => (
-                    <li key={i} className="text-xs text-gray-700 leading-relaxed">• {s}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {(score.feedback.weaknesses || []).length > 0 && (
-              <div className="rounded-xl border border-red-100 bg-red-50/20 p-4">
-                <p className="text-sm font-bold text-red-800 mb-2 flex items-center gap-1.5">⚠️ Cần cải thiện</p>
-                <ul className="space-y-1.5">
-                  {score.feedback.weaknesses!.map((w, i) => (
-                    <li key={i} className="text-xs text-gray-700 leading-relaxed">• {w}</li>
-                  ))}
-                </ul>
-              </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Strengths */}
+          <div className="rounded-2xl border border-emerald-200/70 bg-gradient-to-br from-emerald-50/40 to-white p-4 shadow-xs">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-bold">✓</span>
+              <h4 className="text-sm font-bold text-emerald-900">Điểm mạnh nổi bật</h4>
+            </div>
+            {(score.feedback.strengths || []).length > 0 ? (
+              <ul className="space-y-2">
+                {score.feedback.strengths!.map((s, i) => (
+                  <li key={i} className="text-xs text-gray-700 leading-relaxed flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
+                    <span>{s}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-xs text-gray-400 italic">Chưa ghi nhận điểm mạnh cụ thể.</p>
             )}
           </div>
 
-          {/* Detailed corrections: Grammar & Vocabulary for Writing */}
-          {skill === "writing" && (
-            <div className="space-y-4">
-              {/* Grammar Issues */}
-              {score.feedback.grammar_issues && score.feedback.grammar_issues.length > 0 && (
-                <div className="space-y-2.5">
-                  <h4 className="text-sm font-black text-gray-800 flex items-center gap-2">🔍 Chi tiết lỗi Ngữ pháp & Câu từ</h4>
-                  <div className="space-y-3">
-                    {(score.feedback.grammar_issues as any[]).map((item: any, i: number) => (
-                      <div key={i} className="rounded-xl border border-rose-100 bg-white p-3.5 shadow-sm space-y-2">
-                        <div className="flex items-start gap-2">
-                          <span className="text-xs font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded shrink-0">Bản gốc</span>
-                          <p className="text-xs text-gray-600 italic font-mono leading-relaxed break-words">{item.original}</p>
-                        </div>
-                        <div className="flex items-start gap-2 border-t border-dashed border-gray-100 pt-2">
-                          <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded shrink-0">Gợi ý sửa</span>
-                          <p className="text-xs text-emerald-700 font-bold leading-relaxed break-words">{item.suggestion}</p>
-                        </div>
-                        <div className="bg-gray-50 rounded-lg p-2.5 text-xs text-gray-600 leading-relaxed">
-                          <span className="font-bold text-gray-700 block mb-0.5">📖 Giải thích lỗi:</span>
-                          {item.explanation}
-                        </div>
-                        {item.example && (
-                          <div className="bg-blue-50/50 border border-blue-100/50 rounded-lg p-2.5 text-xs text-blue-800 leading-relaxed">
-                            <span className="font-bold block mb-0.5">💡 Ví dụ thực tế:</span>
-                            {item.example}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+          {/* Weaknesses */}
+          <div className="rounded-2xl border border-amber-200/70 bg-gradient-to-br from-amber-50/40 to-white p-4 shadow-xs">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="w-6 h-6 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center text-xs font-bold">⚠️</span>
+              <h4 className="text-sm font-bold text-amber-900">Điểm cần khắc phục</h4>
+            </div>
+            {(score.feedback.weaknesses || []).length > 0 ? (
+              <ul className="space-y-2">
+                {score.feedback.weaknesses!.map((w, i) => (
+                  <li key={i} className="text-xs text-gray-700 leading-relaxed flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 shrink-0" />
+                    <span>{w}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-xs text-gray-400 italic">Chưa ghi nhận điểm yếu.</p>
+            )}
+          </div>
+        </div>
+      )}
 
-              {/* Vocabulary Suggestions */}
-              {score.feedback.vocabulary_suggestions && score.feedback.vocabulary_suggestions.length > 0 && (
-                <div className="space-y-2.5">
-                  <h4 className="text-sm font-black text-gray-800 flex items-center gap-2">🚀 Gợi ý nâng cấp Từ vựng</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {(score.feedback.vocabulary_suggestions as any[]).map((item: any, i: number) => (
-                      <div key={i} className="rounded-xl border border-sky-100 bg-white p-3.5 shadow-sm space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded">Từ đã dùng</span>
-                          <span className="text-xs font-bold text-brand-700 bg-brand-50 px-2 py-0.5 rounded">Premium Alternatives</span>
-                        </div>
-                        <div className="flex items-center gap-2 justify-between">
-                          <p className="text-xs text-gray-500 font-mono italic">{item.original}</p>
-                          <p className="text-xs text-emerald-600 font-extrabold">{item.suggestion}</p>
-                        </div>
-                        <div className="bg-gray-50 rounded-lg p-2.5 text-xs text-gray-600 leading-relaxed">
-                          <span className="font-bold text-gray-700 block mb-0.5">💡 Giải thích & Cách dùng:</span>
-                          {item.explanation}
-                        </div>
-                        {item.example && (
-                          <div className="bg-blue-50/50 border border-blue-100/50 rounded-lg p-2.5 text-xs text-blue-800 leading-relaxed">
-                            <span className="font-bold block mb-0.5">💡 Ví dụ thực tế:</span>
-                            {item.example}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+      {/* Writing Specific: Grammar & Vocab */}
+      {skill === "writing" && score.feedback && (
+        <div className="space-y-4">
+          {/* Grammar Issues */}
+          {score.feedback.grammar_issues && score.feedback.grammar_issues.length > 0 && (
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-black text-gray-800 flex items-center gap-2">
+                  🔍 Chi tiết lỗi Ngữ pháp & Câu từ
+                </h4>
+                <span className="text-xs font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-100">
+                  {score.feedback.grammar_issues.length} lỗi cần sửa
+                </span>
+              </div>
 
-              {/* Improved Sample */}
-              {score.feedback.improved_sample && (
-                <div className="space-y-2.5 border-t border-gray-100 pt-4">
-                  <h4 className="text-sm font-black text-gray-800 flex items-center gap-2">✍️ Bài viết mẫu nâng Band hoàn chỉnh</h4>
-                  <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-xs text-gray-700 leading-relaxed font-mono whitespace-pre-wrap max-h-96 overflow-y-auto">
-                    {score.feedback.improved_sample}
+              <div className="space-y-3">
+                {(score.feedback.grammar_issues as any[]).map((item: any, i: number) => (
+                  <div key={i} className="rounded-2xl border border-rose-100 bg-white p-4 shadow-xs space-y-2.5">
+                    <div className="flex items-start gap-2">
+                      <span className="text-[11px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-md shrink-0">Bản gốc</span>
+                      <p className="text-xs text-rose-900 font-mono line-through leading-relaxed break-words">{item.original}</p>
+                    </div>
+                    <div className="flex items-start gap-2 border-t border-dashed border-gray-100 pt-2">
+                      <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md shrink-0">Gợi ý sửa</span>
+                      <p className="text-xs text-emerald-800 font-bold leading-relaxed break-words">{item.suggestion}</p>
+                    </div>
+                    <div className="bg-gray-50 rounded-xl p-2.5 text-xs text-gray-600 leading-relaxed">
+                      <span className="font-bold text-gray-700 block mb-0.5">📖 Giải thích:</span>
+                      {item.explanation}
+                    </div>
+                    {item.example && (
+                      <div className="bg-blue-50/60 border border-blue-100 rounded-xl p-2.5 text-xs text-blue-900 leading-relaxed">
+                        <span className="font-bold block mb-0.5">💡 Ví dụ áp dụng:</span>
+                        {item.example}
+                      </div>
+                    )}
                   </div>
-                </div>
-              )}
+                ))}
+              </div>
             </div>
           )}
 
-          {/* Detailed corrections: Pronunciation & Natural phrasing for Speaking */}
-          {skill === "speaking" && (
-            <div className="space-y-4">
-              {score.transcript && (
-                <div className="border-t border-gray-100 pt-3">
-                  <p className="text-xs font-semibold text-gray-600 mb-1.5">📝 Transcript</p>
-                  <p className="text-xs text-gray-600 whitespace-pre-wrap bg-gray-50 rounded-lg p-3 max-h-48 overflow-y-auto leading-relaxed">{score.transcript}</p>
-                </div>
-              )}
+          {/* Vocabulary Suggestions */}
+          {score.feedback.vocabulary_suggestions && score.feedback.vocabulary_suggestions.length > 0 && (
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-black text-gray-800 flex items-center gap-2">
+                  🚀 Gợi ý nâng cấp Từ vựng (Band 8.0+)
+                </h4>
+                <span className="text-xs font-bold text-brand-700 bg-brand-50 px-2 py-0.5 rounded-full border border-brand-100">
+                  {score.feedback.vocabulary_suggestions.length} từ nâng cấp
+                </span>
+              </div>
 
-              {/* Pronunciation Issues */}
-              {score.feedback.pronunciation_issues && score.feedback.pronunciation_issues.length > 0 && (
-                <div className="space-y-2.5">
-                  <h4 className="text-sm font-black text-gray-800 flex items-center gap-2">🗣️ Chi tiết lỗi Phát âm</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {(score.feedback.pronunciation_issues as any[]).map((item: any, i: number) => (
-                      <div key={i} className="rounded-xl border border-sky-100 bg-white p-3.5 shadow-sm space-y-2">
-                        <div className="flex items-center justify-between border-b border-gray-100 pb-1.5">
-                          <p className="text-xs font-bold text-red-600">{item.word}</p>
-                          <span className="text-xs font-bold text-sky-700 bg-sky-50 px-2 py-0.5 rounded font-mono">{item.correct_pronunciation}</span>
-                        </div>
-                        <div className="bg-gray-50 rounded-lg p-2.5 text-xs text-gray-600 leading-relaxed">
-                          <span className="font-bold text-gray-700 block mb-0.5">💡 Mẹo phát âm đúng:</span>
-                          {item.tip}
-                        </div>
-                        {item.example && (
-                          <div className="bg-blue-50/50 border border-blue-100/50 rounded-lg p-2.5 text-xs text-blue-800 leading-relaxed">
-                            <span className="font-bold block mb-0.5">💡 Từ tương tự:</span>
-                            {item.example}
-                          </div>
-                        )}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {(score.feedback.vocabulary_suggestions as any[]).map((item: any, i: number) => (
+                  <div key={i} className="rounded-2xl border border-sky-100 bg-white p-4 shadow-xs space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded">Từ hiện tại</span>
+                      <span className="text-[10px] font-bold text-brand-700 bg-brand-50 px-2 py-0.5 rounded">Nâng cấp</span>
+                    </div>
+                    <div className="flex items-center gap-2 justify-between">
+                      <p className="text-xs text-gray-500 font-mono italic">{item.original}</p>
+                      <p className="text-xs text-emerald-700 font-extrabold">{item.suggestion}</p>
+                    </div>
+                    <div className="bg-gray-50 rounded-xl p-2.5 text-xs text-gray-600 leading-relaxed">
+                      <span className="font-bold text-gray-700 block mb-0.5">💡 Hướng dẫn:</span>
+                      {item.explanation}
+                    </div>
+                    {item.example && (
+                      <div className="bg-blue-50/60 border border-blue-100 rounded-xl p-2.5 text-xs text-blue-900 leading-relaxed">
+                        <span className="font-bold block mb-0.5">💡 Ví dụ câu:</span>
+                        {item.example}
                       </div>
-                    ))}
+                    )}
                   </div>
-                </div>
-              )}
+                ))}
+              </div>
+            </div>
+          )}
 
-              {/* Natural suggestions */}
-              {score.feedback.natural_suggestions && score.feedback.natural_suggestions.length > 0 && (
-                <div className="space-y-2.5">
-                  <h4 className="text-sm font-black text-gray-800 flex items-center gap-2">💡 Đề xuất diễn đạt tự nhiên hơn</h4>
-                  <div className="space-y-3">
-                    {(score.feedback.natural_suggestions as any[]).map((item: any, i: number) => (
-                      <div key={i} className="rounded-xl border border-emerald-100 bg-white p-3.5 shadow-sm space-y-2">
-                        <div className="flex items-start gap-2">
-                          <span className="text-xs font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded shrink-0">Bạn nói</span>
-                          <p className="text-xs text-gray-600 italic font-mono leading-relaxed break-words">{item.original}</p>
-                        </div>
-                        <div className="flex items-start gap-2 border-t border-dashed border-gray-100 pt-2">
-                          <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded shrink-0">Native</span>
-                          <p className="text-xs text-emerald-700 font-bold leading-relaxed break-words">{item.improved}</p>
-                        </div>
-                        {item.explanation && (
-                          <div className="bg-gray-50 rounded-lg p-2.5 text-xs text-gray-600 leading-relaxed">
-                            <span className="font-bold text-gray-700 block mb-0.5">📖 Giải thích & Mẹo từ vựng:</span>
-                            {item.explanation}
-                          </div>
-                        )}
-                        {item.example && (
-                          <div className="bg-blue-50/50 border border-blue-100/50 rounded-lg p-2.5 text-xs text-blue-800 leading-relaxed">
-                            <span className="font-bold block mb-0.5">💡 Ví dụ thực tế:</span>
-                            {item.example}
-                          </div>
-                        )}
+          {/* Improved Sample */}
+          {score.feedback.improved_sample && (
+            <div className="space-y-2.5 border-t border-gray-100 pt-4">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-black text-gray-800 flex items-center gap-2">
+                  ✍️ Bài viết mẫu nâng Band hoàn chỉnh
+                </h4>
+                <Button size="sm" variant="outline" onClick={copySample} icon={<Copy className="w-3.5 h-3.5" />}>
+                  {copiedSample ? "Đã chép" : "Sao chép bài mẫu"}
+                </Button>
+              </div>
+              <div className="rounded-2xl border border-gray-200 bg-gradient-to-b from-gray-50 to-white p-4 text-xs text-gray-700 leading-relaxed font-serif whitespace-pre-wrap max-h-96 overflow-y-auto">
+                {score.feedback.improved_sample}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Speaking Specific */}
+      {skill === "speaking" && score.feedback && (
+        <div className="space-y-4">
+          {score.transcript && (
+            <div className="border-t border-gray-100 pt-3">
+              <p className="text-xs font-bold text-gray-700 mb-1.5 flex items-center gap-1.5">
+                <FileText className="w-3.5 h-3.5 text-gray-500" /> Bản gỡ băng âm thanh (Transcript)
+              </p>
+              <p className="text-xs text-gray-600 whitespace-pre-wrap bg-gray-50 rounded-xl p-3.5 max-h-48 overflow-y-auto leading-relaxed font-mono">
+                {score.transcript}
+              </p>
+            </div>
+          )}
+
+          {/* Pronunciation Issues */}
+          {score.feedback.pronunciation_issues && score.feedback.pronunciation_issues.length > 0 && (
+            <div className="space-y-2.5">
+              <h4 className="text-sm font-black text-gray-800 flex items-center gap-2">🗣️ Chi tiết lỗi Phát âm</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {(score.feedback.pronunciation_issues as any[]).map((item: any, i: number) => (
+                  <div key={i} className="rounded-2xl border border-sky-100 bg-white p-4 shadow-xs space-y-2">
+                    <div className="flex items-center justify-between border-b border-gray-100 pb-1.5">
+                      <p className="text-xs font-bold text-rose-600">{item.word}</p>
+                      <span className="text-xs font-bold text-sky-700 bg-sky-50 px-2 py-0.5 rounded font-mono">{item.correct_pronunciation}</span>
+                    </div>
+                    <div className="bg-gray-50 rounded-xl p-2.5 text-xs text-gray-600 leading-relaxed">
+                      <span className="font-bold text-gray-700 block mb-0.5">💡 Mẹo phát âm chuẩn:</span>
+                      {item.tip}
+                    </div>
+                    {item.example && (
+                      <div className="bg-blue-50/60 border border-blue-100 rounded-xl p-2.5 text-xs text-blue-900 leading-relaxed">
+                        <span className="font-bold block mb-0.5">💡 Từ tương tự:</span>
+                        {item.example}
                       </div>
-                    ))}
+                    )}
                   </div>
-                </div>
-              )}
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Natural suggestions */}
+          {score.feedback.natural_suggestions && score.feedback.natural_suggestions.length > 0 && (
+            <div className="space-y-2.5">
+              <h4 className="text-sm font-black text-gray-800 flex items-center gap-2">💡 Đề xuất diễn đạt tự nhiên hơn</h4>
+              <div className="space-y-3">
+                {(score.feedback.natural_suggestions as any[]).map((item: any, i: number) => (
+                  <div key={i} className="rounded-2xl border border-emerald-100 bg-white p-4 shadow-xs space-y-2">
+                    <div className="flex items-start gap-2">
+                      <span className="text-[11px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded shrink-0">Bạn nói</span>
+                      <p className="text-xs text-gray-600 italic font-mono leading-relaxed break-words">{item.original}</p>
+                    </div>
+                    <div className="flex items-start gap-2 border-t border-dashed border-gray-100 pt-2">
+                      <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded shrink-0">Native</span>
+                      <p className="text-xs text-emerald-800 font-bold leading-relaxed break-words">{item.improved}</p>
+                    </div>
+                    {item.explanation && (
+                      <div className="bg-gray-50 rounded-xl p-2.5 text-xs text-gray-600 leading-relaxed">
+                        <span className="font-bold text-gray-700 block mb-0.5">📖 Giải thích:</span>
+                        {item.explanation}
+                      </div>
+                    )}
+                    {item.example && (
+                      <div className="bg-blue-50/60 border border-blue-100 rounded-xl p-2.5 text-xs text-blue-900 leading-relaxed">
+                        <span className="font-bold block mb-0.5">💡 Ví dụ thực tế:</span>
+                        {item.example}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -325,6 +629,34 @@ function DetailPanel({ sub, exam, onClose, onUpdate }: {
   const [tab, setTab] = useState<"listening" | "reading" | "writing" | "speaking" | "summary">("listening");
   const [grading, setGrading] = useState<"writing" | "speaking" | "both" | "summary" | null>(null);
   const [updatingItemId, setUpdatingItemId] = useState<string | null>(null);
+  const [copiedWriting, setCopiedWriting] = useState(false);
+
+  // Status checks for missing AI parts
+  const hasWritingText = Boolean(answersRaw.writingText && answersRaw.writingText.trim().length > 10);
+  const hasSpeakingAudio = Boolean((answersRaw.speakingAudios && answersRaw.speakingAudios.length > 0) || answersRaw.speakingDriveUrl);
+  const missingWriting = hasWritingText && !scores.writing;
+  const missingSpeaking = hasSpeakingAudio && !scores.speaking;
+
+  // Calculate Overall IELTS Band
+  const overallBand = (() => {
+    if (scores.summary?.overall_band != null) return scores.summary.overall_band;
+    const bands = [
+      scores.listening?.band,
+      scores.reading?.band,
+      scores.writing?.band,
+      scores.speaking?.band,
+    ].filter((b): b is number => typeof b === "number" && b > 0);
+    if (bands.length === 0) return null;
+    const avg = bands.reduce((acc, curr) => acc + curr, 0) / bands.length;
+    return Math.round(avg * 2) / 2;
+  })();
+
+  const candidateInitials = (c.full_name || "HV")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(-2)
+    .map(w => w[0]?.toUpperCase())
+    .join("") || "HV";
 
   async function toggleAnswer(skill: "listening" | "reading", itemId: string) {
     if (!scores[skill] || !scores[skill].items) return;
@@ -351,21 +683,36 @@ function DetailPanel({ sub, exam, onClose, onUpdate }: {
     }
   }
 
+  const [actionError, setActionError] = useState<string | null>(null);
+
   async function grade(target: "writing" | "speaking" | "both" | "summary") {
     setGrading(target);
+    setActionError(null);
     try {
       const res = await fetch(`/api/admin/mock-skill-submissions/${sub.id}/grade`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ target }),
       });
-      const json = await res.json() as { ok?: boolean; scores?: Scores; status?: string; errors?: string[]; error?: string };
-      if (!res.ok) { toast.error(json.error || "Chấm thất bại"); return; }
-      if (json.errors?.length) toast.error(json.errors.join("; "));
-      else toast.success("Chấm xong!");
+      const json = await res.json() as { ok?: boolean; scores?: Scores; status?: string; errors?: string[]; error?: string; message?: string };
+      if (!res.ok || !json.ok) {
+        const errMsg = json.error || json.message || json.errors?.join("; ") || "Chấm thất bại";
+        setActionError(errMsg);
+        toast.error(errMsg);
+        if (json.scores) {
+          onUpdate({ ...sub, scores: json.scores as unknown as Record<string, unknown>, status: json.status || sub.status } as MockSkillSubmission);
+        }
+        return;
+      }
+      setActionError(null);
+      toast.success("Chấm xong!");
       onUpdate({ ...sub, scores: json.scores as unknown as Record<string, unknown>, status: json.status || sub.status } as MockSkillSubmission);
-    } catch { toast.error("Lỗi mạng"); }
-    finally { setGrading(null); }
+    } catch {
+      setActionError("Lỗi mạng khi kết nối server");
+      toast.error("Lỗi mạng khi kết nối server");
+    } finally {
+      setGrading(null);
+    }
   }
   
   const [releasing, setReleasing] = useState(false);
@@ -384,7 +731,7 @@ function DetailPanel({ sub, exam, onClose, onUpdate }: {
         
       if (upError) throw upError;
       
-      // 2. Send notification ONLY when releasing (not un-releasing)
+      // 2. Send notification ONLY when releasing
       if (nextState && sub.auth_user_id) {
         const { error: notiError } = await supabase
           .from("notifications")
@@ -411,247 +758,539 @@ function DetailPanel({ sub, exam, onClose, onUpdate }: {
   }
 
   const TABS = [
-    { id: "listening" as const, label: `🎧 Listening (${scores.listening?.correct ?? "?"}/${scores.listening?.total ?? "?"})` },
-    { id: "reading" as const, label: `📖 Reading (${scores.reading?.correct ?? "?"}/${scores.reading?.total ?? "?"})` },
-    { id: "writing" as const, label: `✍️ Writing ${scores.writing ? "✓" : ""}` },
-    { id: "speaking" as const, label: `🎤 Speaking ${scores.speaking ? "✓" : ""}` },
-    { id: "summary" as const, label: `✨ Tổng hợp AI ${scores.summary ? "✓" : ""}` },
+    { 
+      id: "listening" as const, 
+      label: "Listening", 
+      icon: <Headphones className="w-3.5 h-3.5" />,
+      badge: scores.listening?.band != null 
+        ? `Band ${scores.listening.band.toFixed(1)}` 
+        : `${scores.listening?.correct ?? "?"}/${scores.listening?.total ?? "?"}`,
+      isDone: scores.listening?.band != null
+    },
+    { 
+      id: "reading" as const, 
+      label: "Reading", 
+      icon: <BookOpen className="w-3.5 h-3.5" />,
+      badge: scores.reading?.band != null 
+        ? `Band ${scores.reading.band.toFixed(1)}` 
+        : `${scores.reading?.correct ?? "?"}/${scores.reading?.total ?? "?"}`,
+      isDone: scores.reading?.band != null
+    },
+    { 
+      id: "writing" as const, 
+      label: "Writing", 
+      icon: <PenTool className="w-3.5 h-3.5" />,
+      badge: scores.writing?.band != null 
+        ? `Band ${scores.writing.band.toFixed(1)}` 
+        : (hasWritingText ? "Chờ chấm" : "Trống"),
+      isDone: Boolean(scores.writing?.band)
+    },
+    { 
+      id: "speaking" as const, 
+      label: "Speaking", 
+      icon: <Mic className="w-3.5 h-3.5" />,
+      badge: scores.speaking?.band != null 
+        ? `Band ${scores.speaking.band.toFixed(1)}` 
+        : (hasSpeakingAudio ? "Chờ chấm" : "Trống"),
+      isDone: Boolean(scores.speaking?.band)
+    },
+    { 
+      id: "summary" as const, 
+      label: "Tổng hợp AI", 
+      icon: <Sparkles className="w-3.5 h-3.5" />,
+      badge: scores.summary ? "✓ Đã có" : "Chưa tạo",
+      isDone: Boolean(scores.summary)
+    },
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="bg-white rounded-t-3xl sm:rounded-3xl w-full sm:max-w-2xl max-h-[90vh] flex flex-col shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-0 sm:p-4 transition-opacity" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="bg-white rounded-t-3xl sm:rounded-3xl w-full sm:max-w-4xl lg:max-w-5xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden border border-gray-100">
+        
         {/* Header */}
-        <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-gray-100">
-          <div>
-            <p className="font-bold text-gray-900">{c.full_name || "—"}</p>
-            <p className="text-xs text-gray-500">{c.email}</p>
+        <div className="px-6 py-4 border-b border-gray-100 bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
+          <div className="flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-white flex items-center justify-center font-black text-base shadow-md shadow-brand-500/20 shrink-0">
+              {candidateInitials}
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="font-extrabold text-base text-gray-900 leading-snug">{c.full_name || "Thí sinh tự do"}</h3>
+                {(() => {
+                  const displayStatus = getSubmissionDisplayStatus(sub);
+                  return <Badge variant={displayStatus.variant as "success"}>{displayStatus.label}</Badge>;
+                })()}
+              </div>
+              <div className="flex items-center gap-3 text-xs text-gray-500 mt-0.5">
+                <span>{c.email || "Chưa có email"}</span>
+                {c.phone && <span>• {c.phone}</span>}
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Badge variant={(STATUS_CONFIG[sub.status]?.variant as "success") || "gray"}>{STATUS_CONFIG[sub.status]?.label || sub.status}</Badge>
-            <button type="button" onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100"><X className="w-4 h-4" /></button>
-          </div>
-        </div>
 
-        {/* Tabs */}
-        <div className="flex gap-0.5 px-5 pt-3 border-b border-gray-100">
-          {TABS.map((t) => (
-            <button key={t.id} type="button" onClick={() => setTab(t.id)}
-              className={`px-3 py-2 text-xs font-semibold rounded-t-lg border-b-2 transition-all whitespace-nowrap ${tab === t.id ? "border-brand-600 text-brand-700" : "border-transparent text-gray-500 hover:text-gray-700"}`}>
-              {t.label}
+          {/* Quick Score Ribbon & Close Button */}
+          <div className="flex items-center justify-between sm:justify-end gap-3">
+            {/* 4-Skill Band Matrix Pill Bar */}
+            <div className="flex items-center gap-2 bg-gray-50/80 border border-gray-200/80 rounded-2xl p-1.5 text-xs shadow-xs">
+              <div className="px-3 py-1 rounded-xl bg-brand-600 text-white font-black text-xs flex items-center gap-1.5 shadow-xs">
+                <span className="text-[10px] font-semibold opacity-80 uppercase tracking-wider">Overall</span>
+                <span className="text-sm">{overallBand != null ? overallBand.toFixed(1) : "—"}</span>
+              </div>
+              <div className="flex items-center gap-2 px-2 text-[11px] font-bold text-gray-600">
+                <span title="Listening">L: <strong className={scores.listening?.band != null ? "text-brand-700" : "text-gray-400"}>{scores.listening?.band != null ? scores.listening.band.toFixed(1) : "—"}</strong></span>
+                <span className="text-gray-300">|</span>
+                <span title="Reading">R: <strong className={scores.reading?.band != null ? "text-brand-700" : "text-gray-400"}>{scores.reading?.band != null ? scores.reading.band.toFixed(1) : "—"}</strong></span>
+                <span className="text-gray-300">|</span>
+                <span title="Writing">W: <strong className={scores.writing?.band != null ? "text-brand-700" : "text-gray-400"}>{scores.writing?.band != null ? scores.writing.band.toFixed(1) : "—"}</strong></span>
+                <span className="text-gray-300">|</span>
+                <span title="Speaking">S: <strong className={scores.speaking?.band != null ? "text-brand-700" : "text-gray-400"}>{scores.speaking?.band != null ? scores.speaking.band.toFixed(1) : "—"}</strong></span>
+              </div>
+            </div>
+
+            <button 
+              type="button" 
+              onClick={onClose} 
+              className="p-2 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+            >
+              <X className="w-5 h-5" />
             </button>
-          ))}
+          </div>
         </div>
 
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-4">
+        {/* Action Error Banner if AI failed */}
+        {actionError && (
+          <div className="mx-6 mt-3 p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-start gap-2.5">
+            <span className="font-bold text-sm shrink-0">⚠️</span>
+            <div className="flex-1">
+              <p className="font-bold text-rose-800">Lỗi khi gọi AI chấm điểm:</p>
+              <p className="mt-0.5 leading-relaxed">{actionError}</p>
+            </div>
+            <button type="button" onClick={() => setActionError(null)} className="text-rose-400 hover:text-rose-700 text-base font-bold leading-none">×</button>
+          </div>
+        )}
+
+        {/* Modern Segmented Navigation Tabs */}
+        <div className="flex items-center gap-2 px-6 pt-3 pb-2.5 bg-gray-50/70 border-b border-gray-100 overflow-x-auto no-scrollbar shrink-0">
+          {TABS.map((t) => {
+            const isActive = tab === t.id;
+            return (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setTab(t.id)}
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                  isActive
+                    ? "bg-white text-brand-700 shadow-xs border border-brand-200"
+                    : "text-gray-600 hover:text-gray-900 hover:bg-white/60"
+                }`}
+              >
+                {t.icon}
+                <span>{t.label}</span>
+                {t.badge && (
+                  <span
+                    className={`text-[10px] px-1.5 py-0.5 rounded-md font-bold ${
+                      isActive
+                        ? "bg-brand-50 text-brand-700"
+                        : t.isDone
+                        ? "bg-emerald-50 text-emerald-700"
+                        : "bg-gray-100 text-gray-500"
+                    }`}
+                  >
+                    {t.badge}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Modal Scrollable Body */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-5">
           {/* Listening tab */}
           {tab === "listening" && (
-            <div className="space-y-4">
-              <div className="flex flex-wrap gap-2 items-center">
-                <BandPill label="Listening" band={scores.listening?.band} />
-                {scores.listening && <span className="text-xs text-gray-500">{scores.listening.correct}/{scores.listening.total} câu đúng</span>}
-              </div>
-              <SkillAnswerReview skill="listening" items={scores.listening?.items || []} updatingId={updatingItemId} onToggle={toggleAnswer} />
-            </div>
+            <SkillAnswerReview 
+              skill="listening" 
+              items={scores.listening?.items || []} 
+              band={scores.listening?.band}
+              correctCount={scores.listening?.correct}
+              totalCount={scores.listening?.total}
+              updatingId={updatingItemId} 
+              onToggle={toggleAnswer} 
+            />
           )}
 
           {/* Reading tab */}
           {tab === "reading" && (
-            <div className="space-y-4">
-              <div className="flex flex-wrap gap-2 items-center">
-                <BandPill label="Reading" band={scores.reading?.band} />
-                {scores.reading && <span className="text-xs text-gray-500">{scores.reading.correct}/{scores.reading.total} câu đúng</span>}
-              </div>
-              <SkillAnswerReview skill="reading" items={scores.reading?.items || []} updatingId={updatingItemId} onToggle={toggleAnswer} />
-            </div>
+            <SkillAnswerReview 
+              skill="reading" 
+              items={scores.reading?.items || []} 
+              band={scores.reading?.band}
+              correctCount={scores.reading?.correct}
+              totalCount={scores.reading?.total}
+              updatingId={updatingItemId} 
+              onToggle={toggleAnswer} 
+            />
           )}
 
           {/* Writing tab */}
           {tab === "writing" && (
-            <div className="space-y-4">
-              {answersRaw.writingText ? (
-                <div>
-                  <p className="text-xs font-semibold text-gray-600 mb-1.5">Bài viết ({answersRaw.writingText.trim().split(/\s+/).filter(Boolean).length} từ)</p>
-                  <div className="rounded-xl bg-gray-50 border border-gray-200 p-3 text-sm text-gray-700 whitespace-pre-wrap max-h-48 overflow-y-auto">{answersRaw.writingText}</div>
+            <div className="space-y-5">
+              {/* Student Essay Submission Box */}
+              <div className="rounded-2xl border border-amber-200/80 bg-amber-50/20 p-4 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-amber-500" />
+                    <h4 className="text-xs font-bold text-gray-800 uppercase tracking-wider">
+                      Bài làm của học viên
+                    </h4>
+                    {answersRaw.writingText && (
+                      <span className="text-[11px] font-bold text-amber-800 bg-amber-100/80 px-2.5 py-0.5 rounded-full">
+                        {answersRaw.writingText.trim().split(/\s+/).filter(Boolean).length} từ
+                      </span>
+                    )}
+                  </div>
+                  {answersRaw.writingText && (
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="text-xs h-7 py-0"
+                      onClick={() => {
+                        navigator.clipboard.writeText(answersRaw.writingText || "");
+                        setCopiedWriting(true);
+                        toast.success("Đã sao chép bài viết của học viên!");
+                        setTimeout(() => setCopiedWriting(false), 2000);
+                      }}
+                      icon={<Copy className="w-3 h-3" />}
+                    >
+                      {copiedWriting ? "Đã chép" : "Sao chép bài nộp"}
+                    </Button>
+                  )}
                 </div>
-              ) : <p className="text-gray-400 text-sm">Không có bài viết.</p>}
 
+                {answersRaw.writingText ? (
+                  <div className="rounded-xl bg-white border border-amber-100 p-4 text-xs text-gray-800 font-serif leading-relaxed whitespace-pre-wrap max-h-56 overflow-y-auto shadow-xs">
+                    {answersRaw.writingText}
+                  </div>
+                ) : (
+                  <p className="text-gray-400 text-xs italic py-2">Thí sinh không nộp bài viết cho phần thi này.</p>
+                )}
+              </div>
+
+              {/* AI Score Section */}
               {scores.writing ? (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <AIScoreDisplay skill="writing" score={scores.writing} />
-                  <div className="pt-2 border-t border-gray-100">
-                    <Button variant="outline" size="sm" icon={<Bot className="w-3.5 h-3.5 text-gray-500" />}
-                      loading={grading === "writing"} onClick={() => grade("writing")}>
+                  <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
+                    <span className="text-xs text-gray-400">Đã chấm chi tiết bằng Vertex AI Gemini Flash</span>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      icon={<Bot className="w-3.5 h-3.5 text-gray-500" />}
+                      loading={grading === "writing"} 
+                      onClick={() => grade("writing")}
+                    >
                       Chấm lại Writing bằng AI
                     </Button>
                   </div>
                 </div>
               ) : (
-                <Button variant="primary" size="sm" icon={<Bot className="w-3.5 h-3.5" />}
-                  loading={grading === "writing"} onClick={() => grade("writing")}>
-                  Chấm Writing bằng AI
-                </Button>
+                <div className="rounded-2xl border border-dashed border-amber-300 bg-amber-50/40 p-8 text-center space-y-3">
+                  <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center mx-auto shadow-xs">
+                    <Bot className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-gray-900">Phần Writing chưa được chấm điểm</h4>
+                    <p className="text-xs text-gray-600 max-w-md mx-auto mt-1 leading-relaxed">
+                      Bài viết đã được lưu trên hệ thống. Nhấn nút bên dưới để Vertex AI phân tích 4 tiêu chí chuẩn Cambridge: Task Response, Coherence & Cohesion, Lexical Resource, và Grammar.
+                    </p>
+                  </div>
+                  <Button 
+                    variant="primary" 
+                    size="sm" 
+                    icon={<Bot className="w-4 h-4" />}
+                    loading={grading === "writing"} 
+                    onClick={() => grade("writing")}
+                  >
+                    Chấm Writing bằng AI ngay
+                  </Button>
+                </div>
               )}
             </div>
           )}
 
           {/* Speaking tab */}
           {tab === "speaking" && (
-            <div className="space-y-4">
-              <div className="flex flex-col gap-3">
-                {/* Audio Drive parent/folders link */}
-                <div className="flex flex-wrap gap-3 items-center">
-                  {answersRaw.speakingDriveUrl && (
-                    <a href={answersRaw.speakingDriveUrl} target="_blank" rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 text-brand-600 text-xs font-semibold hover:underline bg-brand-50 px-3 py-1.5 rounded-lg border border-brand-100">
-                      <FolderOpen className="w-3.5 h-3.5" /> Nghe file tổng hợp trên Drive
-                    </a>
-                  )}
-                  {sub.drive_folder_url && (
-                    <a href={sub.drive_folder_url} target="_blank" rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-brand-600 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200">
-                      <FolderOpen className="w-3.5 h-3.5" /> Mở folder Drive chứa tất cả file
-                    </a>
-                  )}
+            <div className="space-y-5">
+              {/* Audio Files & Drive Links */}
+              <div className="rounded-2xl border border-sky-100 bg-sky-50/30 p-4 space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-sky-500" />
+                    <h4 className="text-xs font-bold text-gray-800 uppercase tracking-wider">
+                      File âm thanh của học viên (Google Drive)
+                    </h4>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {answersRaw.speakingDriveUrl && (
+                      <a 
+                        href={answersRaw.speakingDriveUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-[11px] font-bold text-brand-700 bg-brand-50 hover:bg-brand-100 px-3 py-1.5 rounded-xl border border-brand-200 transition-colors"
+                      >
+                        <FolderOpen className="w-3.5 h-3.5" /> File gộp Audio Drive
+                      </a>
+                    )}
+                    {sub.drive_folder_url && (
+                      <a 
+                        href={sub.drive_folder_url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-[11px] font-bold text-gray-600 bg-white hover:bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-200 transition-colors"
+                      >
+                        <FolderOpen className="w-3.5 h-3.5 text-amber-500" /> Folder bài thi trên Drive
+                      </a>
+                    )}
+                  </div>
                 </div>
 
-                {/* Individual Question Audio files */}
                 {answersRaw.speakingAudios && answersRaw.speakingAudios.length > 0 ? (
-                  <div className="space-y-2 border-t border-gray-100 pt-3">
-                    <p className="text-xs font-bold text-gray-700">🎙️ Danh sách file ghi âm từng câu của học sinh:</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {answersRaw.speakingAudios.map((audio, index) => (
-                        <a key={index} href={audio.driveUrl} target="_blank" rel="noopener noreferrer"
-                          className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 bg-white hover:bg-brand-50/50 hover:border-brand-200 shadow-sm transition-all text-left">
-                          <span className="w-6 h-6 rounded-lg bg-brand-100 text-brand-700 flex items-center justify-center text-xs font-black shrink-0">
-                            {index + 1}
-                          </span>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-bold text-gray-800 truncate">{audio.name || `Ghi âm phần ${index + 1}`}</p>
-                            <p className="text-[10px] text-gray-400 font-medium">Click để nghe trên Drive</p>
-                          </div>
-                          <FolderOpen className="w-4 h-4 text-gray-400 shrink-0" />
-                        </a>
-                      ))}
-                    </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                    {answersRaw.speakingAudios.map((audio, index) => (
+                      <a 
+                        key={index} 
+                        href={audio.driveUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 p-3 rounded-xl border border-gray-200/80 bg-white hover:border-brand-300 hover:shadow-xs transition-all group"
+                      >
+                        <div className="w-8 h-8 rounded-lg bg-sky-50 group-hover:bg-brand-50 text-sky-700 group-hover:text-brand-700 flex items-center justify-center font-bold text-xs shrink-0 transition-colors">
+                          #{index + 1}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-bold text-gray-800 truncate group-hover:text-brand-700 transition-colors">
+                            {audio.name || `Ghi âm phần ${index + 1}`}
+                          </p>
+                          <p className="text-[10px] text-gray-400">Click để nghe trên Google Drive</p>
+                        </div>
+                        <ExternalLink className="w-3.5 h-3.5 text-gray-300 group-hover:text-brand-600 shrink-0" />
+                      </a>
+                    ))}
                   </div>
                 ) : !answersRaw.speakingDriveUrl ? (
-                  <p className="text-gray-400 text-sm">Chưa có audio Speaking.</p>
+                  <p className="text-gray-400 text-xs italic py-2">Thí sinh không nộp bản ghi âm Speaking.</p>
                 ) : null}
               </div>
 
+              {/* AI Score Section */}
               {scores.speaking ? (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <AIScoreDisplay skill="speaking" score={scores.speaking} />
-                  <div className="pt-2 border-t border-gray-100">
-                    <Button variant="outline" size="sm" icon={<Bot className="w-3.5 h-3.5 text-gray-500" />}
-                      loading={grading === "speaking"} onClick={() => grade("speaking")}>
+                  <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
+                    <span className="text-xs text-gray-400">Đã chấm chi tiết bằng Vertex AI Gemini Flash</span>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      icon={<Bot className="w-3.5 h-3.5 text-gray-500" />}
+                      loading={grading === "speaking"} 
+                      onClick={() => grade("speaking")}
+                    >
                       Chấm lại Speaking bằng AI
                     </Button>
                   </div>
                 </div>
               ) : (
-                <Button variant="primary" size="sm" icon={<Bot className="w-3.5 h-3.5" />}
-                  loading={grading === "speaking"} onClick={() => grade("speaking")}>
-                  Chấm Speaking bằng AI
-                </Button>
+                <div className="rounded-2xl border border-dashed border-sky-300 bg-sky-50/40 p-8 text-center space-y-3">
+                  <div className="w-12 h-12 rounded-2xl bg-sky-100 text-sky-700 flex items-center justify-center mx-auto shadow-xs">
+                    <Bot className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-gray-900">Phần Speaking chưa được chấm điểm</h4>
+                    <p className="text-xs text-gray-600 max-w-md mx-auto mt-1 leading-relaxed">
+                      Hệ thống sẽ đồng bộ file âm thanh từ Google Drive và gửi sang Vertex AI để phiên âm transcript, đánh giá phát âm, ngữ điệu, sự trôi chảy & chấm điểm Band.
+                    </p>
+                  </div>
+                  <Button 
+                    variant="primary" 
+                    size="sm" 
+                    icon={<Bot className="w-4 h-4" />}
+                    loading={grading === "speaking"} 
+                    onClick={() => grade("speaking")}
+                  >
+                    Chấm Speaking bằng AI ngay
+                  </Button>
+                </div>
               )}
             </div>
           )}
 
           {/* Summary tab */}
           {tab === "summary" && (
-            <div className="space-y-4">
+            <div className="space-y-5">
               {!scores.summary ? (
-                <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50/50 p-6 text-center space-y-4">
-                  <div className="mx-auto w-12 h-12 rounded-2xl bg-brand-50 flex items-center justify-center">
-                    <Bot className="w-6 h-6 text-brand-600 animate-bounce" />
+                <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50/50 p-8 text-center space-y-4">
+                  <div className="mx-auto w-12 h-12 rounded-2xl bg-brand-50 flex items-center justify-center text-brand-600 shadow-xs">
+                    <Sparkles className="w-6 h-6 animate-pulse" />
                   </div>
                   <div>
-                    <h4 className="text-sm font-bold text-gray-800">Chưa có Nhận xét Tổng hợp AI</h4>
-                    <p className="text-xs text-gray-500 max-w-sm mx-auto mt-1">Hệ thống AI sẽ tự động phân tích phổ điểm các kỹ năng và đưa ra nhận xét chung về điểm mạnh, điểm yếu & lộ trình ôn tập.</p>
+                    <h4 className="text-sm font-bold text-gray-900">Chưa có nhận xét tổng hợp 4 kỹ năng</h4>
+                    <p className="text-xs text-gray-500 max-w-md mx-auto mt-1 leading-relaxed">
+                      AI sẽ tổng hợp tương quan giữa cả 4 kỹ năng (Listening, Reading, Writing, Speaking), phân tích điểm mạnh, điểm yếu cốt lõi và vạch ra lộ trình ôn tập cá nhân hóa.
+                    </p>
                   </div>
-                  <Button variant="primary" size="sm" icon={<Bot className="w-3.5 h-3.5" />}
-                    loading={grading === "summary"} onClick={() => grade("summary")}>
+                  <Button 
+                    variant="primary" 
+                    size="sm" 
+                    icon={<Bot className="w-4 h-4" />}
+                    loading={grading === "summary"} 
+                    onClick={() => grade("summary")}
+                  >
                     Tổng hợp nhận xét bằng AI
                   </Button>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-4">
-                    <div className="text-center">
-                      <span className="text-3xl font-black text-brand-700">{scores.summary.overall_band?.toFixed(1) || "—"}</span>
-                      <p className="text-xs text-gray-500">Overall</p>
-                    </div>
-                    <div className="h-10 w-px bg-gray-200"></div>
-                    <div>
-                      <Badge variant="info">{scores.summary.level || "Unknown"}</Badge>
-                      <p className="text-sm font-medium text-gray-600 mt-1 capitalize">{scores.summary.skill_balance?.replace("_", " ") || "Balanced"}</p>
-                    </div>
-                  </div>
-                  <p className="text-sm text-gray-700 bg-brand-50 p-3 rounded-xl border border-brand-100">{scores.summary.overview}</p>
+                <div className="space-y-5">
+                  {/* Hero Summary Card */}
+                  <div className="rounded-2xl bg-gradient-to-br from-brand-50 via-white to-purple-50/40 border border-brand-100 p-5 shadow-xs">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="flex items-center gap-4">
+                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-600 to-purple-700 text-white flex flex-col items-center justify-center shadow-lg shadow-brand-600/20 shrink-0">
+                          <span className="text-2xl font-black leading-none">
+                            {scores.summary.overall_band?.toFixed(1) || (overallBand != null ? overallBand.toFixed(1) : "—")}
+                          </span>
+                          <span className="text-[10px] font-bold uppercase tracking-wider mt-0.5 opacity-80">Overall</span>
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-base font-black text-gray-900">Đánh giá Năng lực Tổng quát</span>
+                            <Badge variant="info">{scores.summary.level || "IELTS Candidate"}</Badge>
+                          </div>
+                          <p className="text-xs text-gray-600 mt-1 capitalize">
+                            Phân bố kỹ năng: <strong>{scores.summary.skill_balance?.replace("_", " ") || "Cân bằng"}</strong>
+                          </p>
+                        </div>
+                      </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
-                    <div>
-                      <p className="text-xs font-semibold text-emerald-700 mb-1">✅ Điểm mạnh tổng hợp</p>
-                      <ul className="space-y-1">
-                        {(scores.summary.strengths || []).map((s, i) => <li key={i} className="text-xs text-gray-600">• {s}</li>)}
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        icon={<Bot className="w-3.5 h-3.5 text-gray-500" />}
+                        loading={grading === "summary"} 
+                        onClick={() => grade("summary")}
+                      >
+                        Làm mới nhận xét
+                      </Button>
+                    </div>
+
+                    {scores.summary.overview && (
+                      <div className="mt-4 p-4 rounded-xl bg-white border border-brand-100/70 text-xs text-gray-700 leading-relaxed">
+                        <span className="font-bold text-gray-900 block mb-1">📋 Nhận xét tổng quan:</span>
+                        {scores.summary.overview}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Strengths & Weaknesses */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="rounded-2xl border border-emerald-100 bg-emerald-50/30 p-4 space-y-2">
+                      <div className="flex items-center gap-2 text-emerald-800 font-bold text-xs">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                        <span>Điểm mạnh nổi bật</span>
+                      </div>
+                      <ul className="space-y-2">
+                        {(scores.summary.strengths || []).map((s, i) => (
+                          <li key={i} className="text-xs text-emerald-950 bg-white/80 p-2.5 rounded-xl border border-emerald-100/60 leading-relaxed">
+                            • {s}
+                          </li>
+                        ))}
                       </ul>
                     </div>
-                    <div>
-                      <p className="text-xs font-semibold text-red-700 mb-1">⚠️ Cần cải thiện chung</p>
-                      <ul className="space-y-1">
-                        {(scores.summary.weaknesses || []).map((s, i) => <li key={i} className="text-xs text-gray-600">• {s}</li>)}
+
+                    <div className="rounded-2xl border border-rose-100 bg-rose-50/30 p-4 space-y-2">
+                      <div className="flex items-center gap-2 text-rose-800 font-bold text-xs">
+                        <AlertCircle className="w-4 h-4 text-rose-600" />
+                        <span>Kỹ năng cần ưu tiên cải thiện</span>
+                      </div>
+                      <ul className="space-y-2">
+                        {(scores.summary.weaknesses || []).map((s, i) => (
+                          <li key={i} className="text-xs text-rose-950 bg-white/80 p-2.5 rounded-xl border border-rose-100/60 leading-relaxed">
+                            • {s}
+                          </li>
+                        ))}
                       </ul>
                     </div>
                   </div>
 
+                  {/* Recommendations */}
                   {scores.summary.recommendations && scores.summary.recommendations.length > 0 && (
-                    <div className="mt-4 border-t border-gray-100 pt-3">
-                      <p className="text-xs font-semibold text-blue-700 mb-1">💡 Lời khuyên & Lộ trình ôn tập</p>
-                      <ul className="space-y-1.5">
-                        {scores.summary.recommendations.map((r, i) => <li key={i} className="text-xs text-gray-600">👉 {r}</li>)}
-                      </ul>
+                    <div className="rounded-2xl border border-blue-100 bg-blue-50/30 p-4 space-y-2.5">
+                      <div className="flex items-center gap-2 text-blue-900 font-bold text-xs">
+                        <Sparkles className="w-4 h-4 text-blue-600" />
+                        <span>Lộ trình ôn tập gợi ý từ AI</span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {scores.summary.recommendations.map((r, i) => (
+                          <div key={i} className="p-3 bg-white rounded-xl border border-blue-100 text-xs text-blue-950 leading-relaxed">
+                            <span className="font-bold text-blue-700 mr-1">#{i + 1}</span> {r}
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
-
-                  <div className="pt-2 border-t border-gray-100 flex items-center justify-between">
-                    <span className="text-xs text-gray-400 font-medium">Nhận xét tổng hợp tự động bằng AI</span>
-                    <Button variant="outline" size="sm" icon={<Bot className="w-3.5 h-3.5 text-gray-500" />}
-                      loading={grading === "summary"} onClick={() => grade("summary")}>
-                      Cập nhật tổng hợp nhận xét AI
-                    </Button>
-                  </div>
                 </div>
               )}
             </div>
           )}
         </div>
 
-        {/* Footer: Grade all & Release */}
-        <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
+        {/* Footer: Quick Grade & Release */}
+        <div className="px-6 py-3.5 border-t border-gray-100 bg-white flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            {/* Quick action to grade missing skills if any */}
+            {(missingWriting || missingSpeaking) && (
+              <Button
+                variant="outline"
+                size="sm"
+                icon={<Bot className="w-4 h-4 text-brand-600" />}
+                loading={grading === "both" || grading === "writing" || grading === "speaking"}
+                onClick={() => grade(missingWriting && missingSpeaking ? "both" : missingWriting ? "writing" : "speaking")}
+              >
+                {missingWriting && missingSpeaking 
+                  ? "Chấm tất cả bằng AI (W + S)" 
+                  : missingWriting 
+                    ? "Chấm Writing bằng AI" 
+                    : "Chấm Speaking bằng AI"}
+              </Button>
+            )}
+
             {["graded", "completed"].includes(sub.status) && (
               <Button 
                 variant={sub.is_released ? "outline" : "primary"}
-                className={!sub.is_released ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/20" : ""}
+                className={!sub.is_released ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/20 text-white" : ""}
                 size="sm" 
                 icon={releasing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
                 loading={releasing}
                 onClick={toggleRelease}
               >
-                {sub.is_released ? "Hủy công khai" : "Công khai điểm"}
+                {sub.is_released ? "Hủy công khai" : "Công khai điểm cho học viên"}
               </Button>
-            )}
-            {sub.is_released && (
-              <span className="text-xs font-bold text-emerald-600 flex items-center gap-1">
-                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" /> Đang hiển thị với học viên
-              </span>
             )}
           </div>
 
-
+          <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto">
+            {sub.is_released ? (
+              <span className="text-xs font-bold text-emerald-600 flex items-center gap-1.5">
+                <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" /> Đang hiển thị với học viên
+              </span>
+            ) : (
+              <span className="text-xs text-gray-400 flex items-center gap-1.5">
+                <span className="w-2 h-2 bg-gray-300 rounded-full" /> Chưa công khai điểm
+              </span>
+            )}
+            <Button variant="ghost" size="sm" onClick={onClose}>
+              Đóng
+            </Button>
+          </div>
         </div>
       </div>
     </div>
@@ -762,7 +1401,7 @@ export default function AdminMockSkillKetQuaPage({ params }: { params: Promise<{
             {filtered.map((r) => {
               const c = r.candidate as Candidate;
               const sc = (r.scores || {}) as Scores;
-              const { label, variant } = STATUS_CONFIG[r.status] ?? { label: r.status, variant: "gray" as const };
+              const { label, variant } = getSubmissionDisplayStatus(r);
               return (
                 <tr key={r.id} className="hover:bg-gray-50/80 align-middle">
                   <td className="py-3 px-4">

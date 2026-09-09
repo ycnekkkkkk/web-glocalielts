@@ -15,6 +15,14 @@ import { usePathname, useRouter } from "next/navigation";
 import { createBrowserClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
 import { ArrowLeft, ArrowRight, ChevronLeft, Loader2, Lock, Upload } from "lucide-react";
+import {
+  saveSpeakingAudioToIDB,
+  loadSpeakingAudiosFromIDB,
+  clearSpeakingAudiosFromIDB,
+  saveExamDraftToIDB,
+  loadExamDraftFromIDB,
+  clearExamDraftFromIDB,
+} from "@/lib/mock-skill/storage-indexeddb";
 
 // ── Session persistence ──────────────────────────────────────────
 
@@ -41,6 +49,8 @@ function saveSession(slug: string, session: Partial<ExamSession>) {
 
 function clearSession(slug: string) {
   try { localStorage.removeItem(sessionKey(slug)); } catch { /* empty */ }
+  clearSpeakingAudiosFromIDB(slug).catch(() => {});
+  clearExamDraftFromIDB(slug).catch(() => {});
 }
 
 // ── Wizard ───────────────────────────────────────────────────────
@@ -97,6 +107,8 @@ export function ExamWizard({ slug }: ExamWizardProps) {
   const [startTimeMs] = useState(() => Date.now());
   const [hasResume, setHasResume] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<"saving" | "saved" | "idle">("idle");
+  const [lastSavedTime, setLastSavedTime] = useState<string>("");
 
   const examRef = useRef<MockSkillExamDef | null>(null);
   const content = exam?.content_public as unknown as MockSkillContentPublic | undefined;
@@ -139,20 +151,58 @@ export function ExamWizard({ slug }: ExamWizardProps) {
     load().catch(console.error);
   }, [slug]);
 
-  // ── Resume detection ──────────────────────────────────────────
+  // ── Resume detection (LocalStorage + IndexedDB) ───────────────
 
   useEffect(() => {
-    const saved = loadSession(slug);
-    if (saved && saved.step && saved.step !== "done") {
-      setHasResume(true);
+    async function checkResume() {
+      const saved = loadSession(slug);
+      if (saved && saved.step && saved.step !== "done") {
+        setHasResume(true);
+        return;
+      }
+      const idbDraft = await loadExamDraftFromIDB(slug);
+      if (idbDraft && idbDraft.step && idbDraft.step !== "done") {
+        setHasResume(true);
+      }
     }
+    checkResume().catch(() => {});
   }, [slug]);
 
-  // ── Auto-save session ─────────────────────────────────────────
+  // ── Auto-save Speaking audio to IndexedDB ─────────────────────
+
+  useEffect(() => {
+    if (!slug) return;
+    Object.entries(speakingAudios).forEach(([idStr, item]) => {
+      if (item && item.blob && item.blob.size > 0) {
+        saveSpeakingAudioToIDB(slug, Number(idStr), item.blob, item.duration).catch(() => {});
+      }
+    });
+  }, [speakingAudios, slug]);
+
+  // ── Auto-save session (LocalStorage + IndexedDB Draft) ────────
 
   useEffect(() => {
     if (step === "done" || step === "submitting" || step === "intro") return;
-    saveSession(slug, { examSlug: slug, step, listeningPicks, readingPicks, writingText: JSON.stringify(writingValues), flaggedQuestions: flagged, startedAt: startTimeMs, lastSavedAt: Date.now() });
+    setSaveStatus("saving");
+    const draft = {
+      examSlug: slug,
+      step,
+      listeningPicks,
+      readingPicks,
+      writingValues,
+      flaggedQuestions: flagged,
+      startedAt: startTimeMs,
+      lastSavedAt: Date.now(),
+    };
+    saveSession(slug, { ...draft, writingText: JSON.stringify(writingValues) });
+    saveExamDraftToIDB(draft).catch(() => {});
+    
+    const timer = setTimeout(() => {
+      setSaveStatus("saved");
+      const d = new Date();
+      setLastSavedTime(`${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`);
+    }, 400);
+    return () => clearTimeout(timer);
   }, [step, listeningPicks, readingPicks, writingValues, flagged, slug, startTimeMs]);
 
   // ── Anti-refresh warning ──────────────────────────────────────
@@ -188,8 +238,21 @@ export function ExamWizard({ slug }: ExamWizardProps) {
 
   // ── Resume ────────────────────────────────────────────────────
 
-  const handleResume = useCallback(() => {
-    const saved = loadSession(slug);
+  const handleResume = useCallback(async () => {
+    let saved = loadSession(slug);
+    if (!saved) {
+      const idbDraft = await loadExamDraftFromIDB(slug);
+      if (idbDraft) {
+        saved = {
+          examSlug: idbDraft.examSlug,
+          step: idbDraft.step as ExamStep,
+          listeningPicks: idbDraft.listeningPicks,
+          readingPicks: idbDraft.readingPicks,
+          writingText: JSON.stringify(idbDraft.writingValues),
+          flaggedQuestions: idbDraft.flaggedQuestions,
+        };
+      }
+    }
     if (!saved) return;
     if (saved.listeningPicks) setListeningPicks(saved.listeningPicks);
     if (saved.readingPicks) setReadingPicks(saved.readingPicks);
@@ -198,8 +261,19 @@ export function ExamWizard({ slug }: ExamWizardProps) {
     }
     if (saved.flaggedQuestions) setFlagged(saved.flaggedQuestions);
     if (saved.step) setStep(saved.step);
+
+    // Khôi phục toàn bộ các file ghi âm Speaking đã lưu trong IndexedDB
+    try {
+      const savedAudios = await loadSpeakingAudiosFromIDB(slug);
+      if (savedAudios && Object.keys(savedAudios).length > 0) {
+        setSpeakingAudios(savedAudios);
+      }
+    } catch (e) {
+      console.warn("Restore speaking audios error:", e);
+    }
+
     setHasResume(false);
-    toast.success("Đã khôi phục bài làm còn dang dở!");
+    toast.success("Đã khôi phục bài làm và file ghi âm thành công!");
   }, [slug]);
 
   // ── Submit ────────────────────────────────────────────────────
@@ -415,9 +489,11 @@ export function ExamWizard({ slug }: ExamWizardProps) {
         totalQuestions={allQuestions.length}
         isFullscreen={isFullscreen}
         onToggleFullscreen={toggleFullscreen}
+        saveStatus={saveStatus}
+        lastSavedTime={lastSavedTime}
         onSaveExit={() => {
           saveSession(slug, { examSlug: slug, step, listeningPicks, readingPicks, writingText: JSON.stringify(writingValues), flaggedQuestions: flagged, startedAt: startTimeMs, lastSavedAt: Date.now() });
-          toast.success("Đã lưu bài. Bạn có thể tiếp tục sau.");
+          toast.success("Đã lưu bài an toàn. Bạn có thể tiếp tục sau.");
           setTimeout(() => router.push(thiThuRoot), 300);
         }}
       />

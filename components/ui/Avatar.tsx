@@ -20,13 +20,14 @@ const sizeClasses: Record<AvatarSize, string> = {
 };
 
 const gradients = [
-  "from-brand-400 to-brand-600",
-  "from-emerald-400 to-teal-600",
-  "from-sky-400 to-blue-600",
-  "from-sky-400 to-sky-600",
-  "from-amber-400 to-orange-600",
-  "from-rose-400 to-pink-600",
+  "from-brand-600 to-indigo-700",
+  "from-indigo-600 to-violet-700",
+  "from-emerald-600 to-teal-700",
+  "from-slate-700 to-slate-900",
+  "from-amber-600 to-orange-700",
+  "from-rose-600 to-pink-700",
 ];
+
 
 function getGradient(name: string): string {
   let sum = 0;

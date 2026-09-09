@@ -29,13 +29,13 @@ const themeConfig = {
   },
   purple: {
     bg: "bg-white",
-    groupLabel: "text-[#9CA3AF] text-[11px]",
-    link: "text-[#374151] hover:text-[#5B5BD6] hover:bg-[#F5F3FF]",
-    active: "bg-[#EEF2FF] text-[#5B5BD6]",
-    activeIcon: "text-[#5B5BD6]",
-    icon: "text-[#9CA3AF]",
-    badge: "bg-[#5B5BD6] text-white",
-    navBg: "hover:bg-[#F9FAFB]",
+    groupLabel: "text-slate-400 text-[10px] font-bold uppercase tracking-wider",
+    link: "text-slate-600 hover:text-brand-600 hover:bg-brand-50/60 font-medium",
+    active: "bg-brand-50 text-brand-700 font-bold border border-brand-200/60 shadow-xs",
+    activeIcon: "text-brand-600",
+    icon: "text-slate-400 group-hover:text-brand-600",
+    badge: "bg-brand-600 text-white font-bold",
+    navBg: "hover:bg-slate-50",
   },
   emerald: {
     bg: "bg-gray-950",
@@ -70,7 +70,7 @@ function NavLink({
       href={item.href}
       title={item.label}
       className={cn(
-        "group relative flex items-center gap-2.5 rounded-lg transition-all duration-150",
+        "group relative flex items-center gap-2.5 rounded-xl transition-all duration-150",
         collapsed ? "justify-center px-2 py-2.5" : depth > 0 ? "pl-10 pr-3 py-2" : "px-3 py-2",
         isActive ? t.active : t.link,
         !isActive && t.navBg
@@ -81,7 +81,7 @@ function NavLink({
           "absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full",
           theme === "sky" && "bg-sky-400",
           theme === "brand" && "bg-brand-400",
-          theme === "purple" && "bg-[#5B5BD6]",
+          theme === "purple" && "bg-brand-600",
           theme === "emerald" && "bg-emerald-400"
         )} />
       )}
@@ -93,7 +93,7 @@ function NavLink({
         <span className={cn(
           "text-[10px] font-bold px-1.5 py-0.5 rounded-md leading-none",
           isActive
-            ? theme === "purple" ? "bg-[#5B5BD6]/10 text-[#5B5BD6]" : "bg-white/20 text-white"
+            ? theme === "purple" ? "bg-brand-100 text-brand-700" : "bg-white/20 text-white"
             : t.badge
         )}>
           {item.badge}
@@ -114,31 +114,31 @@ export function SidebarInner({ groups, theme = "purple", footerContent }: {
   return (
     <aside className={cn(
       "h-screen sticky top-0 flex flex-col shrink-0 overflow-hidden",
-      "border-r border-[#E5E7EB]",
+      "border-r border-slate-200/80",
       collapsed ? "w-[64px]" : "w-[240px]",
       t.bg
     )}>
       {/* Hamburger toggle */}
-      <div className="shrink-0 h-14 flex items-center px-4 border-b border-[#E5E7EB]">
+      <div className="shrink-0 h-14 flex items-center px-4 border-b border-slate-200/80">
         <button
           type="button"
           onClick={() => setCollapsed(!collapsed)}
           className={cn(
-            "flex flex-col gap-[5px] p-1 rounded-lg cursor-pointer transition-all duration-200",
-            "hover:bg-[#F5F3FF]"
+            "flex flex-col gap-[5px] p-1.5 rounded-xl cursor-pointer transition-all duration-200",
+            "hover:bg-brand-50"
           )}
           aria-label={collapsed ? "Mở menu" : "Thu menu"}
           title={collapsed ? "Mở menu" : "Thu menu"}
         >
           <span className={cn(
-            "block w-5 h-[2px] rounded-full bg-[#9CA3AF] transition-all duration-200",
+            "block w-5 h-[2px] rounded-full bg-slate-400 transition-all duration-200",
             collapsed ? "w-4" : "w-5"
           )} />
           <span className={cn(
-            "block w-5 h-[2px] rounded-full bg-[#9CA3AF] transition-all duration-200"
+            "block w-5 h-[2px] rounded-full bg-slate-400 transition-all duration-200"
           )} />
           <span className={cn(
-            "block w-3.5 h-[2px] rounded-full bg-[#9CA3AF] transition-all duration-200"
+            "block w-3.5 h-[2px] rounded-full bg-slate-400 transition-all duration-200"
           )} />
         </button>
       </div>
@@ -164,10 +164,10 @@ export function SidebarInner({ groups, theme = "purple", footerContent }: {
       {/* Footer */}
       {footerContent && (
         <div className={cn(
-          "border-t border-[#E5E7EB] shrink-0",
-          collapsed ? "p-2" : "p-3"
+          "border-t border-slate-200/80 shrink-0",
+          collapsed ? "p-2 flex items-center justify-center" : "p-3"
         )}>
-          {collapsed ? null : footerContent}
+          {footerContent}
         </div>
       )}
     </aside>

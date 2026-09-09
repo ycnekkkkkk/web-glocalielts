@@ -71,9 +71,12 @@ function BandPill({ band, label }: { band: number; label: string }) {
 
 function StatusBadge({ status }: { status: string }) {
   const config: Record<string, { label: string; className: string }> = {
-    completed: { label: "Hoàn thành", className: "bg-emerald-100 text-emerald-700" },
-    processing: { label: "Đang xử lý", className: "bg-blue-100 text-blue-700" },
-    failed: { label: "Lỗi", className: "bg-red-100 text-red-700" },
+    completed:  { label: "Hoàn thành",   className: "bg-emerald-100 text-emerald-700" },
+    graded:     { label: "Đã chấm",      className: "bg-emerald-100 text-emerald-700" },
+    grading:    { label: "Đang chấm AI", className: "bg-blue-100 text-blue-700" },
+    pending:    { label: "Chờ chấm",     className: "bg-amber-100 text-amber-700" },
+    processing: { label: "Đang xử lý",   className: "bg-blue-100 text-blue-700" },
+    failed:     { label: "Lỗi",          className: "bg-red-100 text-red-700" },
   };
   const c = config[status] || { label: status, className: "bg-gray-100 text-gray-500" };
   return (
@@ -368,7 +371,7 @@ export default function TestHistoryPage() {
                         {s.mock_skill_exam_defs?.title || "Đề thi"}
                       </p>
                       <StatusBadge status={s.status} />
-                      {!s.is_released && s.status === "completed" && (
+                      {!s.is_released && (s.status === "completed" || s.status === "graded") && (
                         <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-amber-100 text-amber-700">
                           Chờ công khai điểm
                         </span>
