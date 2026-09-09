@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import type { NavGroup } from "@/types";
+import type { AuthUser, NavGroup } from "@/types";
 
 const navGroups: NavGroup[] = [
   {
@@ -44,7 +44,7 @@ const navGroups: NavGroup[] = [
   },
 ];
 
-function StudentSidebarFooter({ user }: { user: { name: string; avatar_url?: string; email?: string } }) {
+function StudentSidebarFooter({ user }: { user: AuthUser }) {
   const { collapsed } = useSidebarContext();
 
   if (collapsed) {
