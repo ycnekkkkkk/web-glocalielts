@@ -5,6 +5,7 @@ import Badge from "@/components/ui/Badge";
 import { createBrowserClient } from "@/lib/supabase/client";
 import { SESSION_STATUS } from "@/lib/constants";
 import { parseSessionDate } from "@/lib/scheduleUtils";
+import { getSessionState } from "@/lib/sessionStatus";
 import { Calendar, ChevronLeft, ChevronRight, BookOpen, Clock } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Link from "next/link";
@@ -449,6 +450,8 @@ export default function StudentSchedulePage() {
                                   <Badge variant="success" className="text-[10px]">✓ Xong</Badge>
                                 ) : s.status === "CANCELLED" ? (
                                   <Badge variant="danger" className="text-[10px]">Đã hủy</Badge>
+                                ) : getSessionState(s as Session).isPast ? (
+                                  <Badge variant="gray" className="text-[10px]">Đã học</Badge>
                                 ) : (
                                   <Badge variant="info" className="text-[10px]">Sắp tới</Badge>
                                 )}

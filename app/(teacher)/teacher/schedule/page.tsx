@@ -6,6 +6,7 @@ import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import { createBrowserClient } from "@/lib/supabase/client";
 import { SESSION_STATUS, ATTENDANCE_STATUS } from "@/lib/constants";
+import { getSessionState } from "@/lib/sessionStatus";
 import {
   AlertTriangle, Ban, CalendarCheck2, ChevronLeft, ChevronRight,
   ClipboardList, Star, Calendar, Video, ExternalLink, WrapText,
@@ -797,9 +798,10 @@ export default function InstructorSchedulePage() {
                   ) : (
                     <div className="space-y-3">
                       {selectedDaySessions.map(s => {
-                        const isDone = s.status === SESSION_STATUS.DONE;
-                        const isCancelled = s.status === SESSION_STATUS.CANCELLED;
-                        const isUpcoming = s.status === SESSION_STATUS.UPCOMING;
+                        const sessionState = getSessionState(s);
+                        const isDone = sessionState.isDone;
+                        const isCancelled = sessionState.isCancelled;
+                        const isUpcoming = sessionState.isUpcoming;
                         const isMakeup = !!s.makeup_original_date;
                         const colorClass = classColorMap[s.class_name || s.class_id || ""] || CLASS_COLORS[0];
                         const sRef = `${s.class_name}#${s.session_no}#${s.session_date}`;
@@ -825,8 +827,10 @@ export default function InstructorSchedulePage() {
                                   <Badge variant="success" className="text-[10px]">✓ Xong</Badge>
                                 ) : isMakeup ? (
                                   <Badge variant="warning" className="text-[10px]">🔄 Học bù</Badge>
+                                ) : sessionState.isPendingAttendance ? (
+                                  <Badge variant="warning" className="text-[10px] bg-amber-100 text-amber-800 border-amber-300 font-bold">Chưa điểm danh</Badge>
                                 ) : (
-                                  <Badge variant="warning" className="text-[10px]">Sắp tới</Badge>
+                                  <Badge variant="info" className="text-[10px]">Sắp tới</Badge>
                                 )}
                               </div>
 
@@ -854,12 +858,12 @@ export default function InstructorSchedulePage() {
                                 {!isCancelled && (
                                   <Button
                                     size="sm"
-                                    variant={isDone ? "outline" : "primary"}
-                                    className="w-full text-xs h-7"
+                                    variant={sessionState.isPendingAttendance ? "primary" : isDone ? "outline" : "primary"}
+                                    className={`w-full text-xs h-7 ${sessionState.isPendingAttendance ? "bg-amber-600 hover:bg-amber-700 border-amber-600 text-white font-medium" : ""}`}
                                     icon={<ClipboardList className="w-3 h-3" />}
                                     onClick={() => openAttendance(s, isDone)}
                                   >
-                                    {isDone ? "Xem điểm danh" : "Điểm danh"}
+                                    {isDone ? "Xem điểm danh" : sessionState.isPendingAttendance ? "Điểm danh ngay" : "Điểm danh"}
                                   </Button>
                                 )}
 

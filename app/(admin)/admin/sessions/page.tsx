@@ -9,6 +9,7 @@ import Modal from "@/components/ui/Modal";
 import { SkeletonTable } from "@/components/ui/Skeleton";
 import { createBrowserClient } from "@/lib/supabase/client";
 import { SESSION_STATUS } from "@/lib/constants";
+import { getSessionState } from "@/lib/sessionStatus";
 import type { Class, Session } from "@/types";
 import {
   AlertTriangle, ArrowRightLeft, BookOpen, Calendar,
@@ -83,9 +84,11 @@ const CLASS_DOT_COLORS = [
   "bg-amber-500",  "bg-cyan-500", "bg-pink-500",   "bg-sky-500",
 ];
 
-function statusBadge(status: string) {
-  if (status === SESSION_STATUS.DONE)      return <Badge variant="success">Hoàn thành</Badge>;
-  if (status === SESSION_STATUS.CANCELLED) return <Badge variant="danger">Hủy</Badge>;
+function statusBadge(s: Session) {
+  const state = getSessionState(s);
+  if (state.isDone)      return <Badge variant="success">Hoàn thành</Badge>;
+  if (state.isCancelled) return <Badge variant="danger">Hủy</Badge>;
+  if (state.isPendingAttendance) return <Badge variant="warning">Chưa điểm danh</Badge>;
   return <Badge variant="info">Sắp diễn ra</Badge>;
 }
 
@@ -691,7 +694,7 @@ export default function AdminSessionsPage() {
             </div>
           )}
         </td>
-        <td className="px-4 py-3">{statusBadge(s.status)}</td>
+        <td className="px-4 py-3">{statusBadge(s)}</td>
         <td className="px-4 py-3">
           <div className="flex items-center gap-1.5">
             {s.status === SESSION_STATUS.UPCOMING && (
@@ -847,7 +850,8 @@ export default function AdminSessionsPage() {
               const isCollapsed = collapsed.has(`date-${date}`);
 
               const done    = dateSessions.filter(s => s.status === SESSION_STATUS.DONE).length;
-              const upcoming = dateSessions.filter(s => s.status === SESSION_STATUS.UPCOMING).length;
+              const pending = dateSessions.filter(s => getSessionState(s).isPendingAttendance).length;
+              const upcoming = dateSessions.filter(s => getSessionState(s).isUpcoming).length;
 
               return (
                 <Card key={date} className="overflow-hidden">
@@ -866,6 +870,7 @@ export default function AdminSessionsPage() {
                       <p className="text-xs text-gray-500 mt-0.5">
                         {dateSessions.length} buổi học
                         {done > 0 && <span className="ml-2 text-emerald-600">✓ {done} xong</span>}
+                        {pending > 0 && <span className="ml-2 text-amber-600 font-medium">⚠️ {pending} chưa ĐD</span>}
                         {upcoming > 0 && <span className="ml-2 text-sky-600">⏳ {upcoming} sắp tới</span>}
                       </p>
                     </div>
@@ -938,7 +943,8 @@ export default function AdminSessionsPage() {
               const colorIdx = classColorMap.get(cName) ?? 0;
               const isCollapsed = collapsed.has(`class-${cName}`);
               const done    = cSessions.filter(s => s.status === SESSION_STATUS.DONE).length;
-              const upcoming = cSessions.filter(s => s.status === SESSION_STATUS.UPCOMING).length;
+              const pending = cSessions.filter(s => getSessionState(s).isPendingAttendance).length;
+              const upcoming = cSessions.filter(s => getSessionState(s).isUpcoming).length;
               const cancelled = cSessions.filter(s => s.status === SESSION_STATUS.CANCELLED).length;
 
               return (
@@ -955,6 +961,7 @@ export default function AdminSessionsPage() {
                       <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-500">
                         <span>{cSessions.length} buổi</span>
                         {done > 0 && <span className="text-emerald-600 font-medium">✓ {done} xong</span>}
+                        {pending > 0 && <span className="text-amber-600 font-medium">⚠️ {pending} chưa ĐD</span>}
                         {upcoming > 0 && <span className="text-sky-600 font-medium">⏳ {upcoming} sắp tới</span>}
                         {cancelled > 0 && <span className="text-red-500 font-medium">✗ {cancelled} hủy</span>}
                       </div>

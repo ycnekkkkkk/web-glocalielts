@@ -1,14 +1,16 @@
 "use client";
+
 import Avatar from "@/components/ui/Avatar";
-import { Search, LogOut, Settings, ChevronRight } from "lucide-react";
+import { cn } from "@/utils/cn";
+import { Calendar, LogOut, Settings, ChevronRight, ChevronDown, PanelLeftOpen } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import NotificationBell from "./NotificationBell";
 import { createBrowserClient } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { AuthUser } from "@/types";
 import { usePageTitle } from "./PageTitleContext";
+import { useSidebarContext } from "./SidebarContext";
 
 interface HeaderProps {
   user: AuthUser | null;
@@ -25,7 +27,7 @@ const ROUTE_LABELS: Record<string, string> = {
   "teachers": "Giáo viên",
   "students": "Học viên",
   "courses": "Khóa học",
-  "schedule": "Lịch học",
+  "schedule": "Lịch dạy",
   "dashboard": "Tổng quan",
   "online-courses": "Khóa học online",
   "my-courses": "Khóa học của tôi",
@@ -42,12 +44,15 @@ const ROUTE_LABELS: Record<string, string> = {
   "skill-reports": "Báo cáo kỹ năng",
   "my-online-courses": "Khóa học online",
   "thi-thu": "Thi thử",
+  "analytics": "Thống kê",
+  "account": "Tài khoản",
+  "grading": "Chấm bài",
 };
 
 function getBreadcrumb(pathname: string) {
   const parts = pathname.split("/").filter(Boolean);
   return parts.map((part, i) => {
-    const label = ROUTE_LABELS[part] || ROUTE_LABELS[part.replace(/-/g, "-")] || part.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+    const label = ROUTE_LABELS[part] || part.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
     const href = "/" + parts.slice(0, i + 1).join("/");
     return { label, href };
   });
@@ -55,10 +60,20 @@ function getBreadcrumb(pathname: string) {
 
 export default function Header({ user, title }: HeaderProps) {
   const [showMenu, setShowMenu] = useState(false);
+  const [currentDateStr, setCurrentDateStr] = useState("");
   const menuRef = useRef<HTMLDivElement>(null);
   const { title: pageTitle } = usePageTitle();
+  const { collapsed, setCollapsed } = useSidebarContext();
   const pathname = usePathname();
   const router = useRouter();
+
+  useEffect(() => {
+    const now = new Date();
+    const days = ["Chủ Nhật", "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy"];
+    const dayName = days[now.getDay()];
+    const dateFormatted = `${String(now.getDate()).padStart(2, "0")}/${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()}`;
+    setCurrentDateStr(`${dayName}, ${dateFormatted}`);
+  }, []);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -80,37 +95,44 @@ export default function Header({ user, title }: HeaderProps) {
   const displayTitle = pageTitle || title;
 
   return (
-    <header className="h-14 border-b border-slate-200/80 bg-white sticky top-0 z-30 flex items-center justify-between shrink-0">
-      {/* Left section: logo + breadcrumb */}
-      <div className="flex items-center gap-3 min-w-0 px-4">
-        {/* Logo - always visible */}
-        <div className="flex items-center gap-1.5 shrink-0">
-          <img src="/logo/logo-ag.svg" alt="AG" className="h-6 w-6 object-contain" />
-          <img src="/logo/logo-gi.svg" alt="Glocal IELTS" className="h-6 w-6 object-contain" />
-          <div className="min-w-0">
-            <p className="text-xs font-bold text-slate-900 leading-none truncate">Glocal IELTS</p>
-            <p className="text-[9px] font-medium text-slate-400 leading-none mt-0.5 truncate">Amazing Group</p>
-          </div>
-        </div>
+    <header className="h-16 border-b border-slate-200/80 bg-white/90 backdrop-blur-md sticky top-0 z-30 flex items-center justify-between shrink-0 px-4 md:px-6 transition-all">
+      {/* ── Left section: Expand Button (if collapsed) + Breadcrumb ── */}
+      <div className="flex items-center gap-3 min-w-0">
+        {collapsed && (
+          <button
+            type="button"
+            onClick={() => setCollapsed(false)}
+            className="p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors shrink-0 cursor-pointer"
+            title="Mở menu điều hướng"
+          >
+            <PanelLeftOpen className="w-5 h-5 text-slate-600" />
+          </button>
+        )}
 
-        {/* Divider */}
-        <div className="w-px h-6 bg-slate-200 mx-1 shrink-0" />
-
-        {/* Breadcrumb + page title */}
         {breadcrumbs.length > 0 && (
-          <nav className="flex items-center gap-1 text-[13px] min-w-0">
+          <nav className="flex items-center gap-2 min-w-0">
             {breadcrumbs.map((crumb, i) => {
+              const isFirst = i === 0;
               const isLast = i === breadcrumbs.length - 1;
               const showTitle = isLast && displayTitle;
+
               return (
-                <span key={crumb.href} className="flex items-center gap-1 shrink-0">
-                  {i > 0 && <ChevronRight className="w-3 h-3 text-slate-300 shrink-0" />}
-                  <span className={cn(
-                    "leading-none whitespace-nowrap truncate max-w-[200px]",
-                    showTitle ? "font-bold text-slate-900" : isLast ? "font-bold text-slate-900" : "font-medium text-slate-400 hover:text-slate-600"
-                  )}>
-                    {showTitle ? displayTitle : crumb.label}
-                  </span>
+                <span key={crumb.href} className="flex items-center gap-2 shrink-0">
+                  {i > 0 && <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0" />}
+                  {isFirst ? (
+                    <span className="text-xs font-bold text-brand-700 bg-brand-50 border border-brand-200/60 px-2.5 py-1 rounded-xl">
+                      {crumb.label}
+                    </span>
+                  ) : (
+                    <span
+                      className={cn(
+                        "leading-none whitespace-nowrap truncate max-w-[240px]",
+                        isLast ? "font-black text-slate-900 text-sm" : "font-semibold text-slate-500 hover:text-slate-800 text-xs"
+                      )}
+                    >
+                      {showTitle ? displayTitle : crumb.label}
+                    </span>
+                  )}
                 </span>
               );
             })}
@@ -118,52 +140,62 @@ export default function Header({ user, title }: HeaderProps) {
         )}
       </div>
 
-      {/* Right section */}
-      <div className="flex items-center gap-2 pr-4 shrink-0">
-        {/* Search */}
-        <div className="hidden md:flex items-center gap-2 bg-slate-50 border border-slate-200/80 rounded-xl px-3 py-1.5 text-xs text-slate-400 w-48 cursor-pointer hover:border-brand-300 hover:bg-white transition-all duration-150">
-          <Search className="w-3.5 h-3.5 shrink-0 text-slate-400" />
-          <span className="text-xs text-slate-500">Tìm kiếm...</span>
-          <span className="ml-auto text-[10px] bg-white border border-slate-200 text-slate-400 px-1.5 py-0.5 rounded-md font-medium">⌘K</span>
-        </div>
+      {/* ── Right section: Search + Notifications + User Menu ── */}
+      <div className="flex items-center gap-3 shrink-0">
+        {/* Realtime Date Indicator */}
+        {currentDateStr && (
+          <div className="hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-2xl bg-slate-50 border border-slate-200/80 text-xs font-semibold text-slate-700 shadow-2xs">
+            <Calendar className="w-3.5 h-3.5 text-brand-600 shrink-0" />
+            <span>{currentDateStr}</span>
+          </div>
+        )}
 
         {/* Notifications */}
         {user && <NotificationBell user={user} />}
 
-        {/* User Menu */}
+        {/* User Pill Menu */}
         {user && (
           <div className="relative" ref={menuRef}>
             <button
               onClick={() => setShowMenu(!showMenu)}
-              className="flex items-center gap-2 pl-1.5 pr-2.5 py-1 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer"
+              className="flex items-center gap-2.5 p-1.5 pr-2.5 rounded-2xl hover:bg-slate-100/80 border border-transparent hover:border-slate-200 transition-all cursor-pointer group"
             >
               <Avatar name={user.name} src={user.avatar_url} size="sm" />
               <div className="hidden sm:block text-left">
-                <p className="text-xs font-bold text-slate-900 leading-none">{user.name}</p>
-                <p className="text-[10px] text-slate-400 mt-0.5 leading-none capitalize font-medium">{user.role}</p>
+                <p className="text-xs font-bold text-slate-900 group-hover:text-brand-600 transition-colors leading-tight">
+                  {user.name}
+                </p>
+                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider leading-none mt-0.5 capitalize">
+                  {user.role === "teacher" ? "Giáo viên" : user.role === "admin" ? "Quản trị viên" : user.role}
+                </p>
               </div>
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 transition-colors hidden sm:block" />
             </button>
 
             {showMenu && (
-              <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-200/80 py-1.5 z-20 overflow-hidden animate-[var(--animate-fade-in)]">
+              <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-200/80 py-1.5 z-40 overflow-hidden animate-[var(--animate-fade-in)]">
                 <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/50">
                   <p className="text-xs font-bold text-slate-900 truncate">{user.name}</p>
-                  <p className="text-[11px] text-slate-500 mt-0.5 truncate">{user.email}</p>
+                  <p className="text-[11px] text-slate-400 truncate mt-0.5">{user.email}</p>
                 </div>
+
                 <div className="py-1">
                   <Link
-                    href={user.role === "student" ? "/student/account" : `/${user.role}/settings`}
+                    href={user.role === "teacher" ? "/teacher/account" : "/admin/settings"}
                     onClick={() => setShowMenu(false)}
-                    className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-brand-50 hover:text-brand-700 transition-colors cursor-pointer text-left"
+                    className="flex items-center gap-2.5 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-600 transition-colors"
                   >
                     <Settings className="w-4 h-4 text-slate-400" />
                     Cài đặt tài khoản
                   </Link>
+                </div>
+
+                <div className="border-t border-slate-100 pt-1">
                   <button
                     onClick={handleSignOut}
                     className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer text-left"
                   >
-                    <LogOut className="w-4 h-4" />
+                    <LogOut className="w-4 h-4 text-rose-500" />
                     Đăng xuất
                   </button>
                 </div>
@@ -174,8 +206,4 @@ export default function Header({ user, title }: HeaderProps) {
       </div>
     </header>
   );
-}
-
-function cn(...classes: (string | undefined | false | null)[]) {
-  return classes.filter(Boolean).join(" ");
 }

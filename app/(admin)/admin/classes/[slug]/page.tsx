@@ -6,6 +6,7 @@ import Button from "@/components/ui/Button";
 import { SkeletonPage } from "@/components/ui/Skeleton";
 import { createBrowserClient } from "@/lib/supabase/client";
 import { SESSION_STATUS, ATTENDANCE_STATUS } from "@/lib/constants";
+import { getSessionState } from "@/lib/sessionStatus";
 import { buildSessionRef } from "@/lib/sessionRefUtils";
 import BackButton from "@/components/ui/BackButton";
 import { AlertTriangle, ArrowRightLeft, BookOpen, Calendar, CheckSquare, ChevronDown, ChevronRight, DollarSign, Download, ExternalLink, FileText, History, MessageSquare, Pencil, Plus, Search, Star, Trash2, Users, Video, WrapText, ZoomIn } from "lucide-react";
@@ -1454,10 +1455,14 @@ export default function ClassDetailPage({ params }: { params: Promise<{ slug: st
                       )}
                     </div>
                     <div className="flex flex-col items-end gap-1">
-                      {s.status === SESSION_STATUS.DONE ? <Badge variant="success">✓</Badge>
-                        : s.status === SESSION_STATUS.CANCELLED ? <Badge variant="danger">Hủy</Badge>
-                          : s.makeup_original_date ? <Badge variant="warning">🔄 Học bù</Badge>
-                            : <Badge variant="info">Sắp tới</Badge>}
+                      {(() => {
+                        const state = getSessionState(s);
+                        if (state.isDone) return <Badge variant="success">✓</Badge>;
+                        if (state.isCancelled) return <Badge variant="danger">Hủy</Badge>;
+                        if (state.isMakeup) return <Badge variant="warning">🔄 Học bù</Badge>;
+                        if (state.isPendingAttendance) return <Badge variant="warning">Chưa điểm danh</Badge>;
+                        return <Badge variant="info">Sắp tới</Badge>;
+                      })()}
                     </div>
                   </div>
                   {s.status !== SESSION_STATUS.DONE && s.status !== SESSION_STATUS.CANCELLED && (

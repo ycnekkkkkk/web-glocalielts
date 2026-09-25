@@ -8,6 +8,7 @@ import Modal from "@/components/ui/Modal";
 import { SkeletonPage } from "@/components/ui/Skeleton";
 import { createBrowserClient } from "@/lib/supabase/client";
 import { SESSION_STATUS } from "@/lib/constants";
+import { getSessionState } from "@/lib/sessionStatus";
 import BackButton from "@/components/ui/BackButton";
 import { BookOpen, Calendar, CheckCircle, Clock, GraduationCap, MessageSquare, Star, Video, ExternalLink } from "lucide-react";
 import { use, useEffect, useMemo, useRef, useState } from "react";
@@ -387,7 +388,7 @@ export default function StudentCourseDetailPage({ params }: { params: Promise<{ 
         <Card className="p-4 flex items-center gap-3">
           <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center"><Clock className="w-5 h-5 text-amber-600" /></div>
           <div>
-            <p className="text-2xl font-bold">{sessions.filter(s => s.status === SESSION_STATUS.UPCOMING).length}</p>
+            <p className="text-2xl font-bold">{sessions.filter(s => getSessionState(s).isUpcoming).length}</p>
             <p className="text-xs text-gray-500">Buổi còn lại</p>
           </div>
         </Card>
@@ -499,11 +500,13 @@ export default function StudentCourseDetailPage({ params }: { params: Promise<{ 
                       )}
                     </div>
                   </div>
-                  {isDone
-                    ? <Badge variant="success"><CheckCircle className="w-3 h-3 mr-1 inline" />Hoàn thành</Badge>
-                    : s.status === SESSION_STATUS.CANCELLED
-                      ? <Badge variant="danger">Đã hủy</Badge>
-                      : <Badge variant="info">Sắp tới</Badge>}
+                  {(() => {
+                    const sessionState = getSessionState(s);
+                    if (isDone) return <Badge variant="success"><CheckCircle className="w-3 h-3 mr-1 inline" />Hoàn thành</Badge>;
+                    if (s.status === SESSION_STATUS.CANCELLED) return <Badge variant="danger">Đã hủy</Badge>;
+                    if (sessionState.isPast) return <Badge variant="gray">Đã học</Badge>;
+                    return <Badge variant="info">Sắp tới</Badge>;
+                  })()}
                 </div>
 
                 {/* Actions for completed sessions */}

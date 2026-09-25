@@ -7,6 +7,7 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import { createBrowserClient } from "@/lib/supabase/client";
+import { getSessionState } from "@/lib/sessionStatus";
 import BackButton from "@/components/ui/BackButton";
 import {
   BookOpen, Calendar, CheckCircle, DollarSign, Download, FileText, History, MessageSquare, Pencil, Plus, Star, Trash2, Upload, Users, Video, WrapText, ZoomIn, ChevronRight, ChevronDown,
@@ -1935,15 +1936,14 @@ export default function AcademicManagerClassDetailPage({ params }: { params: Pro
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex flex-col gap-1">
-                          {s.status === "DONE" ? (
-                            <Badge variant="success">Hoàn thành</Badge>
-                          ) : s.status === "CANCELLED" ? (
-                            <Badge variant="danger">Đã hủy</Badge>
-                          ) : s.makeup_original_date ? (
-                            <Badge variant="warning">🔄 Học bù</Badge>
-                          ) : (
-                            <Badge variant="info">Sắp tới</Badge>
-                          )}
+                          {(() => {
+                            const state = getSessionState(s);
+                            if (state.isDone) return <Badge variant="success">Hoàn thành</Badge>;
+                            if (state.isCancelled) return <Badge variant="danger">Đã hủy</Badge>;
+                            if (state.isMakeup) return <Badge variant="warning">🔄 Học bù</Badge>;
+                            if (state.isPendingAttendance) return <Badge variant="warning">Chưa điểm danh</Badge>;
+                            return <Badge variant="info">Sắp tới</Badge>;
+                          })()}
                           {s.makeup_original_date && (
                             <p className="text-[10px] text-orange-600 leading-tight font-semibold mt-0.5">
                               🔸 Học bù từ {s.makeup_original_date}

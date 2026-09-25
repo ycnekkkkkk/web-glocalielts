@@ -16,7 +16,7 @@ import { Class } from "@/types";
 import { 
   GraduationCap, Pencil, Plus, Search, Trash2, Users, 
   CheckCircle2, Clock, XCircle, ArrowRight, BookOpen, UserCheck, 
-  Calendar, Layers, Sparkles, DollarSign
+  Calendar, Layers, Sparkles, DollarSign, LayoutGrid, List
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, Fragment, useRef, useMemo } from "react";
@@ -69,18 +69,18 @@ function formatVND(amount: number) {
 }
 
 function statusBadge(status: string) {
-  const map: Record<string, { v: "success"|"info"|"gray"|"danger"|"warning"; l: string; icon: any }> = {
-    active:    { v: "success", l: "Đang học", icon: <CheckCircle2 className="w-3 h-3" /> },
-    upcoming:  { v: "info",    l: "Sắp khai giảng", icon: <Clock className="w-3 h-3" /> },
-    completed: { v: "gray",    l: "Kết thúc", icon: <CheckCircle2 className="w-3 h-3" /> },
-    cancelled: { v: "danger",  l: "Đã hủy", icon: <XCircle className="w-3 h-3" /> },
+  const map: Record<string, { bg: string; text: string; dot: string; label: string }> = {
+    active:    { bg: "bg-emerald-50 border-emerald-200/60", text: "text-emerald-700", dot: "bg-emerald-500", label: "Đang học" },
+    upcoming:  { bg: "bg-sky-50 border-sky-200/60",         text: "text-sky-700",     dot: "bg-sky-500",     label: "Sắp tới" },
+    completed: { bg: "bg-slate-100 border-slate-200/60",     text: "text-slate-600",   dot: "bg-slate-400",   label: "Kết thúc" },
+    cancelled: { bg: "bg-rose-50 border-rose-200/60",       text: "text-rose-700",    dot: "bg-rose-500",    label: "Đã hủy" },
   };
-  const m = map[status] || { v: "gray" as const, l: status, icon: <Layers className="w-3 h-3" /> };
+  const m = map[status] || { bg: "bg-slate-100 border-slate-200/60", text: "text-slate-600", dot: "bg-slate-400", label: status };
   return (
-    <Badge variant={m.v} className="gap-1.5 py-1 px-3 shadow-sm border border-black/5">
-      {m.icon}
-      {m.l}
-    </Badge>
+    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold border whitespace-nowrap shrink-0 ${m.bg} ${m.text}`}>
+      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${m.dot}`} />
+      <span className="whitespace-nowrap">{m.label}</span>
+    </span>
   );
 }
 
@@ -133,6 +133,8 @@ export default function AdminClassesPage() {
   const [managers, setManagers] = useState<TeacherOption[]>([]);
   const [students, setStudents] = useState<StudentOption[]>([]);
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
   const [modal, setModal] = useState<null | "create" | "edit" | "delete">(null);
   const [selected, setSelected] = useState<Class | null>(null);
   const [form, setForm] = useState<FormData>(EMPTY);
@@ -187,10 +189,26 @@ export default function AdminClassesPage() {
     })));
   }
 
-  const filtered = classes.filter(c =>
-    c.name.toLowerCase().includes(search.toLowerCase()) ||
-    (c.teacher?.full_name || "").toLowerCase().includes(search.toLowerCase())
-  );
+  const stats = useMemo(() => {
+    return {
+      total: classes.length,
+      active: classes.filter(c => c.status === "active").length,
+      upcoming: classes.filter(c => c.status === "upcoming").length,
+      completed: classes.filter(c => c.status === "completed").length,
+      totalStudents: classes.reduce((acc, c) => acc + (c.enrollments?.[0]?.count ?? 0), 0),
+    };
+  }, [classes]);
+
+  const filtered = useMemo(() => {
+    return classes.filter(c => {
+      const matchSearch =
+        c.name.toLowerCase().includes(search.toLowerCase()) ||
+        (c.teacher?.full_name || "").toLowerCase().includes(search.toLowerCase());
+      if (!matchSearch) return false;
+      if (statusFilter !== "all" && c.status !== statusFilter) return false;
+      return true;
+    });
+  }, [classes, search, statusFilter]);
 
   function openCreate() {
     setForm(EMPTY);
@@ -793,53 +811,71 @@ export default function AdminClassesPage() {
 
   return (
     <PageWrapper>
-      {/* Premium Hero Header - Mobile optimized */}
-      <div className="relative mb-6 md:mb-8 p-5 md:p-8 rounded-[2rem] md:rounded-3xl bg-gradient-to-br from-brand-600 via-brand-700 to-sky-800 overflow-hidden shadow-2xl shadow-brand-200/50">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl opacity-50" />
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-brand-400/20 rounded-full -ml-24 -mb-24 blur-2xl opacity-50" />
-        
-        <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 md:w-16 md:h-16 bg-white/20 backdrop-blur-xl rounded-2xl flex items-center justify-center shadow-inner border border-white/20">
-              <GraduationCap className="w-6 h-6 md:w-9 md:h-9 text-white" />
-            </div>
-            <div>
-              <h1 className="text-xl md:text-3xl font-black text-white tracking-tight leading-none mb-1 md:mb-2">Quản lý lớp học</h1>
-              <div className="flex items-center gap-2 text-brand-100/80 text-[10px] md:text-sm font-bold uppercase tracking-wider">
-                <Sparkles className="w-3 h-3 md:w-4 md:h-4" />
-                <span>Smart Education System</span>
-              </div>
-            </div>
+      {/* ── Page Header: Compact title & primary action ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+        <div>
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-xl font-bold text-slate-900 tracking-tight">Quản lý lớp học</h1>
+            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600">
+              {classes.length} lớp
+            </span>
           </div>
-          <Button 
-            className="w-full sm:w-auto bg-white text-brand-700 hover:bg-brand-50 border-none shadow-xl hover:scale-105 active:scale-95 transition-all py-5 md:py-7 px-8 rounded-2xl font-black text-sm md:text-base"
-            icon={<Plus className="w-5 h-5" />} 
-            onClick={openCreate}
-          >
-            Tạo lớp mới
-          </Button>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Theo dõi danh sách lớp học, phân công giáo viên, lịch học và tiến độ đào tạo
+          </p>
         </div>
+
+        <Button 
+          variant="primary"
+          onClick={openCreate}
+          icon={<Plus className="w-4 h-4" />}
+          className="rounded-xl text-xs font-semibold px-4 py-2 shadow-sm bg-brand-600 hover:bg-brand-700"
+        >
+          Tạo lớp mới
+        </Button>
       </div>
 
-      {/* Stats Summary - Responsive Grid */}
-      <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6 md:mb-8">
-        {[
-          { label: "Tổng lớp học", val: classes.length, icon: Layers, color: "brand" },
-          { label: "Đang hoạt động", val: classes.filter(c => c.status === 'active').length, icon: CheckCircle2, color: "emerald" },
-          { label: "Sắp khai giảng", val: classes.filter(c => c.status === 'upcoming').length, icon: Clock, color: "sky" },
-          { label: "Tổng học viên", val: classes.reduce((acc, c) => acc + (c.enrollments?.[0]?.count ?? 0), 0), icon: Users, color: "sky" },
-        ].map((stat, idx) => (
-          <div key={idx} className="bg-white p-4 md:p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg transition-all group overflow-hidden relative">
-            <div className={`absolute top-0 right-0 w-16 h-16 bg-${stat.color}-500/5 rounded-full -mr-8 -mt-8 group-hover:scale-150 transition-transform duration-500`} />
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">{stat.label}</p>
-            <div className="flex items-end justify-between relative">
-              <h3 className={`text-2xl md:text-3xl font-black text-gray-900 group-hover:text-${stat.color}-600 transition-colors`}>{stat.val}</h3>
-              <div className={`p-2.5 bg-${stat.color}-50 rounded-xl group-hover:rotate-12 transition-transform`}>
-                <stat.icon className={`w-5 h-5 text-${stat.color}-600`} />
-              </div>
-            </div>
+      {/* ── Metrics Strip: Low-profile stat cards ── */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+        <div className="bg-white rounded-xl border border-slate-200/80 p-3 flex items-center gap-3 shadow-xs">
+          <div className="w-9 h-9 rounded-lg bg-brand-50 text-brand-600 flex items-center justify-center shrink-0">
+            <Layers className="w-4 h-4" />
           </div>
-        ))}
+          <div className="min-w-0">
+            <p className="text-[11px] font-medium text-slate-400 truncate">Tổng lớp học</p>
+            <p className="text-lg font-bold text-slate-900 leading-tight">{stats.total}</p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl border border-slate-200/80 p-3 flex items-center gap-3 shadow-xs">
+          <div className="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+            <CheckCircle2 className="w-4 h-4" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[11px] font-medium text-slate-400 truncate">Đang học</p>
+            <p className="text-lg font-bold text-emerald-600 leading-tight">{stats.active}</p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl border border-slate-200/80 p-3 flex items-center gap-3 shadow-xs">
+          <div className="w-9 h-9 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center shrink-0">
+            <Clock className="w-4 h-4" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[11px] font-medium text-slate-400 truncate">Sắp khai giảng</p>
+            <p className="text-lg font-bold text-sky-600 leading-tight">{stats.upcoming}</p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl border border-slate-200/80 p-3 flex items-center gap-3 shadow-xs">
+          <div className="w-9 h-9 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
+            <Users className="w-4 h-4" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[11px] font-medium text-slate-400 truncate">Tổng học viên</p>
+            <p className="text-lg font-bold text-slate-900 leading-tight">{stats.totalStudents}</p>
+          </div>
+        </div>
       </div>
 
       {classesError && (
@@ -848,141 +884,293 @@ export default function AdminClassesPage() {
         </div>
       )}
 
-      <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-2xl shadow-gray-200/50 overflow-hidden mb-12">
-        <div className="p-5 md:p-8 border-b border-gray-100 bg-gray-50/20 flex flex-col md:flex-row md:items-center gap-4">
-          <div className="flex-1">
-            <div className="relative group">
-              <Input
-                placeholder="Tìm tên lớp, giáo viên hoặc trình độ..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                icon={<Search className="w-5 h-5 text-gray-400 group-focus-within:text-brand-600 transition-colors" />}
-                className="pl-12 py-5 md:py-6 rounded-2xl border-gray-200 focus:border-brand-500 focus:ring-4 focus:ring-brand-50 shadow-sm"
-              />
-            </div>
-          </div>
-          <div className="flex items-center self-end md:self-auto gap-2 text-[11px] font-black text-gray-500 px-4 py-2 bg-white rounded-xl border border-gray-200 shadow-sm">
-            <div className="w-2 h-2 rounded-full bg-brand-500 animate-pulse" />
-            {filtered.length} KẾT QUẢ
-          </div>
+      {/* ── Control Toolbar: Search + Quick Status Filter Tabs + View Mode Toggle ── */}
+      <div className="bg-white rounded-xl border border-slate-200/80 p-2.5 mb-4 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-xs">
+        {/* Left: Search input */}
+        <div className="relative w-full md:w-72">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <input
+            type="text"
+            placeholder="Tìm tên lớp, giáo viên..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-brand-500 focus:outline-none transition-colors"
+          />
         </div>
 
-        {loading ? (
-          <div className="p-8"><SkeletonTable /></div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center py-20 md:py-32 px-6">
-            <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
-              <GraduationCap className="w-12 h-12 text-gray-200" />
-            </div>
-            <h3 className="text-xl font-black text-gray-900">Không có dữ liệu phù hợp</h3>
-            <p className="text-gray-500 mt-2 max-w-xs mx-auto text-sm">Thử điều chỉnh bộ lọc hoặc tạo một lớp học mới để bắt đầu.</p>
-          </div>
-        ) : (
-          <div className="p-4 md:p-8 bg-gray-50/10">
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-8">
-              {filtered.map((cls) => {
-                const count = cls.enrollments?.[0]?.count ?? 0;
-                return (
-                  <div 
-                    key={cls.id} 
-                    className="group relative bg-white rounded-[2rem] border border-gray-100 p-5 md:p-7 shadow-sm hover:shadow-2xl hover:shadow-brand-100/40 hover:-translate-y-2 transition-all duration-500 ease-out"
+        {/* Center / Right: Status Filter Tabs + View Switcher */}
+        <div className="flex items-center justify-between md:justify-end gap-2 w-full md:w-auto">
+          {/* Status Pills */}
+          <div className="flex items-center gap-1 overflow-x-auto custom-scrollbar py-0.5">
+            {[
+              { key: "all", label: "Tất cả", count: stats.total },
+              { key: "active", label: "Đang học", count: stats.active },
+              { key: "upcoming", label: "Sắp tới", count: stats.upcoming },
+              { key: "completed", label: "Kết thúc", count: stats.completed },
+            ].map((tab) => {
+              const isSelected = statusFilter === tab.key;
+              return (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => setStatusFilter(tab.key)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                    isSelected
+                      ? "bg-brand-600 text-white shadow-xs font-semibold"
+                      : "text-slate-600 hover:bg-slate-100"
+                  }`}
+                >
+                  <span>{tab.label}</span>
+                  <span
+                    className={`text-[10px] px-1 rounded-full ${
+                      isSelected
+                        ? "bg-brand-700 text-white"
+                        : "bg-slate-100 text-slate-500"
+                    }`}
                   >
-                    <div className="flex items-start gap-4 mb-6 md:mb-8">
-                      <div className="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-br from-brand-500 to-sky-600 rounded-2xl flex items-center justify-center shadow-lg shadow-brand-100 shrink-0 group-hover:rotate-6 transition-transform">
-                        <BookOpen className="w-6 h-6 md:w-8 md:h-8 text-white" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <h3 className="text-base md:text-xl font-black text-gray-900 leading-tight mb-2 group-hover:text-brand-600 transition-colors">
-                          {cls.name}
-                        </h3>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <div className="scale-90 origin-left">
-                            {statusBadge(cls.status)}
-                          </div>
-                          {cls.class_type === "1on1" && (
-                            <Badge variant="warning" className="text-[9px] font-black uppercase tracking-tighter px-2 bg-amber-50 text-amber-700 border border-amber-100">1:1 SOLO</Badge>
-                          )}
-                        </div>
-                      </div>
+                    {tab.count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Divider */}
+          <div className="w-px h-5 bg-slate-200 shrink-0 hidden sm:block mx-1" />
+
+          {/* View Mode Toggle: Grid vs Table */}
+          <div className="flex items-center bg-slate-100 p-0.5 rounded-lg shrink-0">
+            <button
+              type="button"
+              onClick={() => setViewMode("grid")}
+              className={`p-1.5 rounded-md transition-colors cursor-pointer ${
+                viewMode === "grid"
+                  ? "bg-white text-slate-800 shadow-xs"
+                  : "text-slate-400 hover:text-slate-700"
+              }`}
+              title="Dạng lưới thẻ"
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("table")}
+              className={`p-1.5 rounded-md transition-colors cursor-pointer ${
+                viewMode === "table"
+                  ? "bg-white text-slate-800 shadow-xs"
+                  : "text-slate-400 hover:text-slate-700"
+              }`}
+              title="Dạng bảng danh sách"
+            >
+              <List className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Content: Compact Grid or Dense Table ── */}
+      {loading ? (
+        <div className="bg-white rounded-xl border border-slate-200/80 p-6">
+          <SkeletonTable />
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="bg-white rounded-xl border border-slate-200/80 text-center py-16 px-4">
+          <div className="w-12 h-12 bg-slate-50 text-slate-300 rounded-full flex items-center justify-center mx-auto mb-3">
+            <GraduationCap className="w-6 h-6" />
+          </div>
+          <h3 className="text-sm font-bold text-slate-800">Không tìm thấy lớp học</h3>
+          <p className="text-slate-400 mt-1 text-xs max-w-xs mx-auto">
+            Thử thay đổi từ khóa tìm kiếm hoặc chọn bộ lọc trạng thái khác.
+          </p>
+        </div>
+      ) : viewMode === "grid" ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5">
+          {filtered.map((cls) => {
+            const count = cls.enrollments?.[0]?.count ?? 0;
+            const pct = cls.total_sessions ? Math.round(((cls.sessions_done || 0) / cls.total_sessions) * 100) : 0;
+
+            return (
+              <div
+                key={cls.id}
+                className="bg-white rounded-xl border border-slate-200/80 p-3.5 hover:border-brand-300 hover:shadow-md transition-all flex flex-col justify-between group"
+              >
+                <div>
+                  {/* Top Badges */}
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      {statusBadge(cls.status)}
+                      {cls.class_type === "1on1" && (
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200/60 leading-none">
+                          1:1
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-[11px] font-semibold text-slate-400 shrink-0">
+                      {cls.sessions_done || 0}/{cls.total_sessions || 0} buổi
+                    </span>
+                  </div>
+
+                  {/* Class Title */}
+                  <Link
+                    href={`/admin/classes/${encodeURIComponent(cls.name)}`}
+                    className="block font-bold text-slate-900 text-sm hover:text-brand-600 transition-colors line-clamp-1 mb-2.5"
+                    title={cls.name}
+                  >
+                    {cls.name}
+                  </Link>
+
+                  {/* Compact Metadata Box */}
+                  <div className="space-y-1.5 text-xs text-slate-600 bg-slate-50/70 p-2.5 rounded-lg border border-slate-100">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <UserCheck className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <span className="truncate font-medium text-slate-700" title={cls.teacher?.full_name || "Chưa có GV"}>
+                        {cls.teacher?.full_name || "(Chưa có GV)"}
+                      </span>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3 md:gap-4 mb-6 md:mb-8">
-                      <div className="bg-gray-50 rounded-2xl p-3 md:p-4 border border-gray-100 group-hover:bg-brand-50/30 transition-colors">
-                        <div className="flex items-center gap-2 text-gray-400 mb-1">
-                          <Users className="w-3 h-3" />
-                          <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest">Học viên</span>
-                        </div>
-                        <p className="text-sm md:text-lg font-black text-gray-900">{count} <span className="text-[10px] font-bold text-gray-400">HV</span></p>
-                      </div>
-                      <div className="bg-gray-50 rounded-2xl p-3 md:p-4 border border-gray-100 group-hover:bg-brand-50/30 transition-colors">
-                        <div className="flex items-center gap-2 text-gray-400 mb-1">
-                          <Calendar className="w-3 h-3" />
-                          <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest">Lịch học</span>
-                        </div>
-                        <p className="text-[10px] md:text-[12px] font-black text-gray-900 truncate" title={cls.schedule || "Chưa có lịch"}>
-                          {cls.schedule || "N/A"}
-                        </p>
-                      </div>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <span className="truncate text-slate-500" title={cls.schedule || "Chưa có lịch"}>
+                        {cls.schedule || "Chưa có lịch"}
+                      </span>
                     </div>
 
-                    <div className="flex items-center justify-between gap-3 p-4 bg-gray-50 rounded-2xl border border-gray-100 mb-6 md:mb-8 group-hover:border-brand-100 transition-colors">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-9 h-9 md:w-10 md:h-10 rounded-xl bg-white border border-gray-200 flex items-center justify-center overflow-hidden shadow-sm">
-                          {cls.teacher?.full_name ? (
-                            <div className="bg-gradient-to-br from-brand-50 to-brand-100 w-full h-full flex items-center justify-center text-brand-700 font-black text-sm uppercase">
-                              {cls.teacher.full_name.charAt(0)}
-                            </div>
-                          ) : (
-                            <Users className="w-5 h-5 text-gray-300" />
-                          )}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-[9px] text-gray-400 font-black uppercase tracking-tighter mb-0.5">Giảng viên</p>
-                          <p className="text-xs md:text-sm font-black text-gray-800 truncate leading-none">{cls.teacher?.full_name || "Chưa phân công"}</p>
-                        </div>
+                    <div className="flex items-center justify-between gap-2 text-slate-500">
+                      <div className="flex items-center gap-2">
+                        <Users className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <span>{count} học viên</span>
                       </div>
-                      <div className="text-right shrink-0">
-                        <p className="text-[9px] text-gray-400 font-black uppercase tracking-tighter mb-0.5">Tiến độ</p>
-                        <p className="text-xs md:text-sm font-black text-gray-900 leading-none">
-                          {cls.sessions_done || 0}/{cls.total_sessions || 0}
-                        </p>
-                      </div>
+                      <span className="text-[10px] font-medium text-slate-400">{pct}%</span>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                      <Link href={`/admin/classes/${encodeURIComponent(cls.name)}`} className="flex-1">
-                        <Button 
-                          variant="primary" 
-                          size="lg" 
-                          className="w-full justify-center rounded-2xl font-black text-xs md:text-sm bg-brand-600 hover:bg-brand-700 shadow-xl shadow-brand-100 border-none py-4 md:py-6"
-                        >
-                          Chi tiết
-                        </Button>
-                      </Link>
-                      <div className="flex items-center gap-1">
-                        <Button 
-                          variant="subtle" 
-                          size="md" 
-                          icon={<Pencil className="w-4 h-4 md:w-5 md:h-5" />} 
-                          onClick={() => openEdit(cls)} 
-                          className="rounded-2xl border border-gray-200 hover:border-brand-200 hover:text-brand-600 bg-white p-3 md:p-4" 
-                        />
-                        <Button 
-                          variant="subtle" 
-                          size="md" 
-                          icon={<Trash2 className="w-4 h-4 md:w-5 md:h-5" />} 
-                          onClick={() => { setSelected(cls); setModal("delete"); }} 
-                          className="rounded-2xl border border-gray-200 hover:border-red-200 hover:text-red-600 text-red-500 bg-white p-3 md:p-4" 
-                        />
-                      </div>
+                    <div className="w-full bg-slate-200/70 h-1.5 rounded-full overflow-hidden mt-1">
+                      <div
+                        className="bg-brand-600 h-full rounded-full transition-all"
+                        style={{ width: `${Math.min(pct, 100)}%` }}
+                      />
                     </div>
                   </div>
-                );
-              })}
-            </div>
+                </div>
+
+                {/* Footer Action Row */}
+                <div className="flex items-center justify-between pt-3 mt-3 border-t border-slate-100">
+                  <Link
+                    href={`/admin/classes/${encodeURIComponent(cls.name)}`}
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 hover:text-brand-700 hover:underline"
+                  >
+                    <span>Xem chi tiết</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </Link>
+
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => openEdit(cls)}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-brand-50 transition-colors cursor-pointer"
+                      title="Chỉnh sửa lớp"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setSelected(cls); setModal("delete"); }}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                      title="Xóa lớp"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="bg-white rounded-xl border border-slate-200/80 overflow-hidden shadow-xs">
+          <div className="overflow-x-auto custom-scrollbar">
+            <table className="w-full text-left text-xs min-w-[840px] border-collapse">
+              <thead className="bg-slate-50 border-b border-slate-200/80 text-slate-500 font-semibold uppercase tracking-wider text-[10px]">
+                <tr>
+                  <th className="py-3 px-4 whitespace-nowrap min-w-[180px]">Tên lớp</th>
+                  <th className="py-3 px-3 whitespace-nowrap min-w-[120px]">Trạng thái</th>
+                  <th className="py-3 px-3 whitespace-nowrap min-w-[140px]">Giáo viên</th>
+                  <th className="py-3 px-3 whitespace-nowrap min-w-[80px]">Học viên</th>
+                  <th className="py-3 px-3 whitespace-nowrap min-w-[180px]">Lịch học</th>
+                  <th className="py-3 px-3 whitespace-nowrap min-w-[120px]">Tiến độ</th>
+                  <th className="py-3 px-4 text-right whitespace-nowrap min-w-[120px]">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filtered.map((cls) => {
+                  const count = cls.enrollments?.[0]?.count ?? 0;
+                  const pct = cls.total_sessions ? Math.round(((cls.sessions_done || 0) / cls.total_sessions) * 100) : 0;
+                  return (
+                    <tr key={cls.id} className="hover:bg-slate-50/70 transition-colors">
+                      <td className="py-3 px-4 whitespace-nowrap">
+                        <Link
+                          href={`/admin/classes/${encodeURIComponent(cls.name)}`}
+                          className="font-bold text-slate-900 hover:text-brand-600 transition-colors inline-block"
+                        >
+                          {cls.name}
+                        </Link>
+                        {cls.class_type === "1on1" && (
+                          <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200/60 inline-block align-middle">
+                            1:1
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-3 px-3 whitespace-nowrap">{statusBadge(cls.status)}</td>
+                      <td className="py-3 px-3 text-slate-700 font-medium whitespace-nowrap">
+                        {cls.teacher?.full_name || "(Chưa có GV)"}
+                      </td>
+                      <td className="py-3 px-3 text-slate-600 whitespace-nowrap">{count} HV</td>
+                      <td className="py-3 px-3 text-slate-500 whitespace-nowrap" title={cls.schedule || ""}>
+                        {cls.schedule || "—"}
+                      </td>
+                      <td className="py-3 px-3 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <span className="text-slate-600 font-medium shrink-0 whitespace-nowrap">
+                            {cls.sessions_done || 0}/{cls.total_sessions || 0}
+                          </span>
+                          <div className="w-14 bg-slate-100 h-1.5 rounded-full overflow-hidden shrink-0">
+                            <div className="bg-brand-600 h-full rounded-full" style={{ width: `${Math.min(pct, 100)}%` }} />
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-1 whitespace-nowrap">
+                          <Link
+                            href={`/admin/classes/${encodeURIComponent(cls.name)}`}
+                            className="px-2.5 py-1 rounded-lg text-xs font-semibold text-brand-600 hover:bg-brand-50 transition-colors inline-flex items-center whitespace-nowrap"
+                          >
+                            Chi tiết
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => openEdit(cls)}
+                            className="p-1 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-slate-100 transition-colors cursor-pointer shrink-0"
+                            title="Chỉnh sửa"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { setSelected(cls); setModal("delete"); }}
+                            className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer shrink-0"
+                            title="Xóa"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Create / Edit Modal */}
       <Modal open={modal === "create" || modal === "edit"} onClose={() => setModal(null)}

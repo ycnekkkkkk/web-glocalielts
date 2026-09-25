@@ -7,6 +7,7 @@ import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import { createBrowserClient } from "@/lib/supabase/client";
 import { SESSION_STATUS, ATTENDANCE_STATUS } from "@/lib/constants";
+import { getSessionState } from "@/lib/sessionStatus";
 import BackButton from "@/components/ui/BackButton";
 import { BookOpen, Calendar, ClipboardList, Pencil, Star, Users, WrapText, Video, CalendarCheck2, AlertTriangle, Ban, Eye, Target, ChevronRight, ChevronDown, Save, X, Sparkles } from "lucide-react";
 import { use, useEffect, useRef, useState } from "react";
@@ -1376,9 +1377,10 @@ export default function TeacherCourseDetailPage({ params }: { params: Promise<{ 
                   </thead>
                   <tbody className="divide-y divide-gray-50">
                     {sessions.map((s) => {
-                      const isDone = s.status === SESSION_STATUS.DONE;
-                      const isCancelled = s.status === SESSION_STATUS.CANCELLED;
-                      const isUpcoming = s.status === SESSION_STATUS.UPCOMING;
+                      const sessionState = getSessionState(s);
+                      const isDone = sessionState.isDone;
+                      const isCancelled = sessionState.isCancelled;
+                      const isUpcoming = sessionState.isUpcoming;
                       const isMakeup = !!s.makeup_original_date;
                       const day = sessionDayLabel(s.session_date || null);
                       const sessionRef = `${s.class_name}#${s.session_no}#${s.session_date}`;
@@ -1502,7 +1504,9 @@ export default function TeacherCourseDetailPage({ params }: { params: Promise<{ 
                                   ? <Badge variant="danger">Đã hủy</Badge>
                                   : isMakeup
                                     ? <Badge variant="warning">🔄 Học bù</Badge>
-                                    : <Badge variant="info">Sắp tới</Badge>}
+                                    : sessionState.isPendingAttendance
+                                      ? <Badge variant="warning" className="bg-amber-100 text-amber-800 border border-amber-300 font-bold">Chưa điểm danh</Badge>
+                                      : <Badge variant="info">Sắp tới</Badge>}
                               {isMakeup && s.makeup_note && (
                                 <p className="text-[10px] text-orange-600 leading-tight">{s.makeup_note}</p>
                               )}
@@ -1516,14 +1520,14 @@ export default function TeacherCourseDetailPage({ params }: { params: Promise<{ 
                             <div className="flex items-center gap-1.5 flex-wrap">
                               {/* Điểm danh */}
                               {!isCancelled && (
-                                <Button size="sm" variant={isDone ? "outline" : "primary"}
-                                  className={isLockedByEval ? "opacity-50" : ""}
+                                <Button size="sm" variant={sessionState.isPendingAttendance ? "primary" : isDone ? "outline" : "primary"}
+                                  className={sessionState.isPendingAttendance ? "bg-amber-600 hover:bg-amber-700 text-white border-amber-600 shadow-sm font-medium" : isLockedByEval ? "opacity-50" : ""}
                                   icon={<ClipboardList className="w-3.5 h-3.5" />}
                                   onClick={() => {
                                     if (isLockedByEval && !isDone) { toast.error(lockedByEvalMsg); return; }
                                     openAttendance(s, isDone);
                                   }}>
-                                  {isDone ? "Xem ĐD" : "Điểm danh"}
+                                  {isDone ? "Xem ĐD" : sessionState.isPendingAttendance ? "Điểm danh ngay" : "Điểm danh"}
                                 </Button>
                               )}
                               {/* Đánh giá */}
